@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deliservy — Todo lo que necesitas, a un toque</title>
+  <meta name="description" content="Deliservy es la app de delivery líder en Venezuela. Pide comida, realiza compras y solicita taxis desde tu teléfono. Disponible en App Store y Google Play." />
+  <meta name="keywords" content="delivery Venezuela, comida a domicilio, taxi, tiendas, Deliservy, DeliFood, DeliTaxi, DeliTiendas" />
+  <meta property="og:title" content="Deliservy — Todo lo que necesitas, a un toque" />
+  <meta property="og:description" content="Pide comida, compra en tiendas y solicita taxis desde una sola app." />
+  <meta property="og:image" content="assets/logo-hd.png" />
+  <meta property="og:url" content="https://www.deliservy.com" />
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #e41616;
+      --red-dark: #b81010;
+      --red-light: #ff4444;
+      --red-pale: #fff0f0;
+      --dark: #111111;
+      --dark2: #1f1f1f;
+      --gray: #6b6b6b;
+      --gray2: #9e9e9e;
+      --light: #f8f8f8;
+      --white: #ffffff;
+      --border: #ebebeb;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,0.14);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--dark);
+      background: var(--white);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--light); }
+    ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 6vw;
+      height: 72px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    nav.scrolled { border-bottom-color: var(--border); box-shadow: 0 2px 20px rgba(0,0,0,0.06); }
+
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { height: 36px; object-fit: contain; }
+    .nav-logo span { font-size: 22px; font-weight: 800; color: var(--red); letter-spacing: -0.5px; }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a {
+      text-decoration: none; color: var(--dark); font-size: 15px; font-weight: 500;
+      transition: color .2s; position: relative;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -3px; left: 0; right: 0; height: 2px;
+      background: var(--red); transform: scaleX(0); transition: transform .2s; border-radius: 2px;
+    }
+    .nav-links a:hover { color: var(--red); }
+    .nav-links a:hover::after { transform: scaleX(1); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 50px; font-size: 15px; font-weight: 600;
+      text-decoration: none; transition: all .2s; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--red); color: white; box-shadow: 0 4px 16px rgba(228,22,22,0.35); }
+    .btn-primary:hover { background: var(--red-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(228,22,22,0.4); }
+    .btn-outline { background: transparent; color: var(--red); border: 2px solid var(--red); }
+    .btn-outline:hover { background: var(--red); color: white; }
+    .btn-dark { background: var(--dark); color: white; }
+    .btn-dark:hover { background: var(--dark2); transform: translateY(-2px); }
+    .btn-white { background: white; color: var(--dark); box-shadow: var(--shadow); }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+    .nav-cta { padding: 10px 22px; font-size: 14px; }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 100px 6vw 60px;
+      gap: 60px;
+      background: linear-gradient(135deg, #fff 0%, #fff5f5 50%, #fff 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    #hero::before {
+      content: ''; position: absolute;
+      top: -200px; right: -200px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(228,22,22,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    #hero::after {
+      content: ''; position: absolute;
+      bottom: -150px; left: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(228,22,22,0.05) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--red-pale); color: var(--red);
+      padding: 6px 16px; border-radius: 50px;
+      font-size: 13px; font-weight: 600;
+      margin-bottom: 24px;
+      border: 1px solid rgba(228,22,22,0.2);
+    }
+    .hero-badge span { width: 8px; height: 8px; background: var(--red); border-radius: 50%; animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    .hero-title {
+      font-size: clamp(40px, 5vw, 68px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+    }
+    .hero-title em { font-style: normal; color: var(--red); }
+
+    .hero-subtitle {
+      font-size: 18px; color: var(--gray);
+      margin-bottom: 40px; max-width: 480px;
+      line-height: 1.7;
+    }
+
+    .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 56px; }
+
+    .store-btn {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--dark); color: white;
+      padding: 14px 24px; border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: all .2s;
+      min-width: 180px;
+    }
+    .store-btn:hover { background: #333; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .store-btn svg { flex-shrink: 0; }
+    .store-btn-text { display: flex; flex-direction: column; }
+    .store-btn-text small { font-size: 11px; opacity: 0.7; font-weight: 400; }
+    .store-btn-text strong { font-size: 16px; font-weight: 700; line-height: 1.2; }
+
+    .hero-stats { display: flex; gap: 40px; }
+    .hero-stat-num { font-size: 28px; font-weight: 800; color: var(--dark); line-height: 1; }
+    .hero-stat-num span { color: var(--red); }
+    .hero-stat-lbl { font-size: 13px; color: var(--gray); margin-top: 4px; }
+
+    /* Phone mockup */
+    .hero-visual { display: flex; justify-content: center; align-items: center; position: relative; z-index: 1; }
+
+    .phone-wrap {
+      position: relative;
+      display: flex; justify-content: center;
+    }
+    .phone-frame {
+      width: 280px;
+      background: var(--dark);
+      border-radius: 44px;
+      padding: 14px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1);
+      position: relative;
+      z-index: 2;
+    }
+    .phone-screen {
+      border-radius: 32px;
+      overflow: hidden;
+      background: #f0f0f0;
+      aspect-ratio: 9/19;
+    }
+    .phone-screen img { width: 100%; height: 100%; object-fit: cover; }
+    .phone-notch {
+      position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 26px;
+      background: var(--dark);
+      border-radius: 0 0 16px 16px;
+      z-index: 3;
+    }
+
+    .phone-float {
+      position: absolute;
+      background: white;
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      box-shadow: var(--shadow-lg);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px;
+      animation: float 3s ease-in-out infinite;
+    }
+    .phone-float.left { left: -60px; top: 20%; animation-delay: 0s; }
+    .phone-float.right { right: -60px; top: 55%; animation-delay: 1.5s; }
+    .phone-float .icon { font-size: 22px; }
+    .phone-float strong { font-weight: 700; font-size: 13px; display: block; }
+    .phone-float small { color: var(--gray); font-size: 11px; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* ── SECTION BASE ── */
+    section { padding: 100px 6vw; }
+    .section-label {
+      display: inline-block;
+      background: var(--red-pale); color: var(--red);
+      padding: 6px 16px; border-radius: 50px;
+      font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(30px, 3.5vw, 48px);
+      font-weight: 800; letter-spacing: -1.5px; line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .section-sub { font-size: 18px; color: var(--gray); max-width: 560px; line-height: 1.7; }
+    .text-center { text-align: center; }
+    .text-center .section-sub { margin: 0 auto; }
+
+    /* ── STATS BAR ── */
+    #stats {
+      padding: 0;
+      background: var(--red);
+    }
+    .stats-inner {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      padding: 0 6vw;
+    }
+    .stat-item {
+      text-align: center; padding: 40px 20px;
+      border-right: 1px solid rgba(255,255,255,0.15);
+      color: white;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num { font-size: 42px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .stat-lbl { font-size: 14px; opacity: 0.85; margin-top: 6px; }
+
+    /* ── HOW IT WORKS ── */
+    #como-funciona { background: var(--white); }
+    .steps-tabs {
+      display: flex; gap: 12px; margin: 48px 0 56px;
+      justify-content: center;
+    }
+    .step-tab {
+      padding: 10px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;
+      border: 2px solid var(--border); background: white; cursor: pointer;
+      transition: all .2s;
+    }
+    .step-tab.active { background: var(--red); color: white; border-color: var(--red); }
+
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .step-card {
+      text-align: center; padding: 40px 28px;
+      border: 1px solid var(--border); border-radius: 20px;
+      transition: all .3s; position: relative; overflow: hidden;
+    }
+    .step-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: var(--red); transform: scaleX(0); transition: transform .3s;
+    }
+    .step-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+    .step-card:hover::before { transform: scaleX(1); }
+    .step-number {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--red-pale); color: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 18px;
+      margin: 0 auto 20px;
+    }
+    .step-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+    .step-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    .step-card p { color: var(--gray); font-size: 15px; line-height: 1.65; }
+
+    /* ── SERVICES ── */
+    #servicios { background: var(--light); }
+    .services-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 28px; margin-top: 56px;
+    }
+    .service-card {
+      background: white; border-radius: 24px; overflow: hidden;
+      box-shadow: var(--shadow); transition: all .3s;
+      display: flex; flex-direction: column;
+    }
+    .service-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+    .service-header {
+      padding: 40px 32px 32px;
+      background: linear-gradient(135deg, var(--red) 0%, #ff4444 100%);
+      color: white; position: relative; overflow: hidden;
+    }
+    .service-header::after {
+      content: ''; position: absolute;
+      bottom: -40px; right: -40px;
+      width: 120px; height: 120px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+    .service-emoji { font-size: 48px; display: block; margin-bottom: 12px; position: relative; z-index: 1; }
+    .service-header h3 { font-size: 26px; font-weight: 800; position: relative; z-index: 1; }
+    .service-header p { font-size: 14px; opacity: 0.9; margin-top: 6px; position: relative; z-index: 1; }
+    .service-body { padding: 28px 32px; flex: 1; }
+    .service-features { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .service-features li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 14px; color: var(--gray);
+    }
+    .service-features li::before {
+      content: '✓'; color: var(--red); font-weight: 700;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .service-footer { padding: 0 32px 28px; }
+    .service-footer a {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--red); font-weight: 600; font-size: 14px;
+      text-decoration: none; transition: gap .2s;
+    }
+    .service-footer a:hover { gap: 10px; }
+
+    /* ── FEATURES ── */
+    #caracteristicas { background: var(--white); }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px; margin-top: 56px;
+    }
+    .feature-card {
+      padding: 32px 28px; border-radius: 20px;
+      border: 1px solid var(--border);
+      transition: all .3s; cursor: default;
+    }
+    .feature-card:hover { border-color: var(--red); background: var(--red-pale); transform: translateY(-3px); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--red-pale); color: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 20px;
+      transition: background .3s;
+    }
+    .feature-card:hover .feature-icon { background: var(--red); }
+    .feature-card h4 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--gray); line-height: 1.65; }
+
+    /* ── DELIVERYMAN ── */
+    #repartidores {
+      background: var(--dark);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    #repartidores::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url('assets/delivery.jpg') center/cover no-repeat;
+      opacity: 0.12;
+      filter: saturate(0.4);
+    }
+    .deliveryman-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center; margin-top: 56px;
+      position: relative; z-index: 1;
+    }
+    .deliveryman-grid .section-title { color: white; }
+    .deliveryman-grid .section-sub { color: rgba(255,255,255,0.6); }
+    .earnings-list { display: flex; flex-direction: column; gap: 20px; margin-top: 36px; }
+    .earning-item {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(255,255,255,0.06); border-radius: var(--radius-sm);
+      padding: 20px; border: 1px solid rgba(255,255,255,0.08);
+      transition: background .2s;
+    }
+    .earning-item:hover { background: rgba(255,255,255,0.1); }
+    .earning-icon { font-size: 28px; flex-shrink: 0; }
+    .earning-item h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .earning-item p { font-size: 13px; color: rgba(255,255,255,0.5); }
+    .deliveryman-cta { margin-top: 36px; display: flex; gap: 16px; }
+
+    .deliveryman-visual {
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .earn-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 28px;
+    }
+    .earn-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .earn-card-top h4 { font-size: 15px; color: rgba(255,255,255,0.7); }
+    .earn-card-top span { font-size: 11px; background: rgba(34,197,94,0.2); color: #22c55e; padding: 4px 10px; border-radius: 50px; }
+    .earn-amount { font-size: 42px; font-weight: 800; letter-spacing: -2px; margin-bottom: 16px; }
+    .earn-amount small { font-size: 20px; color: rgba(255,255,255,0.5); }
+    .earn-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .earn-breakdown-item { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 14px; }
+    .earn-breakdown-item .val { font-size: 18px; font-weight: 700; }
+    .earn-breakdown-item .lbl { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 3px; }
+
+    /* ── BUSINESSES ── */
+    #negocios { background: var(--light); }
+    .business-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center; margin-top: 56px;
+    }
+    .biz-cards { display: flex; flex-direction: column; gap: 20px; }
+    .biz-card {
+      background: white; border-radius: var(--radius); padding: 24px 28px;
+      box-shadow: var(--shadow); display: flex; gap: 18px; align-items: flex-start;
+      transition: all .3s;
+    }
+    .biz-card:hover { transform: translateX(6px); box-shadow: var(--shadow-lg); }
+    .biz-card-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--red-pale); display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .biz-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .biz-card p { font-size: 14px; color: var(--gray); line-height: 1.6; }
+    .biz-cta { margin-top: 36px; }
+
+    .video-promo {
+      background: white; border-radius: 24px; padding: 36px;
+      box-shadow: var(--shadow-lg);
+    }
+    .video-slots { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+    .video-slot {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-radius: 12px;
+      border: 1px solid var(--border); transition: all .2s;
+    }
+    .video-slot:hover { border-color: var(--red); background: var(--red-pale); }
+    .slot-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--red); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .slot-info h5 { font-size: 14px; font-weight: 600; }
+    .slot-info p { font-size: 12px; color: var(--gray); }
+    .slot-price { margin-left: auto; font-weight: 700; font-size: 14px; color: var(--red); }
+
+    /* ── PAYMENTS ── */
+    #pagos { background: white; }
+    .payments-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px; margin-top: 56px;
+    }
+    .payment-card {
+      border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px;
+      text-align: center; transition: all .3s;
+    }
+    .payment-card:hover { border-color: var(--red); box-shadow: var(--shadow); transform: translateY(-4px); }
+    .payment-emoji { font-size: 40px; margin-bottom: 14px; display: block; }
+    .payment-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .payment-card p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+
+    /* ── TAXI MODES ── */
+    #taxi-modos { background: var(--light); }
+    .taxi-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 20px; margin-top: 56px;
+    }
+    .taxi-card {
+      background: white; border-radius: 20px; padding: 24px 16px;
+      text-align: center; box-shadow: var(--shadow); transition: all .3s;
+    }
+    .taxi-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+    .taxi-icon { font-size: 36px; margin-bottom: 12px; display: block; }
+    .taxi-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .taxi-card p { font-size: 12px; color: var(--gray); }
+
+    /* ── DOWNLOAD ── */
+    #descargar {
+      background: linear-gradient(135deg, var(--red) 0%, #b81010 100%);
+      color: white; text-align: center; position: relative; overflow: hidden;
+    }
+    #descargar::before {
+      content: ''; position: absolute; top: -100px; left: -100px;
+      width: 400px; height: 400px;
+      background: rgba(255,255,255,0.06); border-radius: 50%;
+    }
+    #descargar::after {
+      content: ''; position: absolute; bottom: -150px; right: -100px;
+      width: 500px; height: 500px;
+      background: rgba(255,255,255,0.04); border-radius: 50%;
+    }
+    #descargar .section-title { color: white; position: relative; z-index: 1; }
+    #descargar .section-sub { color: rgba(255,255,255,0.8); position: relative; z-index: 1; margin: 0 auto 48px; }
+    .download-buttons {
+      display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+      position: relative; z-index: 1;
+    }
+    .download-btn {
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white; padding: 16px 28px;
+      border-radius: 14px; text-decoration: none;
+      transition: all .2s; min-width: 200px;
+    }
+    .download-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-3px); }
+    .download-btn svg { flex-shrink: 0; }
+    .download-btn-text { display: flex; flex-direction: column; text-align: left; }
+    .download-btn-text small { font-size: 11px; opacity: 0.8; }
+    .download-btn-text strong { font-size: 18px; font-weight: 700; }
+    .download-phones { display: flex; justify-content: center; gap: 20px; margin-top: 60px; position: relative; z-index: 1; }
+    .download-phone {
+      width: 160px; background: rgba(0,0,0,0.3);
+      border-radius: 28px; padding: 10px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .download-phone img { width: 100%; border-radius: 20px; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark); color: white;
+      padding: 60px 6vw 32px;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px; margin-bottom: 48px;
+    }
+    .footer-brand .nav-logo { margin-bottom: 16px; }
+    .footer-brand p { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 280px; }
+    .footer-social { display: flex; gap: 12px; margin-top: 20px; }
+    .social-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: 16px; transition: background .2s;
+    }
+    .social-btn:hover { background: var(--red); }
+    .footer-col h5 { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: white; }
+    .footer-col a {
+      display: block; font-size: 14px; color: rgba(255,255,255,0.5);
+      text-decoration: none; margin-bottom: 10px; transition: color .2s;
+    }
+    .footer-col a:hover { color: var(--red); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; color: rgba(255,255,255,0.35);
+    }
+    .footer-bottom a { color: rgba(255,255,255,0.35); text-decoration: none; }
+    .footer-bottom a:hover { color: var(--red); }
+
+    /* ── ANIMATIONS ── */
+    .fade-up { opacity: 0; transform: translateY(40px); transition: opacity .7s ease, transform .7s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.delay-1 { transition-delay: .1s; }
+    .fade-up.delay-2 { transition-delay: .2s; }
+    .fade-up.delay-3 { transition-delay: .3s; }
+    .fade-up.delay-4 { transition-delay: .4s; }
+    .fade-up.delay-5 { transition-delay: .5s; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .taxi-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      #hero { grid-template-columns: 1fr; padding-top: 120px; text-align: center; }
+      .hero-buttons { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-visual { display: none; }
+      .nav-links { display: none; }
+      .steps-grid, .services-grid, .features-grid, .payments-grid { grid-template-columns: 1fr; }
+      .deliveryman-grid, .business-grid { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .taxi-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+      .phone-float { display: none; }
+      section { padding: 70px 6vw; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <img src="assets/logo-hd.png" alt="Deliservy" onerror="this.style.display='none'"/>
+    <span>Deliservy</span>
+  </a>
+  <div class="nav-links">
+    <a href="#como-funciona">Cómo funciona</a>
+    <a href="#servicios">Servicios</a>
+    <a href="#repartidores">Repartidores</a>
+    <a href="#negocios">Negocios</a>
+    <a href="#pagos">Pagos</a>
+  </div>
+  <a href="#descargar" class="btn btn-primary nav-cta">Descargar App</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span></span>
+      Disponible en Venezuela
+    </div>
+    <h1 class="hero-title">
+      Todo lo que<br/>necesitas,<br/><em>a un toque.</em>
+    </h1>
+    <p class="hero-subtitle">
+      Pide comida, compra en tus tiendas favoritas y solicita taxi — todo desde una sola app, con seguimiento en tiempo real y pagos 100% seguros.
+    </p>
+    <div class="hero-buttons">
+      <a href="https://apps.apple.com/us/app/deliservy/id6761390577" target="_blank" class="store-btn">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        <div class="store-btn-text">
+          <small>Descarga en el</small>
+          <strong>App Store</strong>
+        </div>
+      </a>
+      <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" target="_blank" class="store-btn">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5c.6.36.6 1.24 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/></svg>
+        <div class="store-btn-text">
+          <small>Disponible en</small>
+          <strong>Google Play</strong>
+        </div>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-num"><span class="counter" data-target="10">0</span>K<span>+</span></div>
+        <div class="hero-stat-lbl">Pedidos realizados</div>
+      </div>
+      <div>
+        <div class="hero-stat-num"><span class="counter" data-target="500">0</span><span>+</span></div>
+        <div class="hero-stat-lbl">Tiendas activas</div>
+      </div>
+      <div>
+        <div class="hero-stat-num"><span class="counter" data-target="4">0</span>.<span>8</span>⭐</div>
+        <div class="hero-stat-lbl">Calificación promedio</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="phone-wrap">
+      <div class="phone-float left">
+        <span class="icon">🛵</span>
+        <div>
+          <strong>En camino</strong>
+          <small>Tu pedido está cerca</small>
+        </div>
+      </div>
+      <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <img src="assets/screen1.png" alt="App Deliservy" />
+        </div>
+      </div>
+      <div class="phone-float right">
+        <span class="icon">✅</span>
+        <div>
+          <strong>¡Entregado!</strong>
+          <small>Califica tu experiencia</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<div id="stats">
+  <div class="stats-inner">
+    <div class="stat-item fade-up">
+      <div class="stat-num">3</div>
+      <div class="stat-lbl">Servicios en una sola app</div>
+    </div>
+    <div class="stat-item fade-up delay-1">
+      <div class="stat-num">5</div>
+      <div class="stat-lbl">Modalidades de taxi</div>
+    </div>
+    <div class="stat-item fade-up delay-2">
+      <div class="stat-num">6</div>
+      <div class="stat-lbl">Métodos de pago</div>
+    </div>
+    <div class="stat-item fade-up delay-3">
+      <div class="stat-num">24/7</div>
+      <div class="stat-lbl">Servicio disponible</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CÓMO FUNCIONA ── -->
+<section id="como-funciona">
+  <div class="text-center">
+    <span class="section-label fade-up">Cómo funciona</span>
+    <h2 class="section-title fade-up delay-1">Tan simple como 1, 2, 3</h2>
+    <p class="section-sub fade-up delay-2">En menos de 3 minutos puedes tener tu pedido en camino. Sin complicaciones.</p>
+  </div>
+
+  <div class="steps-tabs fade-up delay-2">
+    <button class="step-tab active" onclick="showSteps('cliente', this)">👤 Para clientes</button>
+    <button class="step-tab" onclick="showSteps('repartidor', this)">🛵 Para repartidores</button>
+    <button class="step-tab" onclick="showSteps('negocio', this)">🏪 Para negocios</button>
+  </div>
+
+  <div id="steps-cliente" class="steps-grid">
+    <div class="step-card fade-up delay-1">
+      <div class="step-number">1</div>
+      <span class="step-icon">📍</span>
+      <h3>Elige tu dirección</h3>
+      <p>Ingresa tu ubicación de entrega. La app detecta automáticamente las tiendas y servicios disponibles cerca de ti.</p>
+    </div>
+    <div class="step-card fade-up delay-2">
+      <div class="step-number">2</div>
+      <span class="step-icon">🛍️</span>
+      <h3>Selecciona y paga</h3>
+      <p>Explora el catálogo, agrega al carrito y paga con el método que prefieras: pago móvil, transferencia, efectivo o billetera digital.</p>
+    </div>
+    <div class="step-card fade-up delay-3">
+      <div class="step-number">3</div>
+      <span class="step-icon">🗺️</span>
+      <h3>Rastrea en tiempo real</h3>
+      <p>Sigue tu pedido en el mapa, chatea con el repartidor y recibe tu entrega con un PIN de seguridad de 4 dígitos.</p>
+    </div>
+  </div>
+
+  <div id="steps-repartidor" class="steps-grid" style="display:none">
+    <div class="step-card fade-up delay-1">
+      <div class="step-number">1</div>
+      <span class="step-icon">📋</span>
+      <h3>Regístrate</h3>
+      <p>Sube tus documentos, datos del vehículo y completa el proceso de verificación de identidad con reconocimiento facial.</p>
+    </div>
+    <div class="step-card fade-up delay-2">
+      <div class="step-number">2</div>
+      <span class="step-icon">🟢</span>
+      <h3>Actívate y acepta</h3>
+      <p>Pon tu estado en "online" y comienza a recibir pedidos. Tú decides cuándo y cuánto trabajar.</p>
+    </div>
+    <div class="step-card fade-up delay-3">
+      <div class="step-number">3</div>
+      <span class="step-icon">💰</span>
+      <h3>Gana y retira</h3>
+      <p>Acumula ganancias en tu billetera digital y retira a tu cuenta bancaria cuando quieras.</p>
+    </div>
+  </div>
+
+  <div id="steps-negocio" class="steps-grid" style="display:none">
+    <div class="step-card fade-up delay-1">
+      <div class="step-number">1</div>
+      <span class="step-icon">🏪</span>
+      <h3>Registra tu tienda</h3>
+      <p>Crea el perfil de tu negocio, sube tu menú o catálogo de productos con fotos y precios.</p>
+    </div>
+    <div class="step-card fade-up delay-2">
+      <div class="step-number">2</div>
+      <span class="step-icon">🎥</span>
+      <h3>Promociona con video</h3>
+      <p>Sube videos cortos de tus productos. Aparecen en el feed principal de la app, visibles para miles de usuarios.</p>
+    </div>
+    <div class="step-card fade-up delay-3">
+      <div class="step-number">3</div>
+      <span class="step-icon">📈</span>
+      <h3>Recibe pedidos y crece</h3>
+      <p>Gestiona tus órdenes en tiempo real, revisa tus ganancias y haz crecer tu negocio.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── SERVICIOS ── -->
+<section id="servicios">
+  <div class="text-center">
+    <span class="section-label fade-up">Nuestros servicios</span>
+    <h2 class="section-title fade-up delay-1">Una app, tres mundos</h2>
+    <p class="section-sub fade-up delay-2">Deliservy reúne todo en un solo lugar para que nunca tengas que buscar en otro lado.</p>
+  </div>
+
+  <div class="services-grid">
+    <div class="service-card fade-up delay-1">
+      <div class="service-header">
+        <span class="service-emoji">🍔</span>
+        <h3>DeliFood</h3>
+        <p>Comida a domicilio</p>
+      </div>
+      <div class="service-body">
+        <ul class="service-features">
+          <li>Restaurantes y locales de comida cerca de ti</li>
+          <li>Menú completo con fotos y descripciones</li>
+          <li>Videos promocionales de los mejores platos</li>
+          <li>Seguimiento en tiempo real del repartidor</li>
+          <li>Calificaciones y reseñas verificadas</li>
+          <li>Cupones y descuentos exclusivos</li>
+        </ul>
+      </div>
+      <div class="service-footer">
+        <a href="#descargar">Pedir ahora →</a>
+      </div>
+    </div>
+
+    <div class="service-card fade-up delay-2">
+      <div class="service-header">
+        <span class="service-emoji">🛒</span>
+        <h3>DeliTiendas</h3>
+        <p>Compras a domicilio</p>
+      </div>
+      <div class="service-body">
+        <ul class="service-features">
+          <li>Supermercados, farmacias, ferreterías y más</li>
+          <li>Catálogos completos con stock actualizado</li>
+          <li>Entrega a domicilio o retiro en tienda</li>
+          <li>Múltiples tiendas en una sola compra</li>
+          <li>Videos de productos destacados</li>
+          <li>Historial de compras y favoritos</li>
+        </ul>
+      </div>
+      <div class="service-footer">
+        <a href="#descargar">Comprar ahora →</a>
+      </div>
+    </div>
+
+    <div class="service-card fade-up delay-3">
+      <div class="service-header">
+        <span class="service-emoji">🚕</span>
+        <h3>DeliTaxis</h3>
+        <p>Transporte seguro</p>
+      </div>
+      <div class="service-body">
+        <ul class="service-features">
+          <li>5 modalidades: Moto, Taxi, Premium, XL y Lujo</li>
+          <li>Datos del vehículo y conductor verificado</li>
+          <li>PIN de seguridad para confirmar recogida</li>
+          <li>Seguimiento GPS en tiempo real</li>
+          <li>Chat directo con el conductor</li>
+          <li>Calificación post-viaje</li>
+        </ul>
+      </div>
+      <div class="service-footer">
+        <a href="#descargar">Solicitar taxi →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TAXI MODALIDADES ── -->
+<section id="taxi-modos">
+  <div class="text-center">
+    <span class="section-label fade-up">DeliTaxis</span>
+    <h2 class="section-title fade-up delay-1">El transporte que necesitas</h2>
+    <p class="section-sub fade-up delay-2">Elige la modalidad que mejor se adapte a tu viaje y presupuesto.</p>
+  </div>
+  <div class="taxi-grid">
+    <div class="taxi-card fade-up delay-1">
+      <span class="taxi-icon">🏍️</span>
+      <h4>DeliMoto</h4>
+      <p>Rápido y económico para trayectos cortos</p>
+    </div>
+    <div class="taxi-card fade-up delay-2">
+      <span class="taxi-icon">🚕</span>
+      <h4>DeliTaxi</h4>
+      <p>El taxi estándar para tu día a día</p>
+    </div>
+    <div class="taxi-card fade-up delay-3">
+      <span class="taxi-icon">⭐</span>
+      <h4>DeliPremium</h4>
+      <p>Vehículos de alta gama para viajes especiales</p>
+    </div>
+    <div class="taxi-card fade-up delay-4">
+      <span class="taxi-icon">🚐</span>
+      <h4>DeliXL</h4>
+      <p>Vehículos grandes para grupos o equipaje</p>
+    </div>
+    <div class="taxi-card fade-up delay-5">
+      <span class="taxi-icon">💎</span>
+      <h4>DeliLujo</h4>
+      <p>Servicio exclusivo de lujo y confort</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CARACTERÍSTICAS ── -->
+<section id="caracteristicas">
+  <div class="text-center">
+    <span class="section-label fade-up">Por qué Deliservy</span>
+    <h2 class="section-title fade-up delay-1">Tecnología que marca la diferencia</h2>
+    <p class="section-sub fade-up delay-2">Diseñada para Venezuela, con las funcionalidades que el mercado local necesita.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card fade-up delay-1">
+      <div class="feature-icon">🗺️</div>
+      <h4>Seguimiento en tiempo real</h4>
+      <p>Mira en el mapa exactamente dónde está tu pedido o taxi en cada momento. Sin sorpresas.</p>
+    </div>
+    <div class="feature-card fade-up delay-2">
+      <div class="feature-icon">👛</div>
+      <h4>Billetera digital</h4>
+      <p>Acumula saldo, recibe reembolsos automáticos y paga más rápido en tus próximas compras.</p>
+    </div>
+    <div class="feature-card fade-up delay-3">
+      <div class="feature-icon">🔐</div>
+      <h4>Reconocimiento facial</h4>
+      <p>Inicia sesión de forma segura con tu rostro. Tu identidad protegida con tecnología de IA.</p>
+    </div>
+    <div class="feature-card fade-up delay-1">
+      <div class="feature-icon">💬</div>
+      <h4>Chat en tiempo real</h4>
+      <p>Comunícate directamente con el repartidor o conductor desde la app. Sin salir de la pantalla.</p>
+    </div>
+    <div class="feature-card fade-up delay-2">
+      <div class="feature-icon">⭐</div>
+      <h4>Sistema de calificaciones</h4>
+      <p>Califica cada entrega y ayuda a mantener la calidad del servicio para toda la comunidad.</p>
+    </div>
+    <div class="feature-card fade-up delay-3">
+      <div class="feature-icon">🎟️</div>
+      <h4>Cupones y descuentos</h4>
+      <p>Aprovecha ofertas exclusivas y cupones que pueden cubrir el 100% de tu pedido.</p>
+    </div>
+    <div class="feature-card fade-up delay-1">
+      <div class="feature-icon">🔔</div>
+      <h4>Notificaciones push</h4>
+      <p>Recibe alertas en tiempo real sobre el estado de tu pedido, mensajes y novedades.</p>
+    </div>
+    <div class="feature-card fade-up delay-2">
+      <div class="feature-icon">🎥</div>
+      <h4>Videos de productos</h4>
+      <p>Descubre los mejores platos y productos a través de videos cortos de las tiendas.</p>
+    </div>
+    <div class="feature-card fade-up delay-3">
+      <div class="feature-icon">🔑</div>
+      <h4>PIN de entrega</h4>
+      <p>Sistema de PIN de 4 dígitos para confirmar que tu pedido llegó a las manos correctas.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── REPARTIDORES ── -->
+<section id="repartidores">
+  <div class="deliveryman-grid">
+    <div>
+      <span class="section-label" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8)">Para repartidores</span>
+      <h2 class="section-title fade-up" style="color:white">Genera ingresos<br/>a tu ritmo</h2>
+      <p class="section-sub fade-up delay-1">Trabaja cuando quieras, donde quieras. Tú eres el jefe de tu tiempo y tus ganancias.</p>
+      <div class="earnings-list">
+        <div class="earning-item fade-up delay-1">
+          <span class="earning-icon">⏱️</span>
+          <div>
+            <h4>Horario libre</h4>
+            <p>Actívate y desactívate cuando quieras. Sin compromisos de horario fijo.</p>
+          </div>
+        </div>
+        <div class="earning-item fade-up delay-2">
+          <span class="earning-icon">💸</span>
+          <div>
+            <h4>Retiros rápidos</h4>
+            <p>Retira tus ganancias a tu cuenta bancaria cuando lo desees.</p>
+          </div>
+        </div>
+        <div class="earning-item fade-up delay-3">
+          <span class="earning-icon">🎁</span>
+          <div>
+            <h4>Propinas incluidas</h4>
+            <p>Los clientes pueden dejarte propina en USD o Bs. Van directo a tu billetera.</p>
+          </div>
+        </div>
+        <div class="earning-item fade-up delay-4">
+          <span class="earning-icon">🚗</span>
+          <div>
+            <h4>Varios vehículos</h4>
+            <p>Registra hasta 3 vehículos y selecciona cuál usar en cada momento.</p>
+          </div>
+        </div>
+      </div>
+      <div class="deliveryman-cta">
+        <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" target="_blank" class="btn btn-primary">Quiero ser repartidor</a>
+        <a href="https://apps.apple.com/us/app/deliservy/id6761390577" target="_blank" class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3)">Descargar app</a>
+      </div>
+    </div>
+
+    <div class="deliveryman-visual fade-up delay-2">
+      <div class="earn-card">
+        <div class="earn-card-top">
+          <h4>Mis ganancias del mes</h4>
+          <span>+12% vs mes anterior</span>
+        </div>
+        <div class="earn-amount">640<small>.57 Bs</small></div>
+        <div class="earn-breakdown">
+          <div class="earn-breakdown-item">
+            <div class="val">60</div>
+            <div class="lbl">Entregas</div>
+          </div>
+          <div class="earn-breakdown-item">
+            <div class="val">9.5 $</div>
+            <div class="lbl">En propinas</div>
+          </div>
+          <div class="earn-breakdown-item">
+            <div class="val">4.8 ⭐</div>
+            <div class="lbl">Calificación</div>
+          </div>
+          <div class="earn-breakdown-item">
+            <div class="val">70%</div>
+            <div class="lbl">Del fee</div>
+          </div>
+        </div>
+      </div>
+      <div class="earn-card" style="background:rgba(228,22,22,0.15);border-color:rgba(228,22,22,0.3)">
+        <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px">Próximo retiro disponible</div>
+        <div style="font-size:28px;font-weight:800;">$12.50 USD</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:8px">Transferencia directa a tu cuenta bancaria</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── NEGOCIOS ── -->
+<section id="negocios">
+  <div class="business-grid">
+    <div>
+      <span class="section-label fade-up">Para negocios</span>
+      <h2 class="section-title fade-up delay-1">Haz crecer tu<br/>negocio con Deliservy</h2>
+      <p class="section-sub fade-up delay-2">Llega a miles de clientes en tu ciudad sin invertir en repartidores propios. Tú vendes, nosotros entregamos.</p>
+      <div class="biz-cards">
+        <div class="biz-card fade-up delay-1">
+          <div class="biz-card-icon">📦</div>
+          <div>
+            <h4>Gestión completa del catálogo</h4>
+            <p>Crea, edita y organiza tus productos con fotos, descripciones y categorías.</p>
+          </div>
+        </div>
+        <div class="biz-card fade-up delay-2">
+          <div class="biz-card-icon">🎥</div>
+          <div>
+            <h4>Videos promocionales</h4>
+            <p>3 slots de video de 15 segundos para mostrar tus productos a toda la comunidad. El primero es gratis.</p>
+          </div>
+        </div>
+        <div class="biz-card fade-up delay-3">
+          <div class="biz-card-icon">📊</div>
+          <div>
+            <h4>Panel de control</h4>
+            <p>Revisa tus pedidos, ganancias y estadísticas en tiempo real desde la app.</p>
+          </div>
+        </div>
+        <div class="biz-card fade-up delay-4">
+          <div class="biz-card-icon">🕐</div>
+          <div>
+            <h4>Control de horarios</h4>
+            <p>Define tus horarios de apertura y cierre. La app los gestiona automáticamente.</p>
+          </div>
+        </div>
+      </div>
+      <div class="biz-cta fade-up delay-5">
+        <a href="mailto:soporte@deliservy.com" class="btn btn-primary">Registrar mi negocio</a>
+      </div>
+    </div>
+
+    <div class="fade-up delay-2">
+      <img src="assets/about1.png" alt="Negocio con Deliservy"
+        style="width:100%;border-radius:20px;object-fit:cover;max-height:220px;margin-bottom:24px;box-shadow:var(--shadow-lg);"
+        onerror="this.style.display='none'" />
+      <div class="video-promo">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:6px">🎥 Slots de video promocional</h3>
+        <p style="font-size:14px;color:var(--gray)">Aparece en el feed principal de la app y llega a más clientes</p>
+        <div class="video-slots">
+          <div class="video-slot">
+            <div class="slot-num">1</div>
+            <div class="slot-info">
+              <h5>Slot Premium</h5>
+              <p>Primera posición · 100 días gratis</p>
+            </div>
+            <div class="slot-price">$9.99/mes</div>
+          </div>
+          <div class="video-slot">
+            <div class="slot-num">2</div>
+            <div class="slot-info">
+              <h5>Slot Estándar</h5>
+              <p>Segunda posición en el feed</p>
+            </div>
+            <div class="slot-price">$6.99/mes</div>
+          </div>
+          <div class="video-slot">
+            <div class="slot-num">3</div>
+            <div class="slot-info">
+              <h5>Slot Básico</h5>
+              <p>Tercera posición en el feed</p>
+            </div>
+            <div class="slot-price">$4.99/mes</div>
+          </div>
+        </div>
+        <div style="margin-top:24px;padding:16px;background:var(--red-pale);border-radius:12px;display:flex;gap:12px;align-items:center">
+          <span style="font-size:24px">🎁</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--red)">¡Primer video GRATIS!</div>
+            <div style="font-size:12px;color:var(--gray)">100 días de promoción sin costo al registrarte</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PAGOS ── -->
+<section id="pagos">
+  <div class="text-center">
+    <span class="section-label fade-up">Métodos de pago</span>
+    <h2 class="section-title fade-up delay-1">Paga como prefieras</h2>
+    <p class="section-sub fade-up delay-2">Integramos los métodos de pago más usados en Venezuela para tu comodidad.</p>
+  </div>
+  <div class="payments-grid">
+    <div class="payment-card fade-up delay-1">
+      <span class="payment-emoji">📱</span>
+      <h4>Pago Móvil</h4>
+      <p>Paga directamente con tu pago móvil BNC desde la app. Rápido, seguro y sin pasos extra.</p>
+    </div>
+    <div class="payment-card fade-up delay-2">
+      <span class="payment-emoji">🏦</span>
+      <h4>Transferencia bancaria</h4>
+      <p>Realiza transferencias desde tu banco. Validación automática en segundos.</p>
+    </div>
+    <div class="payment-card fade-up delay-3">
+      <span class="payment-emoji">💳</span>
+      <h4>Tarjeta de débito/crédito</h4>
+      <p>Visa y Mastercard de cualquier banco venezolano o internacional.</p>
+    </div>
+    <div class="payment-card fade-up delay-1">
+      <span class="payment-emoji">💵</span>
+      <h4>Efectivo</h4>
+      <p>Paga en mano al repartidor al momento de recibir tu pedido.</p>
+    </div>
+    <div class="payment-card fade-up delay-2">
+      <span class="payment-emoji">👛</span>
+      <h4>Billetera Deliservy</h4>
+      <p>Usa tu saldo acumulado en la app. Los reembolsos van directo a tu billetera.</p>
+    </div>
+    <div class="payment-card fade-up delay-3">
+      <span class="payment-emoji">💲</span>
+      <h4>USD y Bolívares</h4>
+      <p>Precios en ambas monedas con tasa de cambio actualizada automáticamente.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── DESCARGAR ── -->
+<section id="descargar">
+  <span class="section-label" style="background:rgba(255,255,255,0.15);color:white;margin-bottom:20px;display:inline-block">Descarga gratis</span>
+  <h2 class="section-title">Empieza hoy mismo</h2>
+  <p class="section-sub">Disponible para iPhone y Android. Gratis en App Store y Google Play.</p>
+  <div class="download-buttons">
+    <a href="https://apps.apple.com/us/app/deliservy/id6761390577" target="_blank" class="download-btn">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+      <div class="download-btn-text">
+        <small>Descarga en el</small>
+        <strong>App Store</strong>
+      </div>
+    </a>
+    <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" target="_blank" class="download-btn">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M3.18 23.76c.3.17.64.22.98.14l12.43-12.43L12.46 7.4 3.18 23.76zm17.64-10.97L17.7 11l-3.44 3.44 3.44 3.44 3.14-1.79c.9-.51.9-1.79-.02-2.3zM3 1.3L15.49 13.8l-3.03-3.03L3.98.54C3.64.46 3.3.51 3 .68c-.9.52-.9 1.8 0 2.3V1.3zM3.18.24L15.49 12.5 3.18 24.76v-24.52z"/></svg>
+      <div class="download-btn-text">
+        <small>Disponible en</small>
+        <strong>Google Play</strong>
+      </div>
+    </a>
+  </div>
+  <div class="download-phones">
+    <div class="download-phone" style="transform: rotate(-6deg)">
+      <img src="assets/screen2.png" alt="Deliservy App" />
+    </div>
+    <div class="download-phone" style="transform: translateY(-20px)">
+      <img src="assets/screen1.png" alt="Deliservy App" />
+    </div>
+    <div class="download-phone" style="transform: rotate(6deg)">
+      <img src="assets/screen3.png" alt="Deliservy App" />
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="#" class="nav-logo">
+        <img src="assets/logo-hd.png" alt="Deliservy" style="filter:brightness(10)" onerror="this.style.display='none'"/>
+        <span>Deliservy</span>
+      </a>
+      <p>La app de delivery líder en Venezuela. Comida, tiendas y taxis en una sola plataforma.</p>
+      <div class="footer-social">
+        <a href="#" class="social-btn">📘</a>
+        <a href="#" class="social-btn">📸</a>
+        <a href="#" class="social-btn">🐦</a>
+        <a href="https://wa.me/584265201529" class="social-btn">💬</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h5>Servicios</h5>
+      <a href="#servicios">DeliFood</a>
+      <a href="#servicios">DeliTiendas</a>
+      <a href="#servicios">DeliTaxis</a>
+    </div>
+    <div class="footer-col">
+      <h5>Únete</h5>
+      <a href="#repartidores">Ser repartidor</a>
+      <a href="#negocios">Registrar negocio</a>
+      <a href="#descargar">Descargar app</a>
+    </div>
+    <div class="footer-col">
+      <h5>Contacto</h5>
+      <a href="mailto:soporte@deliservy.com">soporte@deliservy.com</a>
+      <a href="https://wa.me/584265201529">+58 426 520 1529</a>
+      <a href="https://deliservy.com/politica-de-privacidad">Política de privacidad</a>
+      <a href="https://deliservy.com/terminos-y-condiciones">Términos y condiciones</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Deliservy LLC. Todos los derechos reservados.</span>
+    <span>Hecho con ❤️ en Venezuela 🇻🇪</span>
+  </div>
+</footer>
+
+<script>
+  // ── Navbar scroll effect
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // ── Intersection Observer para animaciones
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // ── Contador animado
+  function animateCounter(el) {
+    const target = +el.dataset.target;
+    const duration = 2000;
+    const step = target / (duration / 16);
+    let current = 0;
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) { current = target; clearInterval(timer); }
+      el.textContent = Math.floor(current).toLocaleString();
+    }, 16);
+  }
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        animateCounter(e.target);
+        counterObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
+
+  // ── Steps tabs
+  function showSteps(type, btn) {
+    ['cliente','repartidor','negocio'].forEach(t => {
+      document.getElementById('steps-'+t).style.display = t === type ? 'grid' : 'none';
+    });
+    document.querySelectorAll('.step-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+</script>
+</body>
+</html>
