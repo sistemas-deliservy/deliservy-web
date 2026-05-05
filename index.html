@@ -463,6 +463,16 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 }
 
 /* ── STICKY MOBILE CTA ── */
+/* Floating social buttons */
+.float-social{position:fixed;right:20px;bottom:100px;z-index:999;display:flex;flex-direction:column;gap:12px;}
+.float-btn{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);transition:transform .2s,box-shadow .2s;}
+.float-btn:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(0,0,0,.5);}
+.float-btn svg{width:26px;height:26px;}
+.float-wa{background:#25D366;}
+.float-ig{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%);}
+.float-mail{background:#e41616;}
+@media(max-width:768px){.float-social{bottom:90px;right:14px;}}
+
 #sticky-mobile-cta{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:990;
   padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
@@ -595,13 +605,13 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <div class="hero-right fade-up delay-2">
       <div class="hero-phones">
         <div class="phone phone-left">
-          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=800&fit=crop&q=80" alt="Pantalla app 2" loading="lazy"/>
+          <img src="assets/screen2.jpg" alt="Pantalla app 2" loading="lazy"/>
         </div>
         <div class="phone phone-main">
-          <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=800&fit=crop&q=80" alt="Pantalla app 1"/>
+          <img src="assets/screen1.jpg" alt="Pantalla app 1"/>
         </div>
         <div class="phone phone-right">
-          <img src="https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=800&fit=crop&q=80" alt="Pantalla app 3" loading="lazy"/>
+          <img src="assets/screen3.jpg" alt="Pantalla app 3" loading="lazy"/>
         </div>
         <div class="notif-card notif-left">
           <div class="notif-title">🛵 En camino</div>
@@ -619,7 +629,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 </section>
 
 <!-- ── PARTNER MARQUEE ── -->
-<div id="marquee-section">
+<div id="marquee-section" style="display:none;">
   <div class="marquee-label">Nuestros aliados</div>
   <div class="marquee-track-wrapper">
     <div class="marquee-track">
@@ -656,13 +666,14 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   <div class="container">
     <div class="label fade-up"><i data-lucide="grid-3x3"></i> Servicios</div>
     <h2 class="section-title fade-up delay-1">Una app. Tres mundos.</h2>
+    <p class="section-sub fade-up delay-1" style="max-width:640px;color:var(--text-muted);margin-bottom:32px;">Una nueva app para todas tus necesidades. Diseñada con una interfaz moderna e intuitiva que transforma la manera en que disfrutas de tus productos y servicios favoritos.</p>
     <div class="bento-grid">
       <div class="bento-card fade-up">
         <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=700&q=80" class="bento-card-img" alt="Comida" loading="lazy"/>
         <div class="bento-content">
           <div class="bento-tag">DeliFood</div>
-          <div class="bento-title">Comida a domicilio</div>
-          <p class="bento-desc">Restaurantes, comida rápida y antojos a tu puerta en minutos.</p>
+          <div class="bento-title">Los mejores restaurantes de Carabobo</div>
+          <p class="bento-desc">Descubre opciones deliciosas, haz tu pedido fácilmente y disfruta de una experiencia gastronómica inigualable. Comida rápida, criolla, gourmet y mucho más a tu puerta.</p>
           <a href="#" class="bento-link">Explorar →</a>
         </div>
       </div>
@@ -670,8 +681,8 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <img src="https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=700&q=80" class="bento-card-img" alt="Tienda" loading="lazy"/>
         <div class="bento-content">
           <div class="bento-tag">DeliTiendas</div>
-          <div class="bento-title">Supermercados y farmacias</div>
-          <p class="bento-desc">Compras del hogar, medicinas y más sin salir de casa.</p>
+          <div class="bento-title">Todo lo que necesitas en un solo lugar</div>
+          <p class="bento-desc">Supermercados, farmacias, tiendas de productos complementarios y esenciales del hogar. Ya sea una compra exquisita o los básicos, lo tenemos cubierto.</p>
           <a href="#" class="bento-link">Explorar →</a>
         </div>
       </div>
@@ -718,7 +729,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     </div>
     <div class="steps-panel active" id="steps-cliente">
       <div class="step-card"><div class="step-num">01</div><div class="step-icon"><i data-lucide="map-pin"></i></div><div class="step-title">Elige tu dirección</div><p class="step-desc">Ingresa tu ubicación o usa el GPS automático para encontrar los comercios más cercanos disponibles.</p></div>
-      <div class="step-card"><div class="step-num">02</div><div class="step-icon"><i data-lucide="shopping-bag"></i></div><div class="step-title">Selecciona y paga</div><p class="step-desc">Agrega productos al carrito y paga con el método que prefieras: BNC, tarjeta, efectivo o billetera digital.</p></div>
+      <div class="step-card"><div class="step-num">02</div><div class="step-icon"><i data-lucide="shopping-bag"></i></div><div class="step-title">Selecciona y paga</div><p class="step-desc">Agrega productos al carrito y paga con el método que prefieras: pago móvil, tarjeta, efectivo o billetera digital.</p></div>
       <div class="step-card"><div class="step-num">03</div><div class="step-icon"><i data-lucide="map"></i></div><div class="step-title">Rastrea en vivo</div><p class="step-desc">Sigue tu pedido en el mapa en tiempo real desde que sale del comercio hasta llegar a tu puerta.</p></div>
     </div>
     <div class="steps-panel" id="steps-repartidor">
@@ -784,7 +795,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <p class="section-sub">Cada funcionalidad fue pensada para las necesidades reales del venezolano moderno.</p>
         <div class="feature-list">
           <div class="feature-row"><div class="feature-icon"><i data-lucide="map"></i></div><div><div class="feature-title">Seguimiento GPS en tiempo real</div><p class="feature-desc">Ve dónde está tu repartidor en el mapa, actualización continua cada pocos segundos.</p></div></div>
-          <div class="feature-row"><div class="feature-icon"><i data-lucide="shield-check"></i></div><div><div class="feature-title">Pagos seguros y múltiples</div><p class="feature-desc">6 métodos de pago incluyendo Pago Móvil BNC, transferencia, tarjeta, efectivo y USD.</p></div></div>
+          <div class="feature-row"><div class="feature-icon"><i data-lucide="shield-check"></i></div><div><div class="feature-title">Pagos seguros y múltiples</div><p class="feature-desc">6 métodos de pago incluyendo Pago Móvil de cualquier banco, transferencia, tarjeta, efectivo y USD.</p></div></div>
           <div class="feature-row"><div class="feature-icon"><i data-lucide="message-circle"></i></div><div><div class="feature-title">Chat de soporte integrado</div><p class="feature-desc">Habla directamente con soporte desde la app, sin salir de tu pedido activo.</p></div></div>
           <div class="feature-row"><div class="feature-icon"><i data-lucide="arrow-left-right"></i></div><div><div class="feature-title">Pickup y delivery</div><p class="feature-desc">Puedes recoger en el local o solicitar envío. Flexibilidad total para cada situación.</p></div></div>
           <div class="feature-row"><div class="feature-icon"><i data-lucide="video"></i></div><div><div class="feature-title">Videos promocionales de tiendas</div><p class="feature-desc">Descubre las mejores ofertas a través de videos cortos de tus tiendas favoritas.</p></div></div>
@@ -818,7 +829,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
           <div><div class="testimonial-name">Carlos R.</div><div class="testimonial-role">Cliente frecuente</div></div>
         </div>
         <div class="stars">★★★★★</div>
-        <p class="testimonial-quote">"El pago móvil BNC integrado me facilita todo. Ya no tengo que salir a la farmacia, llega a mi puerta."</p>
+        <p class="testimonial-quote">"El pago móvil integrado me facilita todo. Ya no tengo que salir a la farmacia, llega a mi puerta."</p>
         <span class="service-badge">DeliTiendas</span>
       </div>
       <div class="testimonial-card fade-up delay-2">
@@ -931,9 +942,54 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <h2 class="section-title fade-up delay-1" style="text-align:center;max-width:640px;margin-left:auto;margin-right:auto;">La plataforma más completa de Venezuela</h2>
     <div class="why-grid">
       <div class="why-card fade-up"><div class="why-icon"><i data-lucide="zap"></i></div><div class="why-title">Entregas más rápidas</div><p class="why-desc">Promedio 25 min vs 45 min de otras apps. Repartidores dedicados y verificados listos en tu zona.</p></div>
-      <div class="why-card fade-up delay-1"><div class="why-icon"><i data-lucide="credit-card"></i></div><div class="why-title">Más métodos de pago</div><p class="why-desc">6 métodos incluyendo Pago Móvil BNC, el más usado en Venezuela. Sin complicaciones.</p></div>
+      <div class="why-card fade-up delay-1"><div class="why-icon"><i data-lucide="credit-card"></i></div><div class="why-title">Más métodos de pago</div><p class="why-desc">6 métodos incluyendo Pago Móvil de cualquier banco venezolano. Sin complicaciones.</p></div>
       <div class="why-card fade-up delay-2"><div class="why-icon"><i data-lucide="layout-grid"></i></div><div class="why-title">3 servicios en 1</div><p class="why-desc">Comida, tiendas y taxi. Sin instalar múltiples aplicaciones. Todo en una sola experiencia.</p></div>
       <div class="why-card fade-up delay-3"><div class="why-icon"><i data-lucide="headphones"></i></div><div class="why-title">Soporte local 24/7</div><p class="why-desc">Equipo venezolano disponible por chat integrado, IA y WhatsApp. Siempre hay alguien para ti.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SOBRE DELISERVY ── -->
+<section id="sobre" class="section" style="background:var(--dark2);">
+  <div class="container">
+    <div class="label fade-up"><i data-lucide="info"></i> Sobre Deliservy</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;" class="fade-up delay-1">
+      <div>
+        <h2 class="section-title" style="margin-bottom:20px;">Innovación al alcance de tu mano</h2>
+        <p style="color:var(--text-muted);font-size:16px;line-height:1.8;margin-bottom:16px;">Deliservy es una plataforma tecnológica diseñada para transformar la manera en que disfrutas de tus productos y servicios favoritos. Con una interfaz moderna e intuitiva, conectamos clientes, comercios y conductores en una sola app.</p>
+        <p style="color:var(--text-muted);font-size:16px;line-height:1.8;margin-bottom:16px;">Nuestra aplicación utiliza tecnología de vanguardia para brindarte una experiencia de usuario fluida y segura. Ya sea que busques una comida exquisita, un paseo rápido o los esenciales del hogar, <strong style="color:#fff;">lo tenemos cubierto.</strong></p>
+        <p style="color:var(--text-muted);font-size:16px;line-height:1.8;">Operamos a través de <strong style="color:#fff;">DeliservyApp, C.A.</strong> en Venezuela y <strong style="color:#fff;">Deliservy LLC</strong> para operaciones internacionales, con presencia activa en Carabobo y expansión continua.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;text-align:center;">
+          <div style="font-size:36px;font-weight:800;color:#e41616;">24h</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:4px;">Activación de negocios</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;text-align:center;">
+          <div style="font-size:36px;font-weight:800;color:#e41616;">5+</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:4px;">Modalidades de taxi</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;text-align:center;">
+          <div style="font-size:36px;font-weight:800;color:#e41616;">6</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:4px;">Métodos de pago</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;text-align:center;">
+          <div style="font-size:36px;font-weight:800;color:#e41616;">4.8★</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:4px;">Calificación promedio</div>
+        </div>
+      </div>
+    </div>
+    <!-- Compromiso -->
+    <div style="margin-top:56px;background:linear-gradient(135deg,rgba(228,22,22,.1),rgba(228,22,22,.03));border:1px solid rgba(228,22,22,.2);border-radius:20px;padding:40px;text-align:center;" class="fade-up delay-2">
+      <div style="font-size:32px;margin-bottom:12px;">🤝</div>
+      <h3 style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;">Comprometidos con tu satisfacción</h3>
+      <p style="color:var(--text-muted);font-size:15px;max-width:580px;margin:0 auto 24px;">Contamos con una red de mensajeros altamente capacitados y un sistema de soporte disponible para garantizarte la mejor experiencia en cada pedido.</p>
+      <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;color:#ccc;font-size:14px;"><i data-lucide="shield-check" style="color:#e41616;width:18px;height:18px;"></i> Repartidores verificados</div>
+        <div style="display:flex;align-items:center;gap:8px;color:#ccc;font-size:14px;"><i data-lucide="headphones" style="color:#e41616;width:18px;height:18px;"></i> Soporte 24/7</div>
+        <div style="display:flex;align-items:center;gap:8px;color:#ccc;font-size:14px;"><i data-lucide="refresh-cw" style="color:#e41616;width:18px;height:18px;"></i> Reembolso garantizado</div>
+        <div style="display:flex;align-items:center;gap:8px;color:#ccc;font-size:14px;"><i data-lucide="map-pin" style="color:#e41616;width:18px;height:18px;"></i> Rastreo en tiempo real</div>
+      </div>
     </div>
   </div>
 </section>
@@ -950,7 +1006,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       </div>
       <div class="accordion-item">
         <div class="accordion-head"><span>¿Qué métodos de pago aceptan?</span><span class="accordion-icon"><i data-lucide="plus"></i></span></div>
-        <div class="accordion-body"><div class="accordion-body-inner">Aceptamos Pago Móvil BNC, transferencia bancaria, tarjetas Visa/Mastercard, efectivo, billetera digital Deliservy y dólares en efectivo (USD).</div></div>
+        <div class="accordion-body"><div class="accordion-body-inner">Aceptamos Pago Móvil de cualquier banco venezolano, transferencia bancaria, tarjetas Visa/Mastercard de cualquier banco, efectivo, billetera digital Deliservy y dólares en efectivo (USD).</div></div>
       </div>
       <div class="accordion-item">
         <div class="accordion-head"><span>¿Es seguro pagar en Deliservy?</span><span class="accordion-icon"><i data-lucide="plus"></i></span></div>
@@ -987,7 +1043,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <h2 class="section-title fade-up delay-1">6 formas de pagar</h2>
     <p class="section-sub fade-up delay-2">El método que prefieras, siempre disponible.</p>
     <div class="payment-grid">
-      <div class="payment-card fade-up"><div class="payment-icon"><i data-lucide="smartphone"></i></div><div class="payment-name">Pago Móvil BNC</div><p class="payment-desc">El más usado en Venezuela, directo desde tu banco.</p></div>
+      <div class="payment-card fade-up"><div class="payment-icon"><i data-lucide="smartphone"></i></div><div class="payment-name">Pago Móvil</div><p class="payment-desc">Desde cualquier banco venezolano, rápido y sin complicaciones.</p></div>
       <div class="payment-card fade-up delay-1"><div class="payment-icon"><i data-lucide="landmark"></i></div><div class="payment-name">Transferencia</div><p class="payment-desc">Transferencia bancaria a cualquier banco venezolano.</p></div>
       <div class="payment-card fade-up delay-2"><div class="payment-icon"><i data-lucide="credit-card"></i></div><div class="payment-name">Visa / Mastercard</div><p class="payment-desc">Tarjetas de débito o crédito de cualquier banco.</p></div>
       <div class="payment-card fade-up delay-3"><div class="payment-icon"><i data-lucide="dollar-sign"></i></div><div class="payment-name">Efectivo / USD</div><p class="payment-desc">Pago en mano al repartidor, en bolívares o dólares.</p></div>
@@ -1030,9 +1086,9 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     </div>
     <p class="download-compat fade-up delay-5">Compatible con iOS 14+ y Android 7+</p>
     <div class="download-phones fade-up">
-      <div class="dl-phone dl-phone-side"><img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=800&fit=crop&q=80" alt="App screen 2" width="140" loading="lazy"/></div>
-      <div class="dl-phone dl-phone-main"><img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=800&fit=crop&q=80" alt="App screen 1" width="180"/></div>
-      <div class="dl-phone dl-phone-side"><img src="https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=800&fit=crop&q=80" alt="App screen 3" width="140" loading="lazy"/></div>
+      <div class="dl-phone dl-phone-side"><img src="assets/screen2.jpg" alt="App screen 2" width="140" loading="lazy"/></div>
+      <div class="dl-phone dl-phone-main"><img src="assets/screen1.jpg" alt="App screen 1" width="180"/></div>
+      <div class="dl-phone dl-phone-side"><img src="assets/screen3.jpg" alt="App screen 3" width="140" loading="lazy"/></div>
     </div>
   </div>
 </section>
@@ -1094,10 +1150,11 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <div>
       <div class="footer-col-title">Ayuda</div>
       <ul class="footer-links">
-        <li><a href="#">Centro de ayuda</a></li>
         <li><a href="https://wa.me/584265201529">WhatsApp</a></li>
-        <li><a href="#">Política de privacidad</a></li>
-        <li><a href="#">Términos de uso</a></li>
+        <li><a href="mailto:soporte@deliservy.com">soporte@deliservy.com</a></li>
+        <li><a href="mailto:contacto@deliservy.com">contacto@deliservy.com</a></li>
+        <li><a href="/politicas-de-privacidad">Política de privacidad</a></li>
+        <li><a href="/terminos-y-condiciones">Términos de uso</a></li>
       </ul>
     </div>
   </div>
@@ -1108,6 +1165,26 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 </footer>
 
 <!-- ── STICKY MOBILE CTA ── -->
+<!-- Floating social buttons -->
+<div class="float-social">
+  <a href="https://wa.me/584265201529" target="_blank" rel="noopener noreferrer" class="float-btn float-wa" aria-label="WhatsApp">
+    <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.554 4.103 1.523 5.824L0 24l6.332-1.499A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.368l-.36-.214-3.724.881.939-3.618-.235-.372A9.818 9.818 0 112 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z"/>
+    </svg>
+  </a>
+  <a href="mailto:soporte@deliservy.com" class="float-btn float-mail" aria-label="Email soporte">
+    <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+    </svg>
+  </a>
+  <a href="https://www.instagram.com/deliservy.app" target="_blank" rel="noopener noreferrer" class="float-btn float-ig" aria-label="Instagram">
+    <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  </a>
+</div>
+
 <div id="sticky-mobile-cta">
   <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy">Descargar App — Gratis</a>
 </div>
