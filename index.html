@@ -446,10 +446,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .qr-lbl{font-size:12px;color:var(--text-muted);}
 .download-compat{font-size:13px;color:rgba(255,255,255,.25);margin-bottom:56px;}
 .download-phones{display:flex;justify-content:center;gap:24px;align-items:flex-end;}
-.dl-phone{border-radius:32px;overflow:hidden;border:1.5px solid rgba(255,255,255,.09);box-shadow:0 24px 60px rgba(0,0,0,.7);}
-.dl-phone img{display:block;}
-.dl-phone-main{width:180px;}
-.dl-phone-side{width:140px;opacity:.55;}
+.dl-phone{position:relative;}
+.dl-phone-main{width:180px;height:365px;}
+.dl-phone-side{width:140px;height:285px;opacity:.68;}
 
 /* ── FOOTER ── */
 footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;}
@@ -1106,9 +1105,28 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     </div>
     <p class="download-compat fade-up delay-5">Compatible con iOS 14+ y Android 7+</p>
     <div class="download-phones fade-up">
-      <div class="dl-phone dl-phone-side"><img src="assets/screen2.jpg" alt="App screen 2" width="140" loading="lazy"/></div>
-      <div class="dl-phone dl-phone-main"><img src="assets/screen1.jpg" alt="App screen 1" width="180"/></div>
-      <div class="dl-phone dl-phone-side"><img src="assets/screen3.jpg" alt="App screen 3" width="140" loading="lazy"/></div>
+      <!-- Samsung Galaxy S25 Ultra -->
+      <div class="device device-samsung dl-phone dl-phone-side">
+        <div class="device-screen">
+          <div class="punch-hole"></div>
+          <img src="assets/screen2.jpg" alt="Galaxy S25 Ultra — Deliservy" loading="lazy"/>
+        </div>
+      </div>
+      <!-- iPhone 17 Pro Max -->
+      <div class="device device-iphone dl-phone dl-phone-main">
+        <div class="device-screen">
+          <div class="dynamic-island"></div>
+          <img src="assets/screen1.jpg" alt="iPhone 17 Pro Max — Deliservy"/>
+        </div>
+      </div>
+      <!-- Google Pixel 9 Pro -->
+      <div class="device device-pixel dl-phone dl-phone-side">
+        <div class="device-screen">
+          <div class="speaker-strip"></div>
+          <div class="punch-hole"></div>
+          <img src="assets/screen3.jpg" alt="Google Pixel 9 Pro — Deliservy" loading="lazy"/>
+        </div>
+      </div>
     </div>
   </div>
 </section>
