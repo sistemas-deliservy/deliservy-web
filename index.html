@@ -327,7 +327,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .taxi-card:hover{transform:translateY(-6px);border-color:rgba(228,22,22,.3);background:rgba(228,22,22,.06);box-shadow:0 16px 40px rgba(228,22,22,.1);}
 .taxi-icon{width:58px;height:58px;background:rgba(228,22,22,.09);border:1px solid rgba(228,22,22,.18);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
 .taxi-icon [data-lucide]{color:var(--red);width:26px;height:26px;}
-.taxi-name{font-size:14px;font-weight:700;}
+.taxi-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.taxi-sub{font-size:12px;color:var(--text-muted);}
 
 /* ── FEATURES ── */
 #features{background:var(--dark3);}
@@ -702,7 +703,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <div class="bento-content">
           <div class="bento-tag">DeliTaxis</div>
           <div class="bento-title">Taxi seguro y verificado</div>
-          <p class="bento-desc">Estándar, Mototaxi, Camioneta, Pet Friendly y Escolar. Conductores verificados con reconocimiento facial y calificación en tiempo real.</p>
+          <p class="bento-desc">Delimoto, DeliTaxi, DeliPremium, DeliXL y DeliLujo. Conductores verificados con reconocimiento facial y calificación en tiempo real.</p>
           <a href="#taxi-modes" class="bento-link">Ver modalidades →</a>
         </div>
       </div>
@@ -786,11 +787,31 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <div class="label fade-up"><i data-lucide="car"></i> DeliTaxis</div>
     <h2 class="section-title fade-up delay-1">5 modalidades de taxi</h2>
     <div class="taxi-grid">
-      <div class="taxi-card fade-up"><div class="taxi-icon"><i data-lucide="car"></i></div><div class="taxi-name">Taxi Estándar</div></div>
-      <div class="taxi-card fade-up delay-1"><div class="taxi-icon"><i data-lucide="bike"></i></div><div class="taxi-name">Mototaxi</div></div>
-      <div class="taxi-card fade-up delay-2"><div class="taxi-icon"><i data-lucide="truck"></i></div><div class="taxi-name">Camioneta</div></div>
-      <div class="taxi-card fade-up delay-3"><div class="taxi-icon"><i data-lucide="paw-print"></i></div><div class="taxi-name">Pet Friendly</div></div>
-      <div class="taxi-card fade-up delay-4"><div class="taxi-icon"><i data-lucide="graduation-cap"></i></div><div class="taxi-name">Escolar</div></div>
+      <div class="taxi-card fade-up">
+        <div class="taxi-icon"><i data-lucide="bike"></i></div>
+        <div class="taxi-name">Delimoto</div>
+        <div class="taxi-sub">Mototaxi</div>
+      </div>
+      <div class="taxi-card fade-up delay-1">
+        <div class="taxi-icon"><i data-lucide="car"></i></div>
+        <div class="taxi-name">DeliTaxi</div>
+        <div class="taxi-sub">Vehículo</div>
+      </div>
+      <div class="taxi-card fade-up delay-2">
+        <div class="taxi-icon"><i data-lucide="sparkles"></i></div>
+        <div class="taxi-name">DeliPremium</div>
+        <div class="taxi-sub">A/C y Confort</div>
+      </div>
+      <div class="taxi-card fade-up delay-3">
+        <div class="taxi-icon"><i data-lucide="users"></i></div>
+        <div class="taxi-name">DeliXL</div>
+        <div class="taxi-sub">Camioneta 7 personas</div>
+      </div>
+      <div class="taxi-card fade-up delay-4">
+        <div class="taxi-icon"><i data-lucide="star"></i></div>
+        <div class="taxi-name">DeliLujo</div>
+        <div class="taxi-sub">Vehículo lujoso</div>
+      </div>
     </div>
   </div>
 </section>
