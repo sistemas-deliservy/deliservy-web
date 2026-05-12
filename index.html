@@ -137,11 +137,103 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 /* ring glow dot */
 .phone-ring-1::after{content:'';position:absolute;width:10px;height:10px;background:var(--red);border-radius:50%;top:0;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 16px 4px rgba(228,22,22,.6);}
 
-.phone{position:absolute;border-radius:38px;overflow:hidden;border:1.5px solid rgba(255,255,255,.10);box-shadow:0 40px 80px rgba(0,0,0,.7);background:#111;}
-.phone img{width:100%;height:100%;object-fit:cover;}
+/* ── DEVICE FRAMES ── */
+.device{position:absolute;display:flex;flex-direction:column;}
+.device-screen{flex:1;overflow:hidden;background:#000;position:relative;}
+.device-screen img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* iPhone 17 Pro Max — titanium frame + Dynamic Island */
+.device-iphone{
+  border-radius:52px;
+  background:linear-gradient(160deg,#4e4e52 0%,#2c2c2e 30%,#1c1c1e 55%,#3a3a3c 80%,#4a4a4e 100%);
+  padding:16px 12px 22px;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.14),
+    inset 0 -1px 0 rgba(0,0,0,.4),
+    inset 2px 0 0 rgba(255,255,255,.05),
+    inset -2px 0 0 rgba(255,255,255,.05),
+    0 0 0 1px rgba(255,255,255,.07),
+    0 40px 80px rgba(0,0,0,.85),
+    0 0 60px rgba(228,22,22,.08);
+}
+.device-iphone .device-screen{border-radius:40px;}
+.dynamic-island{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:92px;height:28px;background:#000;border-radius:15px;z-index:5;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.03),inset 0 0 8px rgba(0,0,0,.8);
+}
+/* iPhone volume (left) + power (right) */
+.device-iphone::before{
+  content:'';position:absolute;left:-4px;top:92px;width:4px;height:32px;
+  background:linear-gradient(180deg,#4a4a4c,#3a3a3c);border-radius:3px 0 0 3px;
+  box-shadow:0 48px 0 #3a3a3c,0 88px 0 #3a3a3c;
+}
+.device-iphone::after{
+  content:'';position:absolute;right:-4px;top:136px;width:4px;height:72px;
+  background:linear-gradient(180deg,#4a4a4c,#3a3a3c);border-radius:0 3px 3px 0;
+}
+
+/* Samsung Galaxy S25 Ultra — polished dark aluminum */
+.device-samsung{
+  border-radius:46px;
+  background:linear-gradient(155deg,#333 0%,#1e1e1e 35%,#121212 60%,#2a2a2a 100%);
+  padding:13px 9px 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.5),
+    0 0 0 1px rgba(255,255,255,.06),
+    0 30px 70px rgba(0,0,0,.8);
+}
+.device-samsung .device-screen{border-radius:37px;}
+.device-samsung .punch-hole{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:11px;height:11px;background:#000;border-radius:50%;z-index:5;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06);
+}
+.device-samsung::before{
+  content:'';position:absolute;left:-3px;top:82px;width:3px;height:36px;
+  background:#2a2a2a;border-radius:2px 0 0 2px;box-shadow:0 52px 0 #2a2a2a;
+}
+.device-samsung::after{
+  content:'';position:absolute;right:-3px;top:100px;width:3px;height:56px;
+  background:#2a2a2a;border-radius:0 2px 2px 0;
+}
+
+/* Google Pixel 9 Pro — matte polished frame */
+.device-pixel{
+  border-radius:48px;
+  background:linear-gradient(165deg,#2e2e30 0%,#1a1a1c 35%,#101012 60%,#242426 100%);
+  padding:14px 10px 19px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    inset 0 -1px 0 rgba(0,0,0,.45),
+    0 0 0 1px rgba(255,255,255,.05),
+    0 30px 70px rgba(0,0,0,.8);
+}
+.device-pixel .device-screen{border-radius:38px;}
+.device-pixel .punch-hole{
+  position:absolute;top:11px;left:50%;transform:translateX(-50%);
+  width:13px;height:13px;background:#000;border-radius:50%;z-index:5;
+  box-shadow:0 0 0 1px rgba(255,255,255,.05);
+}
+/* Pixel speaker strip in bezel */
+.device-pixel .speaker-strip{
+  position:absolute;top:5px;left:50%;transform:translateX(-50%);
+  width:40px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;z-index:5;
+}
+.device-pixel::before{
+  content:'';position:absolute;left:-3px;top:88px;width:3px;height:38px;
+  background:#242424;border-radius:2px 0 0 2px;box-shadow:0 54px 0 #242424;
+}
+.device-pixel::after{
+  content:'';position:absolute;right:-3px;top:106px;width:3px;height:58px;
+  background:#242424;border-radius:0 2px 2px 0;
+}
+
+/* Positioning & animation */
 .phone-main{width:220px;height:445px;z-index:3;animation:float-main 4s ease-in-out infinite;}
-.phone-left{width:172px;height:344px;z-index:2;left:0;transform:rotate(-8deg) translateX(-10px);animation:float-left 4s ease-in-out infinite .7s;opacity:.82;}
-.phone-right{width:172px;height:344px;z-index:2;right:0;transform:rotate(8deg) translateX(10px);animation:float-right 4s ease-in-out infinite 1.4s;opacity:.82;}
+.phone-left{width:172px;height:344px;z-index:2;left:0;transform:rotate(-8deg) translateX(-10px);animation:float-left 4s ease-in-out infinite .7s;opacity:.88;}
+.phone-right{width:172px;height:344px;z-index:2;right:0;transform:rotate(8deg) translateX(10px);animation:float-right 4s ease-in-out infinite 1.4s;opacity:.88;}
 @keyframes float-main{0%,100%{transform:translateY(0);}50%{transform:translateY(-16px);}}
 @keyframes float-left{0%,100%{transform:rotate(-8deg) translateX(-10px) translateY(0);}50%{transform:rotate(-8deg) translateX(-10px) translateY(-10px);}}
 @keyframes float-right{0%,100%{transform:rotate(8deg) translateX(10px) translateY(0);}50%{transform:rotate(8deg) translateX(10px) translateY(-10px);}}
@@ -520,14 +612,27 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       <div class="hero-phones">
         <div class="phone-ring phone-ring-1"></div>
         <div class="phone-ring phone-ring-2"></div>
-        <div class="phone phone-left">
-          <img src="assets/screen2.jpg" alt="Pantalla app 2" loading="lazy"/>
+        <!-- Samsung Galaxy S25 Ultra -->
+        <div class="device device-samsung phone-left">
+          <div class="device-screen">
+            <div class="punch-hole"></div>
+            <img src="assets/screen2.jpg" alt="Galaxy S25 Ultra — Deliservy" loading="lazy"/>
+          </div>
         </div>
-        <div class="phone phone-main">
-          <img src="assets/screen1.jpg" alt="Pantalla app 1"/>
+        <!-- iPhone 17 Pro Max -->
+        <div class="device device-iphone phone-main">
+          <div class="device-screen">
+            <div class="dynamic-island"></div>
+            <img src="assets/screen1.jpg" alt="iPhone 17 Pro Max — Deliservy"/>
+          </div>
         </div>
-        <div class="phone phone-right">
-          <img src="assets/screen3.jpg" alt="Pantalla app 3" loading="lazy"/>
+        <!-- Google Pixel 9 Pro -->
+        <div class="device device-pixel phone-right">
+          <div class="device-screen">
+            <div class="speaker-strip"></div>
+            <div class="punch-hole"></div>
+            <img src="assets/screen3.jpg" alt="Google Pixel 9 Pro — Deliservy" loading="lazy"/>
+          </div>
         </div>
         <div class="notif-card notif-left">
           <div class="notif-title">🛵 En camino</div>
