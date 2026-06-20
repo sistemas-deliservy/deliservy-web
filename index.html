@@ -120,7 +120,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 
 .hero h1{font-size:clamp(38px,5.5vw,68px);font-weight:900;line-height:1.05;margin-bottom:22px;letter-spacing:-.03em;}
 .hero-sub{font-size:17px;color:var(--text-muted);line-height:1.8;margin-bottom:38px;max-width:480px;}
-.hero-btns{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:52px;}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+.hero-qr-row{display:flex;gap:36px;flex-wrap:wrap;margin-bottom:36px;}
+.hero-qr-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.hero-qr-item img{width:155px;height:155px;border-radius:10px;border:2px solid rgba(255,255,255,.10);}
+.hero-qr-lbl{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.02em;}
 .hero-stats{display:flex;gap:32px;flex-wrap:wrap;}
 .stat-item{display:flex;align-items:center;gap:12px;}
 .stat-icon{width:38px;height:38px;background:rgba(228,22,22,.10);border:1px solid rgba(228,22,22,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -488,15 +492,33 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .stats-bar-inner{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:768px){
-  .section{padding:68px 0;}
+  .container{padding:0 18px;}
+  .section{padding:60px 0;}
+  /* NAV */
   .nav-links,.nav-right .btn{display:none;}
   #hamburger{display:flex;}
-  .hero-inner{grid-template-columns:1fr;gap:40px;}
-  .hero-phones{height:380px;}
-  .phone-main{width:160px;height:320px;}
-  .phone-left,.phone-right{width:120px;height:240px;}
-  .phone-ring-1{width:280px;height:280px;}
-  .phone-ring-2{width:360px;height:360px;}
+  /* HERO */
+  .hero-inner{grid-template-columns:1fr;gap:32px;text-align:center;padding:32px 18px 48px;}
+  .hero h1{font-size:clamp(32px,8vw,48px);}
+  .hero-sub{font-size:15px;max-width:100%;margin-left:auto;margin-right:auto;}
+  .hero-btns{justify-content:center;}
+  .hero-qr-row{justify-content:center;gap:24px;}
+  .hero-qr-item img{width:110px;height:110px;}
+  .hero-stats{justify-content:center;gap:20px;}
+  .hero-badge-green,.hero-badge-red{margin-left:auto;margin-right:auto;}
+  /* PHONES */
+  .hero-phones{height:320px;}
+  .phone-main{width:150px;height:300px;}
+  .phone-left,.phone-right{width:110px;height:220px;}
+  .phone-ring-1{width:260px;height:260px;}
+  .phone-ring-2{width:340px;height:340px;}
+  /* PROMO BANNER */
+  #promo-banner{font-size:12px;height:auto;min-height:40px;padding:8px 40px 8px 16px;text-align:center;}
+  /* TABS */
+  .tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{flex-shrink:0;padding:10px 18px;font-size:13px;}
+  /* GRIDS */
   .bento-grid{grid-template-columns:1fr;}
   .steps-panel.active{grid-template-columns:1fr;}
   .security-cards{grid-template-columns:1fr;}
@@ -514,12 +536,58 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   #sticky-mobile-cta{display:block;}
   .notif-left,.notif-right{display:none;}
   .footer-bottom{flex-direction:column;text-align:center;}
+  /* CARDS */
+  .step-card{padding:22px;}
+  .stat-bar-card{padding:24px 16px;}
+  .why-card{padding:26px;}
+  .accordion-head{padding:16px 18px;font-size:14px;}
+  .accordion-body-inner{padding:0 18px 18px;}
+  /* STATS BAR */
+  .stats-bar-inner{gap:16px;}
+  /* DOWNLOAD */
+  .qr-row{gap:16px;}
+  .qr-box{padding:12px;}
+  /* FOOTER */
+  .footer-grid{padding:40px 18px 32px;}
 }
 @media(max-width:480px){
+  .container{padding:0 14px;}
+  .section{padding:48px 0;}
+  /* HERO */
+  .hero-inner{gap:24px;padding:24px 14px 40px;}
+  .hero-qr-row{gap:18px;}
+  .hero-qr-item img{width:90px;height:90px;}
+  .hero-qr-lbl{font-size:10px;}
+  .hero-btns{flex-direction:column;align-items:center;}
+  .hero-btns .btn{width:100%;max-width:280px;justify-content:center;}
+  .hero-stats{gap:14px;}
+  /* PROMO */
+  #promo-banner .promo-detail{display:none;}
+  /* GRIDS */
   .payment-grid{grid-template-columns:1fr;}
   .footer-grid{grid-template-columns:1fr;}
+  .taxi-grid{grid-template-columns:repeat(2,1fr);}
+  /* DOWNLOAD */
   .download-btns{flex-direction:column;align-items:center;}
-  .qr-row{gap:20px;}
+  .download-btns .btn{width:100%;max-width:280px;justify-content:center;}
+  .qr-row{gap:12px;flex-direction:column;align-items:center;}
+  /* CARDS */
+  .bento-card-img{height:180px;}
+  .bento-content{padding:16px 18px 20px;}
+  .earnings-amount{font-size:34px;}
+  .security-card{padding:24px;}
+  .payment-card{padding:22px;}
+  .testimonial-card{padding:20px;}
+  /* FOOTER */
+  .footer-grid{padding:32px 14px 24px;gap:24px;}
+  .footer-newsletter{padding:24px 14px;}
+  .social-icons{gap:8px;}
+}
+@media(max-width:360px){
+  .hero-qr-row{display:none;}
+  .hero h1{font-size:28px;}
+  .section-title{font-size:24px;}
+  .tab-btn{padding:8px 14px;font-size:12px;}
 }
 </style>
 </head>
@@ -546,7 +614,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       <li><a href="#payments">Pagos</a></li>
     </ul>
     <div class="nav-right">
-      <a href="https://apps.apple.com/us/app/deliservy/id6761390577" class="btn btn-red">Descargar App</a>
+      <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link">Descargar App</a>
     </div>
     <button id="hamburger" aria-label="Abrir menú"><i data-lucide="menu"></i></button>
   </div>
@@ -560,7 +628,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   <a href="#deliveryman" onclick="closeMobileMenu()">Repartidores</a>
   <a href="#business" onclick="closeMobileMenu()">Negocios</a>
   <a href="#payments" onclick="closeMobileMenu()">Pagos</a>
-  <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red" style="margin-top:8px;">Descargar App</a>
+  <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link" style="margin-top:8px;">Descargar App</a>
 </div>
 
 <!-- ── HERO ── -->
@@ -579,8 +647,18 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
           <i data-lucide="apple"></i> App Store
         </a>
         <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-outline">
-          <i data-lucide="play"></i> Google Play
+          <i data-lucide="play"></i> Play Store
         </a>
+      </div>
+      <div class="hero-qr-row">
+        <div class="hero-qr-item">
+          <img src="qr-appstore.png" alt="QR App Store"/>
+          <span class="hero-qr-lbl">App Store</span>
+        </div>
+        <div class="hero-qr-item">
+          <img src="qr-playstore.png" alt="QR Play Store"/>
+          <span class="hero-qr-lbl">Play Store</span>
+        </div>
       </div>
       <div class="hero-stats">
         <div class="stat-item">
@@ -1081,19 +1159,19 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <p class="section-sub fade-up delay-2" style="text-align:center;margin:0 auto 36px;">Únete a miles de venezolanos que ya usan Deliservy todos los días.</p>
     <div class="download-btns fade-up delay-3">
       <a href="https://apps.apple.com/us/app/deliservy/id6761390577" class="btn btn-white"><i data-lucide="apple"></i> App Store</a>
-      <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-outline"><i data-lucide="play"></i> Google Play</a>
+      <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-outline"><i data-lucide="play"></i> Play Store</a>
     </div>
     <div class="qr-row fade-up delay-4">
       <div class="qr-item">
         <div class="qr-box">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&color=ffffff&bgcolor=161616&data=https://apps.apple.com/us/app/deliservy/id6761390577" alt="QR iOS" width="130" height="130"/>
+          <img src="qr-appstore.png" alt="QR iOS" width="130" height="130"/>
         </div>
         <div class="qr-lbl">Escanea con tu cámara</div>
         <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:2px;">iOS · App Store</div>
       </div>
       <div class="qr-item">
         <div class="qr-box">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&color=ffffff&bgcolor=161616&data=https://play.google.com/store/apps/details?id=com.ivc.deliservy" alt="QR Android" width="130" height="130"/>
+          <img src="qr-playstore.png" alt="QR Android" width="130" height="130"/>
         </div>
         <div class="qr-lbl">Escanea con tu cámara</div>
         <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:2px;">Android · Play Store</div>
@@ -1219,7 +1297,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 </div>
 
 <div id="sticky-mobile-cta">
-  <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy">Descargar App — Gratis</a>
+  <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="store-link">Descargar App — Gratis</a>
 </div>
 
 <script>
@@ -1307,6 +1385,18 @@ function handleNewsletter(e){
   alert('¡Gracias! Te enviaremos las mejores ofertas a '+input.value);
   input.value='';
 }
+
+// ── STORE LINK DETECTION ──
+(function(){
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  var storeUrl = isIOS
+    ? 'https://apps.apple.com/us/app/deliservy/id6761390577'
+    : 'https://play.google.com/store/apps/details?id=com.ivc.deliservy';
+  document.querySelectorAll('.store-link').forEach(function(a){
+    a.href = storeUrl;
+  });
+})();
 
 // ── LUCIDE ICONS ──
 lucide.createIcons();
