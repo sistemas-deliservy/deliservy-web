@@ -1590,10 +1590,12 @@ function _renderList(items){
     var initial=name[0].toUpperCase();
     var color=_donateColor(name);
     var time=_timeAgo(d.createdAt);
+    var usd=parseFloat(d.amountUsd)||0;
+    var bs=parseFloat(d.amountBs)||0;
     html+='<div class="df-item">';
     html+='<div class="df-avatar" style="background:'+color+'">'+initial+'</div>';
     html+='<div class="df-info"><div class="df-name">'+name+'</div><div class="df-time">'+time+'</div></div>';
-    html+='<div class="df-amounts"><div class="df-usd">$'+d.amountUsd.toFixed(2)+'</div><div class="df-bs">'+_fmtBs(d.amountBs)+'</div></div>';
+    html+='<div class="df-amounts"><div class="df-usd">$'+usd.toFixed(2)+'</div><div class="df-bs">'+_fmtBs(bs)+'</div></div>';
     html+='</div>';
   });
   list.innerHTML=html;
