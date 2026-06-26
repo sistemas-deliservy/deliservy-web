@@ -432,6 +432,92 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .security-notice{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:36px;background:rgba(228,22,22,.06);border:1px solid rgba(228,22,22,.15);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text-muted);}
 .security-notice [data-lucide]{color:var(--red);width:18px;height:18px;flex-shrink:0;}
 
+/* ── DONATIONS HERO ── */
+#donations{background:var(--dark);position:relative;overflow:hidden;padding:0;}
+.dh-wrap{display:grid;grid-template-columns:45% 55%;min-height:100vh;}
+/* left: image column */
+.dh-img{position:relative;overflow:hidden;}
+.dh-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.dh-img-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(8,8,8,0) 60%,var(--dark) 100%),linear-gradient(to bottom,rgba(8,8,8,.3) 0%,rgba(8,8,8,.1) 50%,rgba(8,8,8,.6) 100%);}
+.dh-img-badge{position:absolute;top:116px;left:24px;background:rgba(228,22,22,.88);backdrop-filter:blur(12px);color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:50px;display:flex;align-items:center;gap:8px;letter-spacing:.06em;text-transform:uppercase;}
+.dh-img-badge::before{content:'';width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse-ring 1.8s ease-out infinite;}
+/* right: content column */
+.dh-content{padding:80px 52px 60px 44px;display:flex;flex-direction:column;justify-content:center;gap:0;}
+.dh-label{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--orange);margin-bottom:16px;background:rgba(255,90,31,.09);padding:6px 14px;border-radius:50px;border:1px solid rgba(255,90,31,.18);width:fit-content;}
+.dh-title{font-size:clamp(28px,3.5vw,46px);font-weight:900;line-height:1.08;letter-spacing:-.025em;margin-bottom:14px;}
+.dh-msg{font-size:15px;color:var(--text-muted);line-height:1.75;margin-bottom:28px;max-width:480px;}
+/* totals strip */
+.dh-totals{display:flex;align-items:center;gap:0;background:rgba(255,255,255,.035);border:1px solid rgba(228,22,22,.18);border-radius:16px;overflow:hidden;margin-bottom:28px;}
+.dh-total-item{flex:1;text-align:center;padding:18px 12px;}
+.dh-total-item+.dh-total-item{border-left:1px solid rgba(255,255,255,.07);}
+.dh-total-val{font-size:22px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;}
+.dh-total-lbl{font-size:10px;color:var(--text-muted);margin-top:3px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+/* live feed */
+.dh-feed{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px;flex:1;max-height:320px;display:flex;flex-direction:column;}
+.dh-feed-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.dh-feed-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;}
+.live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);padding:3px 8px;border-radius:20px;letter-spacing:.06em;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-ring 1.8s ease-out infinite;}
+.dh-feed-list{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
+.dh-feed-list::-webkit-scrollbar{width:4px;}
+.dh-feed-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+/* donation item */
+.df-item{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .2s;animation:slide-down .35s ease;}
+.df-item:last-child{border-bottom:none;}
+.df-item:hover{background:rgba(255,255,255,.03);}
+@keyframes slide-down{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+.df-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;}
+.df-info{flex:1;min-width:0;}
+.df-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.df-time{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.df-amounts{text-align:right;flex-shrink:0;}
+.df-usd{font-size:14px;font-weight:800;color:var(--red);}
+.df-bs{font-size:11px;color:var(--text-muted);margin-top:1px;}
+/* shimmer */
+.df-shimmer{padding:12px 18px;display:flex;align-items:center;gap:12px;}
+.df-sh-circle{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.06);flex-shrink:0;animation:shimmer-pulse 1.5s ease-in-out infinite;}
+.df-sh-lines{flex:1;display:flex;flex-direction:column;gap:6px;}
+.df-sh-line{height:10px;border-radius:4px;background:rgba(255,255,255,.06);animation:shimmer-pulse 1.5s ease-in-out infinite;}
+.df-sh-line.short{width:60%;}
+.df-sh-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.df-sh-val{width:50px;height:12px;border-radius:4px;background:rgba(255,255,255,.06);animation:shimmer-pulse 1.5s ease-in-out infinite;}
+.df-sh-sub{width:36px;height:9px;border-radius:4px;background:rgba(255,255,255,.06);animation:shimmer-pulse 1.5s ease-in-out infinite;}
+@keyframes shimmer-pulse{0%,100%{opacity:.4;}50%{opacity:.9;}}
+.df-empty{padding:24px 18px;text-align:center;color:var(--text-muted);font-size:13px;}
+/* donate button */
+.btn-donate{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:17px 28px;border-radius:14px;font-size:16px;font-weight:700;background:var(--grad);color:#fff;transition:all var(--transition);border:none;cursor:pointer;}
+.btn-donate:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(228,22,22,.40),0 0 0 4px rgba(228,22,22,.1);}
+.btn-donate svg{width:20px;height:20px;flex-shrink:0;}
+.dh-app-note{font-size:12px;color:rgba(255,255,255,.25);text-align:center;margin-top:10px;}
+/* modal overlay */
+#donate-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px;}
+#donate-modal.open{display:flex;}
+.donate-modal-box{background:var(--dark3);border:1px solid var(--border-strong);border-radius:22px;padding:36px 32px;max-width:440px;width:100%;text-align:center;animation:modal-in .25s ease;}
+@keyframes modal-in{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
+.donate-modal-emoji{font-size:40px;margin-bottom:12px;}
+.donate-modal-title{font-size:20px;font-weight:900;margin-bottom:6px;}
+.donate-modal-sub{font-size:14px;color:var(--text-muted);margin-bottom:28px;line-height:1.65;}
+.donate-modal-btns{display:flex;gap:14px;flex-direction:column;}
+.donate-modal-btn{display:flex;align-items:center;justify-content:center;gap:12px;padding:15px 20px;border-radius:12px;font-size:15px;font-weight:700;color:#fff;text-decoration:none;transition:all .2s;}
+.donate-modal-btn-ios{background:#000;}
+.donate-modal-btn-ios:hover{background:#111;transform:translateY(-2px);}
+.donate-modal-btn-android{background:var(--grad);}
+.donate-modal-btn-android:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(228,22,22,.35);}
+.donate-modal-close{margin-top:18px;font-size:13px;color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:inherit;}
+.donate-modal-close:hover{color:#fff;}
+@media(max-width:1024px){
+  .dh-wrap{grid-template-columns:40% 60%;}
+  .dh-content{padding:60px 36px 50px 32px;}
+}
+@media(max-width:768px){
+  .dh-wrap{grid-template-columns:1fr;min-height:auto;}
+  .dh-img{height:260px;}
+  .dh-img-overlay{background:linear-gradient(to bottom,rgba(8,8,8,.1) 0%,rgba(8,8,8,.7) 100%);}
+  .dh-content{padding:32px 20px 40px;}
+  .dh-feed{max-height:260px;}
+  .dh-total-val{font-size:18px;}
+}
+
 /* ── DOWNLOAD CTA ── */
 #download{background:var(--dark);position:relative;overflow:hidden;text-align:center;}
 .download-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(228,22,22,.10) 0%,transparent 70%);z-index:0;pointer-events:none;}
@@ -612,6 +698,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       <li><a href="#deliveryman">Repartidores</a></li>
       <li><a href="#business">Negocios</a></li>
       <li><a href="#payments">Pagos</a></li>
+      <li><a href="#donations">Donaciones</a></li>
     </ul>
     <div class="nav-right">
       <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link">Descargar App</a>
@@ -628,7 +715,89 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   <a href="#deliveryman" onclick="closeMobileMenu()">Repartidores</a>
   <a href="#business" onclick="closeMobileMenu()">Negocios</a>
   <a href="#payments" onclick="closeMobileMenu()">Pagos</a>
+  <a href="#donations" onclick="closeMobileMenu()">Donaciones</a>
   <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link" style="margin-top:8px;">Descargar App</a>
+</div>
+
+<!-- ── DONATIONS HERO ── -->
+<section id="donations">
+  <div class="dh-wrap">
+    <!-- Imagen campaña -->
+    <div class="dh-img">
+      <img src="assets/terremoto.jpeg" alt="Campaña de donaciones Deliservy"/>
+      <div class="dh-img-overlay"></div>
+      <div class="dh-img-badge">En vivo</div>
+    </div>
+    <!-- Contenido -->
+    <div class="dh-content">
+      <div class="dh-label">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        Donaciones
+      </div>
+      <h1 class="dh-title">Ayuda a quienes<br><span class="grad-text">más lo necesitan</span></h1>
+      <p class="dh-msg">Desde Deliservy creemos en el poder de la comunidad. Cada donación va directamente a quienes más la necesitan, con total transparencia. Tu contribución, grande o pequeña, hace la diferencia.</p>
+
+      <!-- Totales -->
+      <div class="dh-totals">
+        <div class="dh-total-item">
+          <div class="dh-total-val" id="donate-usd">—</div>
+          <div class="dh-total-lbl">USD recaudados</div>
+        </div>
+        <div class="dh-total-item">
+          <div class="dh-total-val" id="donate-count">—</div>
+          <div class="dh-total-lbl">Donaciones</div>
+        </div>
+        <div class="dh-total-item">
+          <div class="dh-total-val" id="donate-bs">—</div>
+          <div class="dh-total-lbl">Bolívares</div>
+        </div>
+      </div>
+
+      <!-- Feed en tiempo real -->
+      <div class="dh-feed">
+        <div class="dh-feed-header">
+          <span class="dh-feed-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Donaciones recientes
+          </span>
+          <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
+        </div>
+        <div class="dh-feed-list" id="donation-list">
+          <!-- shimmer inicial -->
+          <div class="df-shimmer"><div class="df-sh-circle"></div><div class="df-sh-lines"><div class="df-sh-line"></div><div class="df-sh-line short"></div></div><div class="df-sh-right"><div class="df-sh-val"></div><div class="df-sh-sub"></div></div></div>
+          <div class="df-shimmer"><div class="df-sh-circle"></div><div class="df-sh-lines"><div class="df-sh-line"></div><div class="df-sh-line short"></div></div><div class="df-sh-right"><div class="df-sh-val"></div><div class="df-sh-sub"></div></div></div>
+          <div class="df-shimmer"><div class="df-sh-circle"></div><div class="df-sh-lines"><div class="df-sh-line"></div><div class="df-sh-line short"></div></div><div class="df-sh-right"><div class="df-sh-val"></div><div class="df-sh-sub"></div></div></div>
+        </div>
+      </div>
+
+      <!-- Botón donar -->
+      <button type="button" class="btn-donate" onclick="handleDonate()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        Hacer una donación
+      </button>
+      <p class="dh-app-note">Para donar necesitas la app Deliservy — es gratis</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── DONATE MODAL ── -->
+<div id="donate-modal" role="dialog" aria-modal="true" aria-label="Descargar app para donar">
+  <div class="donate-modal-box">
+    <p class="donate-modal-emoji">❤️</p>
+    <div class="donate-modal-title">¡Gracias por querer donar!</div>
+    <div class="donate-modal-sub">Para hacer tu donación descarga la app Deliservy.<br>Elige tu tienda según tu dispositivo:</div>
+    <div class="donate-modal-btns">
+      <a href="https://apps.apple.com/us/app/deliservy/id6761390577" class="donate-modal-btn donate-modal-btn-ios" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        App Store (iOS)
+      </a>
+      <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="donate-modal-btn donate-modal-btn-android" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M3.18 23.75c.37.21.8.22 1.18.04L14.84 12 4.36.21C3.98.03 3.55.04 3.18.25 2.8.46 2.57.88 2.57 1.4v21.2c0 .52.23.94.61 1.15zM16.54 13.7l-2.6 2.6-7.79-8.48 10.4 5.88zM21.4 10.35l-2.43-1.38-2.96 3.03 2.96 3.03 2.47-1.4c.7-.4 1.13-1.03 1.13-1.64s-.43-1.24-1.17-1.64zM13.94 11.3L4.14 2.74l7.8 8.47 2-1.91z"/></svg>
+        Play Store (Android)
+      </a>
+    </div>
+    <button type="button" class="donate-modal-close" onclick="closeDonateModal()">Cerrar</button>
+  </div>
 </div>
 
 <!-- ── HERO ── -->
@@ -1239,6 +1408,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <li><a href="#services">DeliTiendas</a></li>
         <li><a href="#taxi-modes">DeliTaxis</a></li>
         <li><a href="#how">Cómo funciona</a></li>
+        <li><a href="#donations">Donaciones</a></li>
       </ul>
     </div>
     <div>
@@ -1385,6 +1555,98 @@ function handleNewsletter(e){
   alert('¡Gracias! Te enviaremos las mejores ofertas a '+input.value);
   input.value='';
 }
+
+// ── DONATIONS: live feed + polling ──
+var _donateColors=['#e41616','#ff5a1f','#8b5cf6','#06b6d4','#22c55e','#f59e0b','#ec4899','#14b8a6'];
+var _lastDonationIds=[];
+
+function _donateColor(name){
+  var n=0;for(var i=0;i<name.length;i++)n+=name.charCodeAt(i);
+  return _donateColors[n%_donateColors.length];
+}
+
+function _timeAgo(dateStr){
+  var diff=Math.floor((Date.now()-new Date(dateStr).getTime())/1000);
+  if(diff<60)return 'hace '+diff+'s';
+  if(diff<3600)return 'hace '+Math.floor(diff/60)+'min';
+  if(diff<86400)return 'hace '+Math.floor(diff/3600)+'h';
+  return 'hace '+Math.floor(diff/86400)+'d';
+}
+
+function _fmtBs(n){
+  return n.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2})+' Bs';
+}
+
+function _renderList(items){
+  var list=document.getElementById('donation-list');
+  if(!list)return;
+  if(!items||items.length===0){
+    list.innerHTML='<div class="df-empty">❤️ Sé el primero en donar</div>';
+    return;
+  }
+  var html='';
+  items.forEach(function(d){
+    var name=d.anonymous?'Anónimo':(d.donorName||'Anónimo');
+    var initial=name[0].toUpperCase();
+    var color=_donateColor(name);
+    var time=_timeAgo(d.createdAt);
+    html+='<div class="df-item">';
+    html+='<div class="df-avatar" style="background:'+color+'">'+initial+'</div>';
+    html+='<div class="df-info"><div class="df-name">'+name+'</div><div class="df-time">'+time+'</div></div>';
+    html+='<div class="df-amounts"><div class="df-usd">$'+d.amountUsd.toFixed(2)+'</div><div class="df-bs">'+_fmtBs(d.amountBs)+'</div></div>';
+    html+='</div>';
+  });
+  list.innerHTML=html;
+}
+
+function loadDonationData(){
+  Promise.all([
+    fetch('https://api.deliservy.site/api/donation/totals').then(function(r){return r.json();}),
+    fetch('https://api.deliservy.site/api/donation/recent').then(function(r){return r.json();})
+  ]).then(function(results){
+    var totals=results[0], items=results[1];
+    // Totals
+    var usd=totals.totalUsd||0;
+    var bs=totals.totalBs||0;
+    var count=totals.count||0;
+    document.getElementById('donate-usd').textContent='$'+usd.toFixed(2);
+    document.getElementById('donate-bs').textContent=Math.round(bs).toLocaleString('es-VE')+' Bs';
+    document.getElementById('donate-count').textContent=count;
+    // List
+    _renderList(Array.isArray(items)?items:[]);
+  }).catch(function(){
+    document.getElementById('donate-usd').textContent='$0.00';
+    document.getElementById('donate-bs').textContent='0 Bs';
+    document.getElementById('donate-count').textContent='0';
+    document.getElementById('donation-list').innerHTML='<div class="df-empty">❤️ Sé el primero en donar</div>';
+  });
+}
+
+// carga inicial + refresco cada 30s
+loadDonationData();
+setInterval(loadDonationData,30000);
+
+// ── DONATE MODAL + DEVICE DETECTION ──
+function handleDonate(){
+  var ua=navigator.userAgent||'';
+  var isIOS=/iPad|iPhone|iPod/.test(ua)&&!window.MSStream;
+  var isAndroid=/Android/.test(ua);
+  if(isIOS){
+    window.open('https://apps.apple.com/us/app/deliservy/id6761390577','_blank','noopener');
+  } else if(isAndroid){
+    window.open('https://play.google.com/store/apps/details?id=com.ivc.deliservy','_blank','noopener');
+  } else {
+    document.getElementById('donate-modal').classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+}
+function closeDonateModal(){
+  document.getElementById('donate-modal').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.getElementById('donate-modal').addEventListener('click',function(e){
+  if(e.target===this)closeDonateModal();
+});
 
 // ── STORE LINK DETECTION ──
 (function(){
