@@ -1643,10 +1643,27 @@ function handleDonate(){
   var ua=navigator.userAgent||'';
   var isIOS=/iPad|iPhone|iPod/.test(ua)&&!window.MSStream;
   var isAndroid=/Android/.test(ua);
-  if(isIOS){
-    window.open('https://apps.apple.com/us/app/deliservy/id6761390577','_blank','noopener');
-  } else if(isAndroid){
-    window.open('https://play.google.com/store/apps/details?id=com.ivc.deliservy','_blank','noopener');
+  var storeUrl=isIOS
+    ?'https://apps.apple.com/us/app/deliservy/id6761390577'
+    :'https://play.google.com/store/apps/details?id=com.ivc.deliservy';
+
+  if(isIOS||isAndroid){
+    // Intenta abrir la app. Si no está instalada, redirige a la tienda tras 900ms.
+    var fallback=setTimeout(function(){
+      window.location.href=storeUrl;
+    },900);
+    // Android: Intent URL con fallback a Play Store embebido
+    if(isAndroid){
+      window.location.href='intent://donate#Intent;scheme=deliservy;package=com.ivc.deliservy;S.browser_fallback_url='+encodeURIComponent(storeUrl)+';end';
+      clearTimeout(fallback);
+    } else {
+      // iOS: custom scheme — si la app lo maneja, el fallback se cancela al perder foco
+      window.addEventListener('blur',function onBlur(){
+        clearTimeout(fallback);
+        window.removeEventListener('blur',onBlur);
+      },{once:true});
+      window.location.href='deliservy://donate';
+    }
   } else {
     document.getElementById('donate-modal').classList.add('open');
     document.body.style.overflow='hidden';
