@@ -1567,9 +1567,10 @@ function _donateColor(name){
 }
 
 function _timeAgo(dateStr){
-  var diff=Math.floor((Date.now()-new Date(dateStr).getTime())/1000);
-  if(diff<60)return 'hace '+diff+'s';
-  if(diff<3600)return 'hace '+Math.floor(diff/60)+'min';
+  var utc=dateStr.endsWith('Z')||dateStr.includes('+')? dateStr : dateStr.replace(' ','T')+'Z';
+  var diff=Math.floor((Date.now()-new Date(utc).getTime())/1000);
+  if(diff<120)return 'hace un momento';
+  if(diff<3600)return 'hace '+Math.floor(diff/60)+' min';
   if(diff<86400)return 'hace '+Math.floor(diff/3600)+'h';
   return 'hace '+Math.floor(diff/86400)+'d';
 }
@@ -1610,9 +1611,10 @@ function _renderList(items){
 }
 
 function loadDonationData(){
+  var opts={cache:'no-store'};
   Promise.all([
-    fetch('https://api.deliservy.site/api/donation/totals').then(function(r){return r.json();}),
-    fetch('https://api.deliservy.site/api/donation/recent').then(function(r){return r.json();})
+    fetch('https://api.deliservy.site/api/donation/totals',opts).then(function(r){return r.json();}),
+    fetch('https://api.deliservy.site/api/donation/recent',opts).then(function(r){return r.json();})
   ]).then(function(results){
     var totals=results[0], items=results[1];
     // Totals
