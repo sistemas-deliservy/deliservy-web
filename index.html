@@ -1657,12 +1657,17 @@ function handleDonate(){
       window.location.href='intent://donate#Intent;scheme=deliservy;package=com.ivc.deliservy;S.browser_fallback_url='+encodeURIComponent(storeUrl)+';end';
       clearTimeout(fallback);
     } else {
-      // iOS: custom scheme — si la app lo maneja, el fallback se cancela al perder foco
+      // iOS: iframe oculto evita el error "Safari no puede abrir la página"
+      // Si la app está instalada, la abre y la página pierde foco → cancela fallback
       window.addEventListener('blur',function onBlur(){
         clearTimeout(fallback);
         window.removeEventListener('blur',onBlur);
       },{once:true});
-      window.location.href='deliservy://donate';
+      var ifr=document.createElement('iframe');
+      ifr.style.display='none';
+      ifr.src='deliservy://donate';
+      document.body.appendChild(ifr);
+      setTimeout(function(){document.body.removeChild(ifr);},200);
     }
   } else {
     document.getElementById('donate-modal').classList.add('open');
