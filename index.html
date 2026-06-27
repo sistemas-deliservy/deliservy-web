@@ -514,7 +514,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
   .dh-img{height:260px;}
   .dh-img-overlay{background:linear-gradient(to bottom,rgba(8,8,8,.1) 0%,rgba(8,8,8,.7) 100%);}
   .dh-content{padding:32px 20px 40px;}
-  .dh-feed{max-height:260px;}
+  .dh-feed{flex:none;max-height:none;}
+  .dh-feed-list{height:auto;max-height:240px;overflow-y:auto;}
   .dh-total-val{font-size:18px;}
 }
 
@@ -1592,8 +1593,15 @@ function _renderList(items){
     var time=_timeAgo(d.createdAt);
     var usd=parseFloat(d.amountUsd)||0;
     var bs=parseFloat(d.amountBs)||0;
+    var hasPhoto=!d.anonymous&&d.donorPhotoUrl&&d.donorPhotoUrl.length>0;
     html+='<div class="df-item">';
-    html+='<div class="df-avatar" style="background:'+color+'">'+initial+'</div>';
+    if(hasPhoto){
+      html+='<div class="df-avatar" style="background:'+color+';position:relative;">';
+      html+='<img src="'+d.donorPhotoUrl+'" alt="" style="width:38px;height:38px;object-fit:cover;border-radius:50%;position:absolute;inset:0;" onerror="this.remove()">';
+      html+=initial+'</div>';
+    }else{
+      html+='<div class="df-avatar" style="background:'+color+'">'+initial+'</div>';
+    }
     html+='<div class="df-info"><div class="df-name">'+name+'</div><div class="df-time">'+time+'</div></div>';
     html+='<div class="df-amounts"><div class="df-usd">$'+usd.toFixed(2)+'</div><div class="df-bs">'+_fmtBs(bs)+'</div></div>';
     html+='</div>';
