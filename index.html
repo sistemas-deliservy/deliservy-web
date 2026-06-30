@@ -62,18 +62,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .delay-1{transition-delay:.10s;}.delay-2{transition-delay:.20s;}.delay-3{transition-delay:.30s;}
 .delay-4{transition-delay:.40s;}.delay-5{transition-delay:.50s;}
 
-/* ── PROMO BANNER ── */
-#promo-banner{
-  background:var(--grad);height:44px;display:flex;align-items:center;justify-content:center;
-  position:relative;z-index:1000;font-size:14px;font-weight:500;gap:16px;
-}
-#promo-banner span{display:flex;align-items:center;gap:8px;}
-#promo-countdown{font-weight:700;background:rgba(0,0,0,.2);padding:2px 8px;border-radius:6px;font-size:13px;}
-#promo-close{position:absolute;right:16px;background:none;border:none;color:#fff;cursor:pointer;opacity:.8;line-height:1;font-size:20px;padding:4px;}
-#promo-close:hover{opacity:1;}
-
 /* ── NAV ── */
-#nav{position:fixed;top:44px;left:0;right:0;z-index:999;padding:0 24px;transition:top .3s ease,background .3s,border-color .3s,backdrop-filter .3s;}
+#nav{position:fixed;top:0;left:0;right:0;z-index:999;padding:0 24px;transition:top .3s ease,background .3s,border-color .3s,backdrop-filter .3s;}
 #nav.no-banner{top:0;}
 #nav.scrolled{background:rgba(8,8,8,.88);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
 .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:68px;}
@@ -599,8 +589,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .phone-left,.phone-right{width:110px;height:220px;}
   .phone-ring-1{width:260px;height:260px;}
   .phone-ring-2{width:340px;height:340px;}
-  /* PROMO BANNER */
-  #promo-banner{font-size:12px;height:auto;min-height:40px;padding:8px 40px 8px 16px;text-align:center;}
   /* TABS */
   .tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .tabs::-webkit-scrollbar{display:none;}
@@ -648,8 +636,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .hero-btns{flex-direction:column;align-items:center;}
   .hero-btns .btn{width:100%;max-width:280px;justify-content:center;}
   .hero-stats{gap:14px;}
-  /* PROMO */
-  #promo-banner .promo-detail{display:none;}
   /* GRIDS */
   .payment-grid{grid-template-columns:1fr;}
   .footer-grid{grid-template-columns:1fr;}
@@ -679,12 +665,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 </style>
 </head>
 <body>
-
-<!-- ── PROMO BANNER ── -->
-<div id="promo-banner">
-  <span>🎁 Obtén un cupón de $2 Gratis — Descarga ahora &nbsp;|&nbsp; <span id="promo-countdown">23:59:59</span></span>
-  <button id="promo-close" aria-label="Cerrar banner">✕</button>
-</div>
 
 <!-- ── NAV ── -->
 <nav id="nav">
@@ -808,7 +788,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   <div class="hero-blob hero-blob-3"></div>
   <div class="hero-inner">
     <div class="hero-left fade-up">
-      <div class="hero-badge-green"><span class="pulse-dot"></span> Obtén un cupón de $2 Gratis</div>
       <div class="hero-badge-red">🇻🇪 Disponible en Venezuela</div>
       <h1>Todo lo que necesitas,<br><span class="grad-text">a un toque.</span></h1>
       <p class="hero-sub">Comida, tiendas y taxi en una sola app. Rastrea tu pedido en tiempo real, paga con 4 métodos seguros y recibe con repartidores verificados.</p>
@@ -1472,27 +1451,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 </div>
 
 <script>
-// ── PROMO BANNER ──
-(function(){
-  if(sessionStorage.getItem('promo-dismissed')){
-    document.getElementById('promo-banner').style.display='none';
-    document.getElementById('nav').classList.add('no-banner');
-    return;
-  }
-  var seconds=86399;
-  function tick(){
-    var h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;
-    var el=document.getElementById('promo-countdown');
-    if(el) el.textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
-    if(seconds>0)seconds--;
-  }
-  tick();setInterval(tick,1000);
-  document.getElementById('promo-close').addEventListener('click',function(){
-    sessionStorage.setItem('promo-dismissed','1');
-    document.getElementById('promo-banner').style.display='none';
-    document.getElementById('nav').classList.add('no-banner');
-  });
-})();
 
 // ── NAV SCROLL ──
 window.addEventListener('scroll',function(){
