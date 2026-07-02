@@ -679,7 +679,8 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       <li><a href="#deliveryman">Repartidores</a></li>
       <li><a href="#business">Negocios</a></li>
       <li><a href="#payments">Pagos</a></li>
-      <li><a href="#donations">Donaciones</a></li>
+      <!-- DONACIONES_OCULTAS: descomenta para reactivar -->
+      <!-- <li><a href="#donations">Donaciones</a></li> -->
     </ul>
     <div class="nav-right">
       <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link">Descargar App</a>
@@ -696,12 +697,13 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   <a href="#deliveryman" onclick="closeMobileMenu()">Repartidores</a>
   <a href="#business" onclick="closeMobileMenu()">Negocios</a>
   <a href="#payments" onclick="closeMobileMenu()">Pagos</a>
-  <a href="#donations" onclick="closeMobileMenu()">Donaciones</a>
+  <!-- DONACIONES_OCULTAS: <a href="#donations" onclick="closeMobileMenu()">Donaciones</a> -->
   <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link" style="margin-top:8px;">Descargar App</a>
 </div>
 
 <!-- ── DONATIONS HERO ── -->
-<section id="donations">
+<!-- DONACIONES_OCULTAS: quitar style para reactivar -->
+<section id="donations" style="display:none">
   <div class="dh-wrap">
     <!-- Imagen campaña -->
     <div class="dh-img">
@@ -1388,7 +1390,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <li><a href="#services">DeliTiendas</a></li>
         <li><a href="#taxi-modes">DeliTaxis</a></li>
         <li><a href="#how">Cómo funciona</a></li>
-        <li><a href="#donations">Donaciones</a></li>
+        <!-- DONACIONES_OCULTAS: <li><a href="#donations">Donaciones</a></li> -->
       </ul>
     </div>
     <div>
@@ -1592,9 +1594,9 @@ function loadDonationData(){
   });
 }
 
-// carga inicial + refresco cada 30s
-loadDonationData();
-setInterval(loadDonationData,30000);
+// DONACIONES_OCULTAS: descomentar para reactivar
+// loadDonationData();
+// setInterval(loadDonationData,30000);
 
 // ── DONATE MODAL + DEVICE DETECTION ──
 function handleDonate(){
