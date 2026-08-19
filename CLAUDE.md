@@ -4,7 +4,14 @@ Landing page de **Deliservy** (https://deliservy.com). Sitio estático, sin buil
 framework: se edita el HTML directamente y se sirve tal cual desde Nginx.
 
 - Repo: `git@github.com:sistemas-deliservy/deliservy-web.git` · rama `main`
-- Producción: VPS interbank `34.122.172.173` → `/var/www/deliservy`
+- ⚠️ **Producción es Ferozo** (`200.58.111.115`, Apache), no la VM de GCP.
+  Comprobado el 19-ago-2026: `deliservy.com` resuelve ahí.
+
+> ⚠️ En la VM `interbank-deliservy` (`34.122.172.173`) hay un
+> `/var/www/deliservy` con este repo, **pero no es lo que se sirve**. Su
+> `index.html` está modificado sin commitear: **un `git pull` ahí borra ese
+> trabajo**. Para dejar un archivo, copiarlo suelto. (`sudo git pull` además
+> falla por permisos de la clave SSH.)
 
 ---
 
