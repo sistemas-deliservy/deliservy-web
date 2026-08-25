@@ -101,7 +101,7 @@ Intenta abrir la app instalada antes de mandar a la tienda:
 
 ### Contacto
 - Soporte: `soporte@deliservy.com` · Contacto: `contacto@deliservy.com`
-- WhatsApp: `https://wa.me/584265201529`
+- WhatsApp: `https://wa.me/19547682019`
 - Instagram: `https://www.instagram.com/deliservy.app`
 - Facebook: **sin URL todavía** — el icono del footer apunta a `#`
 
