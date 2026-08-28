@@ -1895,7 +1895,13 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
 
       requestAnimationFrame(dibuja);
     }
-    requestAnimationFrame(dibuja);
+
+    // ⚠️ Se pinta UNA VEZ de entrada, no solo dentro del bucle. El reloj de
+    // animacion no corre mientras la pestana esta oculta, asi que una pagina
+    // abierta en segundo plano dejaba el hueco en blanco hasta que alguien la
+    // miraba. Dibujando el primer fotograma a mano, la esfera esta ahi desde el
+    // principio y el bucle solo la mueve.
+    dibuja(0);
   })();
   var estado  = document.getElementById('alisa-state');
   var chips   = document.getElementById('alisa-chips');
