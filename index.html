@@ -98,6 +98,30 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .alisa-bar button [data-lucide]{width:19px;height:19px;stroke-width:2.4;}
 .alisa-legal{font-size:11.5px;color:rgba(255,255,255,.32);margin-top:12px;text-align:center;}
 
+/* El microfono. Es un boton FANTASMA, no otro boton rojo: el rojo lleno es
+   «enviar» y solo puede haber una accion principal en la barra.
+   Se esconde solo si el navegador no reconoce voz — ver `montarMicrofono`.
+   Un boton que no hace nada es peor que no tenerlo. */
+.alisa-mic{width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:rgba(255,255,255,.62);
+  transition:all var(--transition);}
+.alisa-mic:hover:not(:disabled){background:rgba(255,255,255,.10);color:#fff;}
+.alisa-mic:disabled{opacity:.4;cursor:not-allowed;}
+.alisa-mic [data-lucide]{width:18px;height:18px;stroke-width:2.2;}
+/* Escuchando: se enciende y late, para que se vea que el microfono esta ABIERTO.
+   Que se note es una cuestion de confianza, no de adorno. */
+.alisa-mic.oyendo{background:rgba(228,22,22,.16);border-color:rgba(228,22,22,.55);color:#ff8080;
+  animation:alisa-oyendo 1.5s ease-in-out infinite;}
+@keyframes alisa-oyendo{0%,100%{box-shadow:0 0 0 0 rgba(228,22,22,.40);}50%{box-shadow:0 0 0 9px rgba(228,22,22,0);}}
+
+/* La salida a una persona. Alisa resuelve casi todo, pero cuando no puede hay
+   que poder salir — y tiene que verse ANTES de que alguien se frustre. */
+.alisa-humano{display:inline-flex;align-items:center;gap:7px;margin-top:10px;font-size:12.5px;
+  color:rgba(255,255,255,.52);text-decoration:none;transition:color var(--transition);}
+.alisa-humano:hover{color:#ff8080;}
+.alisa-humano [data-lucide]{width:14px;height:14px;stroke-width:2.2;}
+@media(prefers-reduced-motion:reduce){ .alisa-mic.oyendo{animation:none;} }
+
 .alisa-quote{background:var(--dark2);border:1px solid rgba(228,22,22,.28);border-radius:var(--radius);padding:22px;
   position:sticky;top:96px;}
 .alisa-quote-head{display:flex;flex-direction:column;gap:3px;padding-bottom:14px;border-bottom:1px solid var(--border);}
@@ -1026,9 +1050,16 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <form class="alisa-bar" id="alisa-form" autocomplete="off">
           <label class="sr-only" for="alisa-input">Escríbele a Alisa</label>
           <input id="alisa-input" type="text" maxlength="400" placeholder="Escríbele a Alisa…"/>
+          <button type="button" class="alisa-mic" id="alisa-mic" hidden aria-label="Hablar con Alisa"><i data-lucide="mic"></i></button>
           <button type="submit" id="alisa-send" aria-label="Enviar"><i data-lucide="arrow-up"></i></button>
         </form>
-        <p class="alisa-legal">No pide ni guarda datos personales. El pedido se termina en la app.</p>
+        <p class="alisa-legal">No pide ni guarda datos personales.</p>
+        <div style="text-align:center">
+          <a class="alisa-humano" id="alisa-humano" href="https://wa.me/19547682019?text=Hola%2C%20quiero%20hablar%20con%20una%20persona%20del%20equipo%20Deliservy"
+             target="_blank" rel="noopener">
+            <i data-lucide="headphones"></i> ¿Prefieres hablar con una persona? Escríbenos
+          </a>
+        </div>
       </div>
 
       <aside class="alisa-quote" id="alisa-quote" hidden aria-live="polite">
@@ -1967,6 +1998,8 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
   function pensando(si){
     ocupada = si;
     enviar.disabled = si;
+    var mic = document.getElementById('alisa-mic');
+    if(mic) mic.disabled = si;
     planeta.classList.toggle('pensando', si);
     estado.textContent = si ? 'Buscando…' : 'Lista para ayudarte';
   }
@@ -2044,6 +2077,74 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
     e.preventDefault();
     hablar(input.value.trim());
   });
+
+  /* ── El microfono ───────────────────────────────────────────────────────
+     Igual que en la app: se le habla y contesta. Aqui el reconocimiento lo
+     hace el NAVEGADOR (Web Speech API), no nuestro servidor — en la app si
+     pasa por Google Speech-to-Text.
+
+     ⚠️ Firefox no lo trae. El boton nace `hidden` y solo se enseña si el
+     navegador lo soporta: un microfono que no escucha es peor que no tenerlo.
+
+     ⚠️ Se manda solo al terminar la frase (`isFinal`). Esperar a que la
+     persona pulse enviar despues de hablar es pedirle que haga el trabajo dos
+     veces. Si no se entendio nada, no se manda: se deja lo dicho en el campo
+     para que lo corrija. */
+  (function montarMicrofono(){
+    var mic = document.getElementById('alisa-mic');
+    if(!mic) return;
+    var Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!Reconocedor) return;              // sin soporte, el boton se queda oculto
+
+    mic.hidden = false;
+    var oyendo = false;
+
+    var oido = new Reconocedor();
+    oido.lang = 'es-VE';
+    oido.interimResults = true;           // se ve lo que va entendiendo
+    oido.continuous = false;
+
+    function marca(si){
+      oyendo = si;
+      mic.classList.toggle('oyendo', si);
+      mic.setAttribute('aria-label', si ? 'Dejar de escuchar' : 'Hablar con Alisa');
+      if(si) estado.textContent = 'Te escucho…';
+      else if(!ocupada) estado.textContent = 'Lista para ayudarte';
+    }
+
+    oido.onresult = function(ev){
+      var texto = '';
+      for(var i = ev.resultIndex; i < ev.results.length; i++){
+        texto += ev.results[i][0].transcript;
+      }
+      input.value = texto;
+      // Frase terminada: se manda sola.
+      if(ev.results[ev.results.length - 1].isFinal){
+        var limpio = texto.trim();
+        marca(false);
+        if(limpio) hablar(limpio);
+      }
+    };
+
+    oido.onerror = function(ev){
+      marca(false);
+      // `no-speech` y `aborted` son de andar por casa: no se le dice nada a
+      // nadie. Un permiso denegado si hay que explicarlo, porque tiene arreglo.
+      if(ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){
+        estado.textContent = 'Dale permiso al micrófono para hablarme';
+      }
+    };
+
+    oido.onend = function(){ marca(false); };
+
+    mic.addEventListener('click', function(){
+      if(ocupada) return;
+      if(oyendo){ oido.stop(); return; }
+      input.value = '';
+      try{ oido.start(); marca(true); }
+      catch(e){ /* ya estaba arrancado: se ignora */ }
+    });
+  })();
 
   chips.addEventListener('click', function(e){
     var b = e.target.closest('.alisa-chip');
