@@ -2290,7 +2290,13 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
 
   function hablar(texto){
     if(ocupada || !texto) return;
-    if(!historial.length && !log.children.length) pinta(SALUDO, 'de-ella');
+    // ⚠️ `visto = true` para que el observador de abajo no vuelva a saludar.
+    // El saludo lo pintan DOS sitios —este y el observador de la sección— y no
+    // se avisaban: si alguien escribe antes de que la sección entre en pantalla,
+    // el «¡Hola! Soy Alisa…» aparecía OTRA VEZ debajo de la respuesta, como si
+    // la conversación hubiera empezado de cero. (`visto` es `var` del mismo
+    // cierre, así que se puede tocar desde aquí aunque se declare más abajo.)
+    if(!historial.length && !log.children.length){ visto = true; pinta(SALUDO, 'de-ella'); }
 
     pinta(texto, 'de-ti');
     historial.push({ role:'user', content: texto });
