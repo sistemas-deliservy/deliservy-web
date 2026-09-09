@@ -226,26 +226,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .hero-alisa:hover .hero-alisa-ir{transform:translateX(3px);color:#ff8080;}
 @media(max-width:900px){ .hero-alisa{margin-left:auto;margin-right:auto;} }
 
-/* Alisa y el QR van JUNTOS, en una sola fila.
-   Antes el QR colgaba solo en su propia fila debajo de los botones y la
-   columna quedaba con cuatro bloques sueltos uno encima de otro. Son las dos
-   formas de empezar —hablar con ella aquí, o llevarte la app—, así que se
-   presentan como una pareja y no como dos sobras. */
-.hero-duo{display:flex;align-items:stretch;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
-.hero-duo .hero-alisa{flex:1 1 260px;margin-bottom:0;}
-.hero-qr-row{display:flex;gap:36px;flex-wrap:wrap;margin-bottom:36px;}
-.hero-qr-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
-/* Dentro de la pareja el QR es una tarjeta, para que pese lo mismo que la
-   pastilla de Alisa y las dos se lean como una sola pieza. */
-.hero-duo .hero-qr-item{flex:none;justify-content:center;gap:8px;
-  background:rgba(255,255,255,.03);border:1px solid var(--border);
-  border-radius:var(--radius);padding:14px 16px;}
-.hero-duo .hero-qr-item img{width:92px;height:92px;}
-.hero-duo .hero-qr-lbl{font-size:10.5px;}
-/* 104 px, no 155: a 155 el recuadro blanco pesaba mas que el titular y era
-   lo primero que veia el ojo. Sigue siendo de sobra para escanearlo. */
-.hero-qr-item img{width:104px;height:104px;border-radius:10px;border:2px solid rgba(255,255,255,.10);}
-.hero-qr-lbl{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.02em;}
 /* ── LA TASA DEL DÍA ──────────────────────────────────────────────────────
    La misma que enseña la app en «Tasa BCV hoy». Nace oculta y solo se
    muestra si el servidor contesta: una tasa vieja o un hueco con guiones es
@@ -292,9 +272,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .hero-sello span{font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;opacity:.94;}
 
 /* La oferta para comercios, debajo de los teléfonos. */
-.hero-afilia{margin-top:18px;background:var(--dark2);border:1px solid rgba(228,22,22,.28);
-  border-radius:var(--radius);padding:20px 22px;text-align:left;}
-.hero-afilia-t{font-size:19px;font-weight:900;letter-spacing:-.02em;margin-bottom:12px;line-height:1.3;}
+.hero-afilia{margin-top:14px;background:var(--dark2);border:1px solid rgba(228,22,22,.28);
+  border-radius:var(--radius);padding:17px 20px;text-align:left;}
+.hero-afilia-t{font-size:19px;font-weight:900;letter-spacing:-.02em;margin-bottom:10px;line-height:1.3;}
 .hero-afilia-l{list-style:none;display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:12px;}
 .hero-afilia-l li{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.88);}
 .hero-afilia-l [data-lucide]{width:15px;height:15px;color:#22c55e;flex:none;}
@@ -303,6 +283,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
    mes; con eso sigue siendo la mejor oferta de la ciudad y además es cierta. */
 .hero-afilia-fine{font-size:11.5px;line-height:1.55;color:rgba(255,255,255,.42);margin-bottom:14px;}
 .hero-afilia-cta{width:100%;justify-content:center;}
+.hero-afilia-como{font-size:11.5px;color:rgba(255,255,255,.38);margin-top:8px;text-align:center;}
 
 @media(max-width:900px){
   /* z-index 5: los teléfonos van en z-index 3 y, al ir DESPUÉS en el HTML,
@@ -316,7 +297,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 }
 
 /* phones + ring halo */
-.hero-phones{position:relative;height:540px;display:flex;align-items:center;justify-content:center;}  /* 540 y no 600: los teléfonos miden 448 y el anillo grande 540, así que
+.hero-phones{position:relative;height:508px;display:flex;align-items:center;justify-content:center;}  /* 540 y no 600: los teléfonos miden 448 y el anillo grande 540, así que
      de 600 sobraban 60 px de aire que empujaban la oferta para comercios
      por debajo del pliegue en una pantalla de portátil. */
 .phone-ring{position:absolute;border-radius:50%;z-index:0;}
@@ -787,10 +768,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .hero h1{font-size:clamp(32px,8vw,48px);}
   .hero-sub{font-size:15px;max-width:100%;margin-left:auto;margin-right:auto;}
   .hero-btns{justify-content:center;}
-  .hero-qr-row{justify-content:center;gap:24px;}
-  .hero-duo{justify-content:center;}
-  .hero-duo .hero-alisa{flex:1 1 100%;}
-  .hero-qr-item img{width:92px;height:92px;}
   .hero-stats{justify-content:center;gap:20px;}
   .hero-badge-green,.hero-badge-red{margin-left:auto;margin-right:auto;}
   /* PHONES */
@@ -840,9 +817,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .section{padding:48px 0;}
   /* HERO */
   .hero-inner{gap:24px;padding:24px 14px 40px;}
-  .hero-qr-row{gap:18px;}
-  .hero-qr-item img{width:90px;height:90px;}
-  .hero-qr-lbl{font-size:10px;}
   .hero-btns{flex-direction:column;align-items:center;}
   .hero-btns .btn{width:100%;max-width:280px;justify-content:center;}
   .hero-stats{gap:14px;}
@@ -867,8 +841,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .social-icons{gap:8px;}
 }
 @media(max-width:360px){
-  .hero-qr-row{display:none;}
-  .hero-duo .hero-qr-item{display:none;}
   .hero h1{font-size:28px;}
   .section-title{font-size:24px;}
   .tab-btn{padding:8px 14px;font-size:12px;}
@@ -1006,31 +978,27 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       <div class="hero-badge-red">🇻🇪 Disponible en Venezuela</div>
       <h1>Todo lo que necesitas,<br><span class="grad-text">a un toque.</span></h1>
       <p class="hero-sub">Comida, tiendas y taxi en una sola app. Rastrea tu pedido en tiempo real, paga con 4 métodos seguros y recibe con repartidores verificados.</p>
+      <!-- UN SOLO botón de descarga.
+           `.store-link` hace que el script del final le ponga la tienda que
+           toca según el teléfono, así que aquí no hay que elegir nada: quien
+           entra desde un iPhone va a App Store y el resto a Play Store. El
+           href de Play Store es el valor por DEFECTO, el que se queda si el
+           script no llega a correr — nunca un enlace muerto.
+           Quien entre desde un ordenador sigue teniendo las dos tiendas por
+           separado en la sección «Descarga gratis» de más abajo. -->
       <div class="hero-btns">
-        <a href="https://apps.apple.com/us/app/deliservy/id6761390577" class="btn btn-white">
-          <i data-lucide="apple"></i> App Store
-        </a>
-        <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-outline">
-          <i data-lucide="play"></i> Play Store
+        <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link">
+          <i data-lucide="download"></i> Descargar la app
         </a>
       </div>
-      <!-- Alisa y el QR, juntos: las dos formas de empezar.
-           Un solo QR: el enlace detecta el dispositivo en el servidor (302) y
-           abre App Store o Play Store segun corresponda. -->
-      <div class="hero-duo">
-        <a href="#alisa" class="hero-alisa">
-          <canvas class="hero-alisa-esfera" id="hero-alisa-planet" aria-hidden="true"></canvas>
-          <span class="hero-alisa-txt">
-            <b>Pídelo hablando con Alisa</b>
-            <span>Te arma el pedido aquí mismo</span>
-          </span>
-          <span class="hero-alisa-ir"><i data-lucide="arrow-right"></i></span>
-        </a>
-        <div class="hero-qr-item">
-          <img src="qr-descarga.png" alt="QR para descargar Deliservy"/>
-          <span class="hero-qr-lbl">Escanea y descarga</span>
-        </div>
-      </div>
+      <a href="#alisa" class="hero-alisa">
+        <canvas class="hero-alisa-esfera" id="hero-alisa-planet" aria-hidden="true"></canvas>
+        <span class="hero-alisa-txt">
+          <b>Pídelo hablando con Alisa</b>
+          <span>Te arma el pedido aquí mismo</span>
+        </span>
+        <span class="hero-alisa-ir"><i data-lucide="arrow-right"></i></span>
+      </a>
       <!-- La tasa del día, la misma de la app. Se rellena desde
            /api/forex/tasas y solo aparece si el servidor contesta. -->
       <div class="hero-tasa" id="hero-tasa" aria-live="polite">
@@ -1097,10 +1065,15 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
           Pasados los 3 meses, 10% de comisión por venta. El envío lo paga el
           cliente final, según la distancia.
         </p>
-        <a href="https://wa.me/19547682019?text=Hola%2C%20quiero%20afiliar%20mi%20comercio%20a%20Deliservy"
-           class="btn btn-red hero-afilia-cta" target="_blank" rel="noopener">
-          <i data-lucide="store"></i> Afiliar mi comercio
+        <!-- Lleva a descargar la app, no a WhatsApp: la afiliación se hace
+             desde la aplicación. Con `.store-link`, el script del final elige
+             App Store o Play Store según el teléfono; el href de Play Store es
+             el valor por defecto si el script no corre. -->
+        <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy"
+           class="btn btn-red store-link hero-afilia-cta">
+          <i data-lucide="download"></i> Afiliar mi comercio
         </a>
+        <p class="hero-afilia-como">Descarga la app y regístrate como comercio.</p>
       </div>
     </div>
   </div>
@@ -1637,8 +1610,10 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         <div class="qr-box">
           <img src="qr-descarga.png" alt="QR para descargar Deliservy" width="130" height="130"/>
         </div>
-        <div class="qr-lbl">Escanea con tu cámara</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:2px;">iPhone y Android</div>
+        <!-- Aquí es donde vive el QR desde el 9-sep-2026: se quitó del hero,
+             donde repetía lo que ya decía el botón de descargar. -->
+        <div class="qr-lbl">Escanea aquí para descargar la app</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:2px;">Reconoce tu teléfono y te lleva a App Store o Play Store</div>
       </div>
     </div>
     <p class="download-compat fade-up delay-5">Compatible con iOS 14+ y Android 7+</p>
