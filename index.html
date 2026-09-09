@@ -257,7 +257,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
    El sello va encima de los tres teléfonos porque es lo que tiene que ver un
    comerciante en el primer segundo. Es `pointer-events:none` para no tapar
    nada de lo que hay debajo. */
-.hero-sello{position:absolute;z-index:3;top:12px;right:0;pointer-events:none;
+.hero-sello{position:absolute;z-index:5;top:12px;right:0;pointer-events:none;
   display:flex;flex-direction:column;align-items:center;gap:2px;
   background:var(--grad);color:#fff;border-radius:16px;padding:12px 18px;
   box-shadow:0 14px 34px rgba(228,22,22,.34);
@@ -279,13 +279,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .hero-afilia-cta{width:100%;justify-content:center;}
 
 @media(max-width:900px){
-  .hero-sello{top:0;right:50%;transform:translateX(50%) rotate(4deg);}
+  /* z-index 5: los teléfonos van en z-index 3 y, al ir DESPUÉS en el HTML,
+     tapaban el sello. Y en móvil se queda en la esquina, no centrado:
+     centrado caía justo sobre la cara del teléfono del medio y tapaba
+     la pantalla, que es lo único que ese teléfono viene a enseñar. */
+  .hero-sello{top:-10px;right:2px;padding:9px 14px;}
+  .hero-sello b{font-size:24px;}
   .hero-afilia{text-align:center;}
   .hero-afilia-l{justify-content:center;}
 }
 
 /* phones + ring halo */
-.hero-phones{position:relative;height:600px;display:flex;align-items:center;justify-content:center;}
+.hero-phones{position:relative;height:540px;display:flex;align-items:center;justify-content:center;}  /* 540 y no 600: los teléfonos miden 448 y el anillo grande 540, así que
+     de 600 sobraban 60 px de aire que empujaban la oferta para comercios
+     por debajo del pliegue en una pantalla de portátil. */
 .phone-ring{position:absolute;border-radius:50%;z-index:0;}
 .phone-ring-1{width:420px;height:420px;border:1px solid rgba(228,22,22,.12);animation:ring-spin 20s linear infinite;}
 .phone-ring-2{width:540px;height:540px;border:1px solid rgba(255,90,31,.07);animation:ring-spin 30s linear infinite reverse;}
@@ -387,6 +394,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 }
 
 /* Positioning & animation */
+/* Los teléfonos de la portada son IMÁGENES, no marcos dibujados con CSS.
+   Son las capturas reales de las tiendas, recortadas sobre fondo transparente
+   —marco, botones laterales y pantalla en una sola pieza—, así que aquí no hay
+   que fabricar ningún chasis: se coloca la imagen y ya.
+   Alto automático: manda la proporción del archivo (471×960), y así una captura
+   nueva no obliga a recalcular píxeles a mano. La sombra va con `drop-shadow`
+   y no con `box-shadow` porque sigue el CONTORNO recortado, no la caja. */
+/* `img.tel` y no `.tel` a secas: las clases de colocación que vienen debajo
+   traen un alto fijo de la época de los marcos CSS y, con la misma
+   especificidad, ganaban por ir después. Con el alto fijo la captura se
+   estiraba unos píxeles. */
+img.tel{position:absolute;height:auto;display:block;
+  filter:drop-shadow(0 26px 50px rgba(0,0,0,.60));}
 .phone-main{width:220px;height:445px;z-index:3;animation:float-main 4s ease-in-out infinite;}
 .phone-left{width:172px;height:344px;z-index:2;left:0;transform:rotate(-8deg) translateX(-10px);animation:float-left 4s ease-in-out infinite .7s;opacity:.88;}
 .phone-right{width:172px;height:344px;z-index:2;right:0;transform:rotate(8deg) translateX(10px);animation:float-right 4s ease-in-out infinite 1.4s;opacity:.88;}
@@ -1008,28 +1028,15 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         </div>
         <div class="phone-ring phone-ring-1"></div>
         <div class="phone-ring phone-ring-2"></div>
-        <!-- Samsung Galaxy S25 Ultra -->
-        <div class="device device-samsung phone-left">
-          <div class="device-screen">
-            <div class="punch-hole"></div>
-            <img src="assets/screen2.jpg" alt="Galaxy S25 Ultra — Deliservy" loading="lazy"/>
-          </div>
-        </div>
-        <!-- iPhone 17 Pro Max -->
-        <div class="device device-iphone phone-main">
-          <div class="device-screen">
-            <div class="dynamic-island"></div>
-            <img src="assets/screen1.jpg" alt="iPhone 17 Pro Max — Deliservy"/>
-          </div>
-        </div>
-        <!-- Google Pixel 9 Pro -->
-        <div class="device device-pixel phone-right">
-          <div class="device-screen">
-            <div class="speaker-strip"></div>
-            <div class="punch-hole"></div>
-            <img src="assets/screen3.jpg" alt="Google Pixel 9 Pro — Deliservy" loading="lazy"/>
-          </div>
-        </div>
+        <!-- Las capturas reales de las tiendas, ya recortadas: cada PNG trae el
+             teléfono entero sobre fondo transparente. El de en medio es el feed
+             porque es lo que la persona va a ver el 90% del tiempo. -->
+        <img src="assets/tel-bienvenida.png" class="tel phone-left"
+             alt="Deliservy — entra hablando con Alisa" loading="lazy"/>
+        <img src="assets/tel-feed.png" class="tel phone-main"
+             alt="Deliservy — comida, mercado y taxi en una sola app"/>
+        <img src="assets/tel-pedido.png" class="tel phone-right"
+             alt="Deliservy — eliges moto, taxi o XL y ves el precio antes" loading="lazy"/>
       </div>
 
       <!-- La oferta para comercios. Va justo debajo de los teléfonos, bajo el
