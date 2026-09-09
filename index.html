@@ -226,8 +226,22 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .hero-alisa:hover .hero-alisa-ir{transform:translateX(3px);color:#ff8080;}
 @media(max-width:900px){ .hero-alisa{margin-left:auto;margin-right:auto;} }
 
+/* Alisa y el QR van JUNTOS, en una sola fila.
+   Antes el QR colgaba solo en su propia fila debajo de los botones y la
+   columna quedaba con cuatro bloques sueltos uno encima de otro. Son las dos
+   formas de empezar —hablar con ella aquí, o llevarte la app—, así que se
+   presentan como una pareja y no como dos sobras. */
+.hero-duo{display:flex;align-items:stretch;gap:14px;margin-bottom:32px;flex-wrap:wrap;}
+.hero-duo .hero-alisa{flex:1 1 260px;margin-bottom:0;}
 .hero-qr-row{display:flex;gap:36px;flex-wrap:wrap;margin-bottom:36px;}
 .hero-qr-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
+/* Dentro de la pareja el QR es una tarjeta, para que pese lo mismo que la
+   pastilla de Alisa y las dos se lean como una sola pieza. */
+.hero-duo .hero-qr-item{flex:none;justify-content:center;gap:8px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;}
+.hero-duo .hero-qr-item img{width:92px;height:92px;}
+.hero-duo .hero-qr-lbl{font-size:10.5px;}
 /* 104 px, no 155: a 155 el recuadro blanco pesaba mas que el titular y era
    lo primero que veia el ojo. Sigue siendo de sobra para escanearlo. */
 .hero-qr-item img{width:104px;height:104px;border-radius:10px;border:2px solid rgba(255,255,255,.10);}
@@ -238,6 +252,37 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .stat-icon [data-lucide]{width:18px;height:18px;color:var(--red);}
 .stat-val{font-size:16px;font-weight:800;}
 .stat-lbl{font-size:11px;color:var(--text-muted);}
+
+/* ── 0% DE COMISIÓN, sobre los teléfonos ──────────────────────────────────
+   El sello va encima de los tres teléfonos porque es lo que tiene que ver un
+   comerciante en el primer segundo. Es `pointer-events:none` para no tapar
+   nada de lo que hay debajo. */
+.hero-sello{position:absolute;z-index:3;top:12px;right:0;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:var(--grad);color:#fff;border-radius:16px;padding:12px 18px;
+  box-shadow:0 14px 34px rgba(228,22,22,.34);
+  transform:rotate(4deg);}
+.hero-sello b{font-size:30px;font-weight:900;line-height:1;letter-spacing:-.03em;}
+.hero-sello span{font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;opacity:.94;}
+
+/* La oferta para comercios, debajo de los teléfonos. */
+.hero-afilia{margin-top:18px;background:var(--dark2);border:1px solid rgba(228,22,22,.28);
+  border-radius:var(--radius);padding:20px 22px;text-align:left;}
+.hero-afilia-t{font-size:19px;font-weight:900;letter-spacing:-.02em;margin-bottom:12px;line-height:1.3;}
+.hero-afilia-l{list-style:none;display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:12px;}
+.hero-afilia-l li{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.88);}
+.hero-afilia-l [data-lucide]{width:15px;height:15px;color:#22c55e;flex:none;}
+/* La letra pequeña dice lo que pasa DESPUÉS de los 3 meses. Sin eso, «0% de
+   comisión» a secas es una promesa que el comercio descubre rota al cuarto
+   mes; con eso sigue siendo la mejor oferta de la ciudad y además es cierta. */
+.hero-afilia-fine{font-size:11.5px;line-height:1.55;color:rgba(255,255,255,.42);margin-bottom:14px;}
+.hero-afilia-cta{width:100%;justify-content:center;}
+
+@media(max-width:900px){
+  .hero-sello{top:0;right:50%;transform:translateX(50%) rotate(4deg);}
+  .hero-afilia{text-align:center;}
+  .hero-afilia-l{justify-content:center;}
+}
 
 /* phones + ring halo */
 .hero-phones{position:relative;height:600px;display:flex;align-items:center;justify-content:center;}
@@ -697,6 +742,8 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .hero-sub{font-size:15px;max-width:100%;margin-left:auto;margin-right:auto;}
   .hero-btns{justify-content:center;}
   .hero-qr-row{justify-content:center;gap:24px;}
+  .hero-duo{justify-content:center;}
+  .hero-duo .hero-alisa{flex:1 1 100%;}
   .hero-qr-item img{width:92px;height:92px;}
   .hero-stats{justify-content:center;gap:20px;}
   .hero-badge-green,.hero-badge-red{margin-left:auto;margin-right:auto;}
@@ -775,6 +822,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 }
 @media(max-width:360px){
   .hero-qr-row{display:none;}
+  .hero-duo .hero-qr-item{display:none;}
   .hero h1{font-size:28px;}
   .section-title{font-size:24px;}
   .tab-btn{padding:8px 14px;font-size:12px;}
@@ -912,15 +960,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
       <div class="hero-badge-red">🇻🇪 Disponible en Venezuela</div>
       <h1>Todo lo que necesitas,<br><span class="grad-text">a un toque.</span></h1>
       <p class="hero-sub">Comida, tiendas y taxi en una sola app. Rastrea tu pedido en tiempo real, paga con 4 métodos seguros y recibe con repartidores verificados.</p>
-      <a href="#alisa" class="hero-alisa">
-        <canvas class="hero-alisa-esfera" id="hero-alisa-planet" aria-hidden="true"></canvas>
-        <span class="hero-alisa-txt">
-          <b>Pídelo con IA</b>
-          <span>Dime qué te provoca y te digo cuánto</span>
-        </span>
-        <span class="hero-alisa-ir"><i data-lucide="arrow-right"></i></span>
-      </a>
-
       <div class="hero-btns">
         <a href="https://apps.apple.com/us/app/deliservy/id6761390577" class="btn btn-white">
           <i data-lucide="apple"></i> App Store
@@ -929,9 +968,18 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
           <i data-lucide="play"></i> Play Store
         </a>
       </div>
-      <!-- Un solo QR: el enlace detecta el dispositivo en el servidor (302) y
+      <!-- Alisa y el QR, juntos: las dos formas de empezar.
+           Un solo QR: el enlace detecta el dispositivo en el servidor (302) y
            abre App Store o Play Store segun corresponda. -->
-      <div class="hero-qr-row">
+      <div class="hero-duo">
+        <a href="#alisa" class="hero-alisa">
+          <canvas class="hero-alisa-esfera" id="hero-alisa-planet" aria-hidden="true"></canvas>
+          <span class="hero-alisa-txt">
+            <b>Pídelo hablando con Alisa</b>
+            <span>Te arma el pedido aquí mismo</span>
+          </span>
+          <span class="hero-alisa-ir"><i data-lucide="arrow-right"></i></span>
+        </a>
         <div class="hero-qr-item">
           <img src="qr-descarga.png" alt="QR para descargar Deliservy"/>
           <span class="hero-qr-lbl">Escanea y descarga</span>
@@ -954,6 +1002,10 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     </div>
     <div class="hero-right fade-up delay-2">
       <div class="hero-phones">
+        <div class="hero-sello">
+          <b>0%</b>
+          <span>de comisión</span>
+        </div>
         <div class="phone-ring phone-ring-1"></div>
         <div class="phone-ring phone-ring-2"></div>
         <!-- Samsung Galaxy S25 Ultra -->
@@ -978,6 +1030,27 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
             <img src="assets/screen3.jpg" alt="Google Pixel 9 Pro — Deliservy" loading="lazy"/>
           </div>
         </div>
+      </div>
+
+      <!-- La oferta para comercios. Va justo debajo de los teléfonos, bajo el
+           sello del 0%, porque las dos cosas cuentan lo mismo: una lo enseña y
+           la otra lo explica. -->
+      <div class="hero-afilia">
+        <div class="hero-afilia-t">Afilia tu comercio por 0% de comisión</div>
+        <ul class="hero-afilia-l">
+          <li><i data-lucide="check"></i> 0 Bs de inicial</li>
+          <li><i data-lucide="check"></i> Sin mensualidades</li>
+          <li><i data-lucide="check"></i> Liquidación inmediata</li>
+        </ul>
+        <p class="hero-afilia-fine">
+          Descuento de inauguración disponible por 3 meses luego de la afiliación.
+          Pasados los 3 meses, 10% de comisión por venta. El envío lo paga el
+          cliente final, según la distancia.
+        </p>
+        <a href="https://wa.me/19547682019?text=Hola%2C%20quiero%20afiliar%20mi%20comercio%20a%20Deliservy"
+           class="btn btn-red hero-afilia-cta" target="_blank" rel="noopener">
+          <i data-lucide="store"></i> Afiliar mi comercio
+        </a>
       </div>
     </div>
   </div>
@@ -1069,13 +1142,18 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
         </div>
         <ul class="alisa-quote-items" id="alisa-quote-items"></ul>
         <div class="alisa-quote-rows" id="alisa-quote-rows"></div>
+        <!-- «Total», no «Total desde»: ya no es una estimacion. Es el borrador
+             de verdad, el mismo que se va a cobrar. -->
         <div class="alisa-quote-total">
-          <span>Total desde</span>
+          <span>Total</span>
           <strong id="alisa-quote-total">$0.00</strong>
         </div>
         <p class="alisa-quote-note" id="alisa-quote-note"></p>
-        <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link alisa-quote-cta">
-          <i data-lucide="download"></i> Pedirlo en la app
+        <!-- Secundario a proposito: el pedido se termina AQUI hablando con
+             Alisa. La app es una opcion, no el unico camino — y el pedido
+             viaja solo, porque vive en el servidor y no en esta pagina. -->
+        <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-outline store-link alisa-quote-cta">
+          <i data-lucide="smartphone"></i> Seguirlo en la app
         </a>
       </aside>
     </div>
@@ -1840,11 +1918,45 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
 })();
 
 // ── ALISA ────────────────────────────────────────────────────────────────
-// Habla con POST /api/client/market/alisa/publico, que NO pide sesion. Por eso
-// aqui no se guarda nada ni se pide ningun dato personal: el historial vive en
-// esta variable y se muere al recargar.
+// Es LA MISMA Alisa que contesta por WhatsApp, no una version recortada.
+//
+// Hasta el 8-sep-2026 esta pagina hablaba con /alisa/publico, un servicio
+// aparte con solo tres herramientas: buscaba tiendas, leia menus y cotizaba, y
+// ahi se acababa. Quien queria pedir tenia que irse a otro sitio. Ahora entra
+// por los mismos endpoints que la app y WhatsApp, y por eso puede armar el
+// pedido entero, cobrar y dejarlo hecho.
+//
+// Son dos puertas, y se cambia de una a otra sola:
+//
+//   · SIN cuenta  → /alisa/invitado. El pedido vive en el servidor colgado de
+//     un `invitadoId`, igual que en la pantalla de bienvenida de la app.
+//   · CON cuenta  → /alisa/chat con el token. Es la Alisa completa, la misma
+//     que por WhatsApp reconoce a la persona por su telefono.
+//
+// El salto lo hace ella misma: si la persona crea su cuenta o entra hablando,
+// el servidor manda la sesion por `ui` y aqui se guarda y se reclama el
+// borrador que traia. Nadie tiene que repetir su pedido.
+//
+// ⚠️ Se manda `origen:'web'` a proposito. El servidor lo trata como un canal
+// SIN pantallas —igual que WhatsApp—, asi que Alisa no dice «te abri la
+// pantalla de pago» en una pagina donde no hay ninguna: la tarjeta se paga con
+// el enlace firmado, que en un navegador es justo lo natural.
 (function(){
-  var API = 'https://api.deliservy.site/api/client/market/alisa/publico';
+  var BASE      = 'https://api.deliservy.site/api/client/market/alisa';
+  var INVITADO  = BASE + '/invitado';
+  var CON_CUENTA= BASE + '/chat';
+  var RECLAMAR  = BASE + '/borrador/reclamar';
+
+  /* El token del invitado y el de la sesion se guardan en ESTE navegador y no
+     salen de aqui. Se guardan —en vez de morir al recargar— porque el pedido
+     vive en el servidor: sin el token, recargar la pagina perdia el carrito
+     entero. Si el navegador no deja (modo privado), se sigue en memoria. */
+  function leer(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function guardar(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  function borrar(k){ try { localStorage.removeItem(k); } catch(e){} }
+
+  var invitadoId = leer('deliservy_invitado') || null;
+  var sesion     = leer('deliservy_token')    || null;
   var log     = document.getElementById('alisa-log');
   var form    = document.getElementById('alisa-form');
   var input   = document.getElementById('alisa-input');
@@ -1984,7 +2096,9 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
   var historial = [];
   var ocupada = false;
 
-  var SALUDO = '¡Hola! Soy Alisa. Dime qué te provoca y te digo qué hay cerca y cuánto te sale. ¿Comida, algo de una tienda, o un taxi?';
+  // Prometia menos de lo que ahora hace: antes solo cotizaba. Ahora arma el
+  // pedido y lo cierra, asi que decirlo es lo honesto y ademas es el argumento.
+  var SALUDO = '¡Hola! Soy Alisa. Dime qué te provoca y te lo armo aquí mismo: te digo qué hay cerca, cuánto sale y lo dejamos pedido. ¿Comida, algo de una tienda, o un taxi?';
 
   function pinta(texto, quien){
     var d = document.createElement('div');
@@ -2001,44 +2115,93 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
     var mic = document.getElementById('alisa-mic');
     if(mic) mic.disabled = si;
     planeta.classList.toggle('pensando', si);
-    estado.textContent = si ? 'Buscando…' : 'Lista para ayudarte';
+    // ⚠️ Esto corre en el `finally` de cada turno, así que es LO ÚLTIMO que
+    // escribe aquí: cualquier aviso puesto antes lo pisa. Por eso el «ya estás
+    // dentro» se decide aquí y no en el sitio donde llega la sesión.
+    estado.textContent = si
+      ? 'Buscando…'
+      : (sesion ? 'En tu cuenta · lista para ayudarte' : 'Lista para ayudarte');
   }
 
   function bs(n){ return '$' + Number(n || 0).toFixed(2); }
 
-  // La cotizacion la calcula el servidor con los precios de la base. Aqui solo
-  // se dibuja: no se suma ni se redondea nada en el navegador.
-  function pintaCotizacion(c){
+  /* El pedido que Alisa lleva armado. NO es una estimacion: es el borrador de
+     verdad, el que vive en la base y el que se va a cobrar. Todas las cifras
+     las calcula el servidor con los precios de la base; aqui no se suma ni se
+     redondea nada, solo se dibuja lo que llega.
+
+     ⚠️ Las cantidades del borrador vienen en `cantidad`. (En el pedido ya
+     cerrado el campo se llama `number`, que es lo que hizo que el correo de
+     confirmacion dijera «1» durante meses — aqui no aplica, pero conviene no
+     confundirlos al tocar esto.) */
+  function pintaPedido(b){
     var caja = document.getElementById('alisa-quote');
-    if(!c || !c.detalle){ return; }
-    document.getElementById('alisa-quote-store').textContent = c.tienda || 'Tu pedido';
+    if(!b || !b.productos || !b.productos.length){ caja.hidden = true; return; }
+
+    document.getElementById('alisa-quote-store').textContent = 'Tu pedido';
 
     var lista = document.getElementById('alisa-quote-items');
     lista.innerHTML = '';
-    c.detalle.forEach(function(i){
+    b.productos.forEach(function(i){
       var li = document.createElement('li');
       var a = document.createElement('span');
       a.textContent = (i.cantidad || 1) + ' × ' + i.nombre;
-      var b = document.createElement('span');
-      b.textContent = bs((i.precio || 0) * (i.cantidad || 1));
-      li.appendChild(a); li.appendChild(b);
+      li.appendChild(a);
       lista.appendChild(li);
     });
 
     var filas = document.getElementById('alisa-quote-rows');
     filas.innerHTML = '';
-    [['Productos', c.subtotal], ['Envío desde', c.envio_desde]].forEach(function(par){
+    var partes = [['Productos', b.subtotal], ['Envío', b.envio]];
+    if(b.propina) partes.push(['Propina', b.propina]);
+    partes.forEach(function(par){
+      if(par[1] == null) return;
       var d = document.createElement('div');
       var a = document.createElement('span'); a.textContent = par[0];
-      var b = document.createElement('span'); b.textContent = bs(par[1]);
-      d.appendChild(a); d.appendChild(b);
+      var c = document.createElement('span'); c.textContent = bs(par[1]);
+      d.appendChild(a); d.appendChild(c);
       filas.appendChild(d);
     });
 
-    document.getElementById('alisa-quote-total').textContent = bs(c.total_desde);
-    document.getElementById('alisa-quote-note').textContent = c.nota || '';
+    document.getElementById('alisa-quote-total').textContent = bs(b.total);
+    // `leFalta` es lo que el servidor dice que aun no tiene el pedido. Decirlo
+    // aqui evita el «¿y ahora que?» y es la misma lista que guia a Alisa.
+    var falta = (b.leFalta || []).length
+      ? 'Falta: ' + b.leFalta.join(', ') + '. Díselo a Alisa y lo completa.'
+      : 'Sigue hablando con Alisa para cerrarlo.';
+    document.getElementById('alisa-quote-note').textContent = falta;
     caja.hidden = false;
     lucide.createIcons();
+  }
+
+  /* Cuando Alisa mete a alguien en su cuenta hablando (`crear_cuenta` o
+     `entrar_a_mi_cuenta`), el servidor manda la sesion por `ui` y NUNCA en el
+     texto: asi el modelo no llega a ver el token y no puede repetirlo dentro
+     de una frase. Aqui se recoge, se guarda, y el pedido que traia de invitado
+     pasa a ser suyo — si no, tendria que armarlo otra vez. */
+  function miraSiEntro(data){
+    var lista = (data && data.ui) || [];
+    for(var i=0; i<lista.length; i++){
+      var d = lista[i];
+      if(d && d.tipo === 'sesion_iniciada' && d.usuario && d.usuario.token){
+        sesion = d.usuario.token;
+        guardar('deliservy_token', sesion);
+        if(invitadoId){
+          fetch(RECLAMAR, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + sesion },
+            body: JSON.stringify({ invitadoId: invitadoId })
+          }).then(function(){
+            // Ya es suyo: el token de invitado no vuelve a hacer falta y
+            // dejarlo guardado solo seria una llave de mas dando vueltas.
+            borrar('deliservy_invitado');
+            invitadoId = null;
+          }).catch(function(){});
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   function hablar(texto){
@@ -2051,24 +2214,51 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
     chips.style.display = 'none';
     pensando(true);
 
-    fetch(API, {
+    // Con cuenta se va por la puerta grande; sin ella, por la de invitado.
+    var conCuenta = !!sesion;
+    var cabeceras = { 'Content-Type':'application/json' };
+    if(conCuenta) cabeceras['Authorization'] = 'Bearer ' + sesion;
+
+    var cuerpo = conCuenta
+      ? { mensajes: historial, origen: 'web' }
+      : { mensajes: historial, invitadoId: invitadoId, origen: 'web' };
+
+    fetch(conCuenta ? CON_CUENTA : INVITADO, {
       method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ mensajes: historial })
+      headers: cabeceras,
+      body: JSON.stringify(cuerpo)
     })
     .then(function(r){
+      // ⚠️ Un token caducado da 401. Sin esto, la persona se quedaba sin poder
+      // hablar con Alisa hasta borrar los datos del navegador a mano: cada
+      // mensaje volvia a fallar igual. Se suelta la sesion y se sigue como
+      // invitada, que es lo peor que puede pasar y no es grave.
+      if(r.status === 401 || r.status === 403){
+        sesion = null; borrar('deliservy_token');
+        throw new Error('sesion');
+      }
       if(!r.ok) throw new Error('http ' + r.status);
       return r.json();
     })
     .then(function(data){
+      // La primera respuesta del invitado trae el token que el servidor acaba
+      // de crear. Sin guardarlo, cada mensaje empezaria un pedido nuevo.
+      if(data && data.invitadoId && !sesion){
+        invitadoId = data.invitadoId;
+        guardar('deliservy_invitado', invitadoId);
+      }
       var msg = (data && data.mensaje) || 'No te entendí. ¿Me lo dices de otra forma?';
       pinta(msg, 'de-ella');
       historial.push({ role:'assistant', content: msg });
-      if(data && data.cotizacion) pintaCotizacion(data.cotizacion);
+      miraSiEntro(data);   // el aviso lo pone `pensando(false)`, que corre después
+      pintaPedido(data && data.borrador);
     })
-    .catch(function(){
+    .catch(function(e){
       // Sin conexion o servidor caido: se dice, no se deja el planeta girando.
-      pinta('No pude conectarme. Intenta otra vez, o escríbenos por WhatsApp al +1 954-768-2019.', 'error');
+      pinta(String(e && e.message) === 'sesion'
+        ? 'Se cerró tu sesión. Dime otra vez qué necesitas y seguimos.'
+        : 'No pude conectarme. Intenta otra vez, o escríbenos por WhatsApp al +1 954-768-2019.',
+        'error');
     })
     .finally(function(){ pensando(false); input.focus(); });
   }
