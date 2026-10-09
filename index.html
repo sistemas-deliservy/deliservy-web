@@ -62,10 +62,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .alisa-wrap{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
 .alisa-panel{background:var(--dark2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;min-height:440px;}
 
-/* El planeta es la MISMA esfera de puntos que en la app: un lienzo, no un
-   circulo con fondo. Se dibuja en JS con la formula portada de
-   `alisa_planeta.dart` — ver el bloque «la esfera» mas abajo. Aqui solo se le
-   da tamano; el color y el movimiento salen del dibujo. */
+/* Alisa en la cabecera del chat: la muñeca por capas (ver `montarMuneca`). */
 .alisa-planet{width:56px;height:56px;flex:none;display:block;}
 @keyframes alisa-orbita{to{transform:rotate(360deg);}}
 
@@ -148,7 +145,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
   .alisa-msg{max-width:90%;}
 }
 @media(prefers-reduced-motion:reduce){
-  /* La esfera se dibuja igual pero deja de girar; lo decide el propio JS. */
 }
 
 /* ── FADE-UP ── */
@@ -207,18 +203,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .hero-sub{font-size:17px;color:var(--text-muted);line-height:1.75;margin-bottom:24px;max-width:480px;}
 .hero-btns{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
 
-/* La entrada a Alisa en la portada. La esfera es la MISMA que la del panel de
-   mas abajo y que la de la app — se monta con `montarEsfera`. Aqui va en
-   reposo: no hay conversacion que la acelere.
-
-   Es un enlace, no un adorno: baja a la seccion donde se puede probar. */
+/* La entrada a Alisa en la portada. Es un enlace, no un adorno: baja a la
+   sección donde se puede probar. Su tamaño de hoy está al final de la hoja. */
 .hero-alisa{display:inline-flex;align-items:center;gap:14px;margin-bottom:26px;
   padding:10px 20px 10px 12px;border-radius:999px;text-decoration:none;
   background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);
   transition:background .22s ease,border-color .22s ease,transform .22s ease;}
 .hero-alisa:hover{background:rgba(228,22,22,.10);border-color:rgba(228,22,22,.34);
   transform:translateY(-2px);}
-.hero-alisa-esfera{width:68px;height:68px;flex:none;display:block;}
 .hero-alisa-txt{display:flex;flex-direction:column;gap:2px;line-height:1.25;}
 .hero-alisa-txt b{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em;}
 .hero-alisa-txt span{font-size:12.5px;color:rgba(255,255,255,.52);}
@@ -252,7 +244,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
   font-size:12.5px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums;}
 .hero-tasa-pie{font-size:11.5px;color:rgba(255,255,255,.38);margin-top:8px;line-height:1.5;}
 
-.hero-stats{display:flex;gap:32px;flex-wrap:wrap;}
 .stat-item{display:flex;align-items:center;gap:12px;}
 .stat-icon{width:38px;height:38px;background:rgba(228,22,22,.10);border:1px solid rgba(228,22,22,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .stat-icon [data-lucide]{width:18px;height:18px;color:var(--red);}
@@ -263,37 +254,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
    El sello va encima de los tres teléfonos porque es lo que tiene que ver un
    comerciante en el primer segundo. Es `pointer-events:none` para no tapar
    nada de lo que hay debajo. */
-.hero-sello{position:absolute;z-index:5;top:12px;right:0;pointer-events:none;
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  background:var(--grad);color:#fff;border-radius:16px;padding:12px 18px;
-  box-shadow:0 14px 34px rgba(228,22,22,.34);
-  transform:rotate(4deg);}
-.hero-sello b{font-size:30px;font-weight:900;line-height:1;letter-spacing:-.03em;}
-.hero-sello span{font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;opacity:.94;}
 
 /* La oferta para comercios, debajo de los teléfonos. */
-.hero-afilia{margin-top:14px;background:var(--dark2);border:1px solid rgba(228,22,22,.28);
-  border-radius:var(--radius);padding:17px 20px;text-align:left;}
-.hero-afilia-t{font-size:19px;font-weight:900;letter-spacing:-.02em;margin-bottom:10px;line-height:1.3;}
-.hero-afilia-l{list-style:none;display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:12px;}
-.hero-afilia-l li{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.88);}
-.hero-afilia-l [data-lucide]{width:15px;height:15px;color:#22c55e;flex:none;}
 /* La letra pequeña dice lo que pasa DESPUÉS de los 3 meses. Sin eso, «0% de
    comisión» a secas es una promesa que el comercio descubre rota al cuarto
    mes; con eso sigue siendo la mejor oferta de la ciudad y además es cierta. */
-.hero-afilia-fine{font-size:11.5px;line-height:1.55;color:rgba(255,255,255,.42);margin-bottom:14px;}
-.hero-afilia-cta{width:100%;justify-content:center;}
-.hero-afilia-como{font-size:11.5px;color:rgba(255,255,255,.38);margin-top:8px;text-align:center;}
 
 @media(max-width:900px){
   /* z-index 5: los teléfonos van en z-index 3 y, al ir DESPUÉS en el HTML,
      tapaban el sello. Y en móvil se queda en la esquina, no centrado:
      centrado caía justo sobre la cara del teléfono del medio y tapaba
      la pantalla, que es lo único que ese teléfono viene a enseñar. */
-  .hero-sello{top:-10px;right:2px;padding:9px 14px;}
-  .hero-sello b{font-size:24px;}
-  .hero-afilia{text-align:center;}
-  .hero-afilia-l{justify-content:center;}
 }
 
 /* phones + ring halo */
@@ -768,7 +739,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .hero h1{font-size:clamp(32px,8vw,48px);}
   .hero-sub{font-size:15px;max-width:100%;margin-left:auto;margin-right:auto;}
   .hero-btns{justify-content:center;}
-  .hero-stats{justify-content:center;gap:20px;}
   .hero-badge-green,.hero-badge-red{margin-left:auto;margin-right:auto;}
   /* PHONES */
   .hero-phones{height:320px;}
@@ -819,7 +789,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .hero-inner{gap:24px;padding:24px 14px 40px;}
   .hero-btns{flex-direction:column;align-items:center;}
   .hero-btns .btn{width:100%;max-width:280px;justify-content:center;}
-  .hero-stats{gap:14px;}
   /* GRIDS */
   .payment-grid{grid-template-columns:1fr;}
   .footer-grid{grid-template-columns:1fr;}
@@ -844,6 +813,118 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
   .hero h1{font-size:28px;}
   .section-title{font-size:24px;}
   .tab-btn{padding:8px 14px;font-size:12px;}
+}
+
+/* ══ 9-oct-2026 · PORTADA CON AIRE ═══════════════════════════════════════════
+   La portada llevaba, además del titular y los teléfonos, la tasa, tres cifras,
+   el sello del 0% y la oferta de comercios con su letra pequeña: todo en la
+   primera pantalla. Ahora la portada es el titular, el botón, Alisa y los tres
+   teléfonos; la tasa baja a una línea y la oferta de comercios tiene su banda.
+   Va al final de la hoja a propósito: gana a las reglas viejas de la portada. */
+.hero-inner{gap:72px;padding:56px 24px 72px;}
+#hero h1{font-size:clamp(34px,4.5vw,60px);font-weight:900;line-height:1.06;letter-spacing:-.035em;margin-bottom:24px;}
+.hero-sub{font-size:18px;line-height:1.7;margin-bottom:34px;max-width:460px;}
+.hero-btns{margin-bottom:34px;}
+.hero-btns .btn{padding:16px 30px;font-size:16px;}
+
+/* Alisa en la portada: la muñeca, grande, saliéndose un poco de su pastilla. */
+.hero-alisa{gap:18px;margin-bottom:0;padding:14px 26px 14px 14px;border-radius:28px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);}
+.hero-alisa-muneca{width:104px;height:104px;margin:-22px 0 -14px -6px;}
+.hero-alisa-txt b{font-size:17px;}
+.hero-alisa-txt span{font-size:13.5px;}
+
+/* La muñeca por capas (ver `montarMuneca`). El lienzo es cuadrado y cada capa
+   va en su caja en %, así que sirve a cualquier tamaño. */
+.muneca{position:relative;display:block;flex:none;}
+.muneca-cuerpo{position:absolute;inset:0;transform-origin:50% 86%;animation:muneca-mece 5.2s ease-in-out infinite;}
+.muneca-capa{position:absolute;display:block;max-width:none;user-select:none;pointer-events:none;}
+.muneca-pompon{transform-origin:20% 90%;animation:muneca-pompon 5.2s ease-in-out infinite;}
+.muneca.pensando .muneca-cuerpo{animation-duration:1.5s;}
+.muneca.pensando .muneca-pompon{animation-duration:1.5s;}
+@keyframes muneca-mece{0%,100%{transform:rotate(-2.2deg) scale(1);}50%{transform:rotate(2.2deg) scale(1.025);}}
+@keyframes muneca-pompon{0%,100%{transform:rotate(5deg);}50%{transform:rotate(-6deg);}}
+@media(prefers-reduced-motion:reduce){.muneca-cuerpo,.muneca-pompon{animation:none;}}
+
+/* Los tres teléfonos, más grandes y sin nada encima. */
+.hero-phones{height:600px;}
+.phone-main{width:266px;height:auto;}
+.phone-left,.phone-right{width:206px;height:auto;opacity:.92;}
+.phone-left{left:-6px;} .phone-right{right:-6px;}
+.phone-ring-1{width:470px;height:470px;} .phone-ring-2{width:610px;height:610px;}
+
+/* La tasa: una línea a todo el ancho, bajo la portada. */
+.hero-tasa{display:none;margin:0;padding:0;border-radius:0;border:0;max-width:none;width:100%;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--dark2);}
+.hero-tasa.viva{display:block;}
+.hero-tasa-in{max-width:1200px;margin:0 auto;padding:18px 24px;display:flex;align-items:baseline;
+  justify-content:center;gap:10px 26px;flex-wrap:wrap;}
+.hero-tasa-top{margin:0;align-self:center;}
+.hero-tasa-val{font-size:22px;}
+.hero-tasa-otras{margin:0;}
+.hero-tasa-pie{margin:0;}
+
+/* La oferta de comercios, en su banda. */
+.afilia{padding:76px 0;}
+.afilia-caja{display:grid;grid-template-columns:auto 1fr auto;gap:36px;align-items:center;
+  background:var(--dark2);border:1px solid rgba(228,22,22,.26);border-radius:28px;padding:36px 40px;}
+.afilia-sello{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--grad);color:#fff;
+  border-radius:22px;padding:20px 26px;box-shadow:0 18px 44px rgba(228,22,22,.30);transform:rotate(-4deg);}
+.afilia-sello b{font-size:46px;font-weight:900;line-height:1;letter-spacing:-.03em;}
+.afilia-sello span{font-size:11.5px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;white-space:nowrap;}
+.afilia-t{font-size:clamp(21px,2.3vw,27px);font-weight:900;letter-spacing:-.02em;line-height:1.25;margin-bottom:14px;}
+.afilia-l{list-style:none;display:flex;flex-wrap:wrap;gap:10px 22px;margin-bottom:14px;}
+.afilia-l li{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:rgba(255,255,255,.90);}
+.afilia-l [data-lucide]{width:17px;height:17px;color:#22c55e;flex:none;}
+.afilia-fine{font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.46);max-width:560px;}
+.afilia-ir{text-align:center;}
+.afilia-ir .btn{white-space:nowrap;}
+.afilia-como{font-size:12px;color:rgba(255,255,255,.42);margin-top:10px;}
+
+/* Alisa en su sección: la muñeca preside el título y la cabecera del chat. */
+.alisa-head{text-align:center;margin-bottom:48px;}
+.alisa-head .section-sub{margin-left:auto;margin-right:auto;}
+.alisa-head-muneca{width:168px;height:168px;margin:0 auto 6px;}
+.alisa-planet{width:68px;height:68px;margin:-8px 0 -6px -4px;}
+/* Sin pedido armado no hay columna de la derecha: el chat va centrado. */
+.alisa-wrap:has(.alisa-quote[hidden]){grid-template-columns:minmax(0,780px);justify-content:center;}
+
+/* Un poco más de aire entre secciones y dentro de las cifras. */
+.section{padding:116px 0;}
+#stats-bar{padding:76px 24px;}
+
+@media(max-width:1024px){
+  .hero-inner{gap:44px;}
+  .phone-main{width:230px;} .phone-left,.phone-right{width:178px;}
+  .hero-phones{height:520px;}
+  .afilia-caja{grid-template-columns:auto 1fr;}
+  .afilia-ir{grid-column:1 / -1;}
+}
+@media(max-width:900px){
+  .hero-inner{gap:40px;padding:36px 20px 56px;}
+  .hero-sub{font-size:16px;margin-bottom:28px;}
+  .hero-btns{margin-bottom:30px;}
+  .hero-alisa{margin-left:auto;margin-right:auto;text-align:left;}
+  .hero-phones{height:400px;}
+  .phone-main{width:178px;} .phone-left,.phone-right{width:136px;}
+  .phone-left{left:calc(50% - 168px);} .phone-right{right:calc(50% - 168px);}
+  .phone-ring-1{width:300px;height:300px;} .phone-ring-2{width:390px;height:390px;}
+  .hero-tasa-in{padding:16px 18px;gap:6px 16px;}
+  .afilia{padding:56px 0;}
+  .afilia-caja{grid-template-columns:1fr;gap:22px;padding:30px 22px;text-align:center;justify-items:center;}
+  .afilia-l{justify-content:center;}
+  .afilia-fine{margin:0 auto;}
+  .section{padding:84px 0;}
+  .alisa-head-muneca{width:136px;height:136px;}
+}
+@media(max-width:480px){
+  .hero-alisa{padding:12px 18px 12px 10px;gap:12px;}
+  .hero-alisa-muneca{width:84px;height:84px;margin:-16px 0 -10px -4px;}
+  .hero-alisa-txt b{font-size:15.5px;}
+  .hero-phones{height:340px;}
+  .phone-main{width:152px;} .phone-left,.phone-right{width:114px;}
+  .phone-left{left:calc(50% - 142px);} .phone-right{right:calc(50% - 142px);}
+  .section{padding:68px 0;}
 }
 </style>
 </head>
@@ -972,108 +1053,99 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 <section id="hero">
   <div class="hero-blob hero-blob-1"></div>
   <div class="hero-blob hero-blob-2"></div>
-  <div class="hero-blob hero-blob-3"></div>
   <div class="hero-inner">
     <div class="hero-left fade-up">
       <div class="hero-badge-red">🇻🇪 Disponible en Venezuela</div>
       <h1>Todo lo que necesitas,<br><span class="grad-text">a un toque.</span></h1>
-      <p class="hero-sub">Comida, tiendas y taxi en una sola app. Rastrea tu pedido en tiempo real, paga con 4 métodos seguros y recibe con repartidores verificados.</p>
+      <p class="hero-sub">Comida, tiendas y taxi en una sola app, con repartidores verificados y el precio claro antes de pagar.</p>
       <!-- UN SOLO botón de descarga.
            `.store-link` hace que el script del final le ponga la tienda que
-           toca según el teléfono, así que aquí no hay que elegir nada: quien
-           entra desde un iPhone va a App Store y el resto a Play Store. El
-           href de Play Store es el valor por DEFECTO, el que se queda si el
-           script no llega a correr — nunca un enlace muerto.
-           Quien entre desde un ordenador sigue teniendo las dos tiendas por
-           separado en la sección «Descarga gratis» de más abajo. -->
+           toca según el teléfono: quien entra desde un iPhone va a App Store y
+           el resto a Play Store. El href de Play Store es el valor por DEFECTO,
+           el que se queda si el script no llega a correr. Quien entre desde un
+           ordenador tiene las dos tiendas en «Descarga gratis», más abajo. -->
       <div class="hero-btns">
         <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy" class="btn btn-red store-link">
           <i data-lucide="download"></i> Descargar la app
         </a>
       </div>
+      <!-- Alisa, la misma muñeca de la app. Es un enlace, no un adorno: baja
+           a la sección donde se le puede hablar. -->
       <a href="#alisa" class="hero-alisa">
-        <canvas class="hero-alisa-esfera" id="hero-alisa-planet" aria-hidden="true"></canvas>
+        <span class="muneca hero-alisa-muneca" id="hero-alisa-planet" aria-hidden="true"></span>
         <span class="hero-alisa-txt">
           <b>Pídelo hablando con Alisa</b>
           <span>Te arma el pedido aquí mismo</span>
         </span>
         <span class="hero-alisa-ir"><i data-lucide="arrow-right"></i></span>
       </a>
-      <!-- La tasa del día, la misma de la app. Se rellena desde
-           /api/forex/tasas y solo aparece si el servidor contesta. -->
-      <div class="hero-tasa" id="hero-tasa" aria-live="polite">
-        <div class="hero-tasa-top">
-          <span class="hero-tasa-vivo" aria-hidden="true"></span>
-          <span class="hero-tasa-lbl">Tasa de hoy</span>
-        </div>
-        <div class="hero-tasa-fila">
-          <span class="hero-tasa-par">Dólar BCV · 1 USD</span>
-          <strong class="hero-tasa-val" id="tasa-usd"></strong>
-          <span class="hero-tasa-par">Bs</span>
-          <span class="hero-tasa-var" id="tasa-var"></span>
-        </div>
-        <div class="hero-tasa-otras" id="tasa-otras"></div>
-        <div class="hero-tasa-pie" id="tasa-pie">Oficial · con esta se cobran los pedidos</div>
-      </div>
-
-      <div class="hero-stats">
-        <div class="stat-item">
-          <div class="stat-icon"><i data-lucide="package"></i></div>
-          <div><div class="stat-val">10K+</div><div class="stat-lbl">Pedidos</div></div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-icon"><i data-lucide="store"></i></div>
-          <div><div class="stat-val">100+</div><div class="stat-lbl">Tiendas</div></div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-icon"><i data-lucide="star"></i></div>
-          <div><div class="stat-val">5.0</div><div class="stat-lbl">Calificación</div></div>
-        </div>
-      </div>
     </div>
     <div class="hero-right fade-up delay-2">
       <div class="hero-phones">
-        <div class="hero-sello">
-          <b>0%</b>
-          <span>de comisión</span>
-        </div>
         <div class="phone-ring phone-ring-1"></div>
         <div class="phone-ring phone-ring-2"></div>
-        <!-- Las capturas reales de las tiendas, ya recortadas: cada PNG trae el
-             teléfono entero sobre fondo transparente. El de en medio es el feed
-             porque es lo que la persona va a ver el 90% del tiempo. -->
-        <img src="assets/tel-bienvenida.png" class="tel phone-left"
+        <!-- Las imágenes de la App Store (2.8.3), recortadas: cada PNG trae el
+             teléfono entero sobre fondo transparente. El de en medio es el
+             inicio porque es lo que la persona va a ver el 90% del tiempo. -->
+        <img src="assets/tel-283-bienvenida.png" class="tel phone-left" width="525" height="1120"
              alt="Deliservy — entra hablando con Alisa" loading="lazy"/>
-        <img src="assets/tel-feed.png" class="tel phone-main"
+        <img src="assets/tel-283-feed.png" class="tel phone-main" width="525" height="1120"
              alt="Deliservy — comida, mercado y taxi en una sola app"/>
-        <img src="assets/tel-pedido.png" class="tel phone-right"
+        <img src="assets/tel-283-pedido.png" class="tel phone-right" width="525" height="1120"
              alt="Deliservy — eliges moto, taxi o XL y ves el precio antes" loading="lazy"/>
       </div>
+    </div>
+  </div>
+</section>
 
-      <!-- La oferta para comercios. Va justo debajo de los teléfonos, bajo el
-           sello del 0%, porque las dos cosas cuentan lo mismo: una lo enseña y
-           la otra lo explica. -->
-      <div class="hero-afilia">
-        <div class="hero-afilia-t">Afilia tu comercio por 0% de comisión</div>
-        <ul class="hero-afilia-l">
+<!-- ── LA TASA DEL DÍA ── una sola línea bajo la portada. La misma de la app:
+     se rellena desde /api/forex/tasas y solo aparece si el servidor contesta. -->
+<div class="hero-tasa" id="hero-tasa" aria-live="polite">
+  <div class="hero-tasa-in">
+    <span class="hero-tasa-top">
+      <span class="hero-tasa-vivo" aria-hidden="true"></span>
+      <span class="hero-tasa-lbl">Tasa de hoy</span>
+    </span>
+    <span class="hero-tasa-fila">
+      <span class="hero-tasa-par">Dólar BCV · 1 USD</span>
+      <strong class="hero-tasa-val" id="tasa-usd"></strong>
+      <span class="hero-tasa-par">Bs</span>
+      <span class="hero-tasa-var" id="tasa-var"></span>
+    </span>
+    <span class="hero-tasa-otras" id="tasa-otras"></span>
+    <span class="hero-tasa-pie" id="tasa-pie">Oficial · con esta se cobran los pedidos</span>
+  </div>
+</div>
+
+<!-- ── 0% DE COMISIÓN ── la oferta para comercios, con su propio espacio. -->
+<section id="afilia" class="afilia">
+  <div class="container">
+    <div class="afilia-caja fade-up">
+      <div class="afilia-sello" aria-hidden="true"><b>0%</b><span>de comisión</span></div>
+      <div class="afilia-txt">
+        <h2 class="afilia-t">Afilia tu comercio por 0% de comisión</h2>
+        <ul class="afilia-l">
           <li><i data-lucide="check"></i> 0 Bs de inicial</li>
           <li><i data-lucide="check"></i> Sin mensualidades</li>
           <li><i data-lucide="check"></i> Liquidación inmediata</li>
         </ul>
-        <p class="hero-afilia-fine">
+        <!-- La letra pequeña dice lo que pasa DESPUÉS de los 3 meses. Sin eso,
+             «0% de comisión» a secas es una promesa que el comercio descubre
+             rota al cuarto mes. -->
+        <p class="afilia-fine">
           Descuento de inauguración disponible por 3 meses luego de la afiliación.
           Pasados los 3 meses, 10% de comisión por venta. El envío lo paga el
           cliente final, según la distancia.
         </p>
-        <!-- Lleva a descargar la app, no a WhatsApp: la afiliación se hace
-             desde la aplicación. Con `.store-link`, el script del final elige
-             App Store o Play Store según el teléfono; el href de Play Store es
-             el valor por defecto si el script no corre. -->
+      </div>
+      <!-- Lleva a descargar la app, no a WhatsApp: la afiliación se hace desde
+           la aplicación. `.store-link` elige la tienda según el teléfono. -->
+      <div class="afilia-ir">
         <a href="https://play.google.com/store/apps/details?id=com.ivc.deliservy"
-           class="btn btn-red store-link hero-afilia-cta">
+           class="btn btn-red store-link">
           <i data-lucide="download"></i> Afiliar mi comercio
         </a>
-        <p class="hero-afilia-como">Descarga la app y regístrate como comercio.</p>
+        <p class="afilia-como">Descarga la app y regístrate como comercio.</p>
       </div>
     </div>
   </div>
@@ -1120,6 +1192,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 <section id="alisa" class="section">
   <div class="container">
     <div class="alisa-head">
+      <span class="muneca alisa-head-muneca fade-up" id="alisa-head-muneca" aria-hidden="true"></span>
       <div class="label fade-up"><i data-lucide="sparkles"></i> Pide con IA</div>
       <h2 class="section-title fade-up delay-1">Dime qué te provoca.<br><span class="grad-text">Yo te digo cuánto.</span></h2>
       <p class="section-sub fade-up delay-1">Alisa busca en las tiendas de Valencia, te arma el pedido y te dice el precio real. Sin registrarte, sin instalar nada.</p>
@@ -1128,7 +1201,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <div class="alisa-wrap fade-up delay-2">
       <div class="alisa-panel">
         <div class="alisa-top">
-          <canvas class="alisa-planet" id="alisa-planet" aria-hidden="true"></canvas>
+          <span class="muneca alisa-planet" id="alisa-planet" aria-hidden="true"></span>
           <div>
             <div class="alisa-name">Alisa</div>
             <div class="alisa-state" id="alisa-state">Lista para ayudarte</div>
@@ -2047,132 +2120,73 @@ document.getElementById('donate-modal').addEventListener('click',function(e){
   var enviar  = document.getElementById('alisa-send');
   var planeta = document.getElementById('alisa-planet');
 
-  /* ── La esfera ──────────────────────────────────────────────────────────
-     Es la MISMA que en la app: los numeros estan portados uno a uno de
-     `alisa_planeta.dart`, no reinventados. Si alla se ajusta algo, aqui hay
-     que ajustarlo igual o dejaran de parecerse.
+  /* ── La muñeca ──────────────────────────────────────────────────────────
+     Es la MISMA Alisa de peluche de la app: las capas salen de
+     `deliservy-flutter/assets/alisa/peluche/384` y sus cajas de `capas.json`
+     (en % del lienzo). Si allá se rehace el dibujo, aquí se copian las capas y
+     las cajas, o dejarán de parecerse.
 
-     Lo esencial, que no es obvio:
+     Va por capas y no en una sola foto para poder parpadear y mover la boca
+     mientras piensa. El balanceo y la respiración son CSS; aquí solo se cambia
+     qué ojos y qué boca se ven. `ocupada` dice si Alisa está pensando.
+  ──────────────────────────────────────────────────────────────────────── */
+  var CAPAS = {
+    'sombra':[8.854,79.167,82.292,11.979],
+    'base':[15.104,16.667,70.833,71.354],
+    'mejillas':[33.854,63.542,32.292,8.854],
+    'pompon':[63.021,9.375,21.354,20.833],
+    'ojos-abiertos':[38.542,57.292,22.917,10.938],
+    'ojos-cerrados':[38.542,60.417,22.917,4.688],
+    'ojos-felices':[38.021,59.375,23.958,6.250],
+    'boca-sonrisa':[44.792,67.708,10.417,5.208],
+    'boca-media':[45.312,67.188,9.375,5.208],
+    'boca-abierta':[44.792,66.146,10.417,7.292],
+    'boca-o':[46.875,66.667,6.250,6.771]
+  };
+  function montarMuneca(el, ocupada){
+    if(!el) return;
+    var cuerpo = document.createElement('span');
+    cuerpo.className = 'muneca-cuerpo';
+    var capa = {};
+    Object.keys(CAPAS).forEach(function(n){
+      var c = CAPAS[n], img = document.createElement('img');
+      img.src = 'assets/alisa/' + n + '.webp';
+      img.alt = ''; img.decoding = 'async'; img.draggable = false;
+      img.className = 'muneca-capa' + (n === 'pompon' ? ' muneca-pompon' : '');
+      img.style.cssText = 'left:'+c[0]+'%;top:'+c[1]+'%;width:'+c[2]+'%;height:'+c[3]+'%';
+      capa[n] = img;
+      (n === 'sombra' ? el : cuerpo).appendChild(img);
+    });
+    el.appendChild(cuerpo);
+    function ojos(n){ ['ojos-abiertos','ojos-cerrados','ojos-felices'].forEach(function(k){ capa[k].style.opacity = k === n ? 1 : 0; }); }
+    function boca(n){ ['boca-sonrisa','boca-media','boca-abierta','boca-o'].forEach(function(k){ capa[k].style.opacity = k === n ? 1 : 0; }); }
+    ojos('ojos-abiertos'); boca('boca-sonrisa');
 
-     · El DESORDEN por punto es lo que quita las «cadenas». Una espiral de
-       Fibonacci pura reparte los puntos tan regularmente que el ojo encuentra
-       la reticula y ve hilos en vez de superficie. Se le suma un ruido
-       pequeño y SIEMPRE EL MISMO para cada indice — por eso es `sin(i*...)`
-       y no un aleatorio: tiene que ser estable entre fotogramas.
-
-     · El tamaño del punto sale de la DENSIDAD (el hueco entre punto y punto),
-       no del ancho del lienzo. Atado al ancho, en tamaños pequeños pintaba
-       puntos de menos de un pixel y se veia como polvo.
-
-     · Lo que la hace parecer una esfera y no un circulo plano son las dos
-       ultimas lineas: los de atras pequeños y translucidos, los de delante
-       grandes y solidos.
-
-     Se monta en CUALQUIER lienzo: la de la portada y la del panel son la
-     misma funcion con distinto tamaño. `ocupada` decide si gira rapido.
-  ────────────────────────────────────────────────────────────────────────── */
-  function montarEsfera(cv, TAM, ocupada){
-    if(!cv || !cv.getContext) return;
-    var ctx = cv.getContext('2d');
-    var PUNTOS = Math.min(2000, Math.max(650, Math.round(TAM * 8)));
-    var AUREO  = Math.PI * (3 - Math.sqrt(3));
-
-    // Nitidez en pantallas densas: el lienzo se dibuja al doble y se muestra
-    // al tamaño CSS. Sin esto los puntos salen borrosos en un movil.
-    var dpr = Math.min(window.devicePixelRatio || 1, 3);
-    cv.width  = TAM * dpr;
-    cv.height = TAM * dpr;
-    ctx.scale(dpr, dpr);
-
-    // Ruido estable por punto. Misma semilla → mismo valor siempre.
-    function desorden(i, semilla){
-      var x = Math.sin(i * 12.9898 + semilla * 78.233) * 43758.5453;
-      return x - Math.floor(x);
-    }
-
-    var quieta = window.matchMedia &&
-                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    var giro = 0;            // 0..1, una vuelta
-    var ultimo = 0;
-
-    function dibuja(ahora){
-      var trabajando = !!(ocupada && ocupada());
-
-      // Vueltas por milisegundo segun el estado, igual que en la app:
-      // 9000 ms en reposo, 2600 ms mientras busca.
-      var duracion = trabajando ? 2600 : 9000;
-      if(ultimo && !quieta) giro = (giro + (ahora - ultimo) / duracion) % 1;
-      ultimo = ahora;
-
-      // En la web no hay microfono, asi que no hay voz que la abra. Mientras
-      // piensa se le da un latido suave para que se note que trabaja.
-      var nivel = trabajando && !quieta
-        ? 0.28 + Math.sin(ahora / 260) * 0.16
-        : 0;
-
-      var centro = TAM / 2;
-      var radio  = centro * (0.66 + nivel * 0.18);
-      var vuelta = giro * Math.PI * 2;
-
-      ctx.clearRect(0, 0, TAM, TAM);
-
-      // El halo: da cuerpo a la esfera y la separa del fondo.
-      ctx.beginPath();
-      ctx.arc(centro, centro, radio * 1.06, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(228,22,22,.07)';
-      ctx.fill();
-
-      var hueco = (radio * 2) / Math.sqrt(PUNTOS);
-
-      for(var i = 0; i < PUNTOS; i++){
-        var y = (1 - (i / (PUNTOS - 1)) * 2) +
-                (desorden(i, 2) - 0.5) * (2 / PUNTOS) * 1.7;
-        var anillo = Math.sqrt(Math.max(0, 1 - y * y));
-        var theta  = AUREO * i + vuelta + (desorden(i, 1) - 0.5) * AUREO * 0.85;
-
-        var x = Math.cos(theta) * anillo;
-        var z = Math.sin(theta) * anillo;      // -1 atras · +1 delante
-
-        // Con la voz cada punto sale hacia fuera SU PROPIO tanto: empujandolos
-        // todos por igual la esfera solo se hincha, que parece un globo.
-        var salto  = 1 + nivel * 0.15 * desorden(i, 4);
-        var frente = (z + 1) / 2;
-        var escala = (0.82 + frente * 0.18) * salto;
-
-        var px = centro + x * radio * escala;
-        var py = centro + y * radio * escala;
-
-        var r = hueco * (0.20 + frente * 0.24) *
-                (0.72 + desorden(i, 3) * 0.56) * (1 + nivel * 0.30);
-
-        // Del rojo oscuro al vivo segun la profundidad, y translucido detras.
-        var rojo  = Math.round(218 + frente * 10);   // 218 → 228
-        var verde = Math.round(6 + frente * 16);     // 6 → 22
-        ctx.beginPath();
-        ctx.arc(px, py, Math.max(r, 0.35), 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(' + rojo + ',' + verde + ',22,' + (0.30 + frente * 0.70).toFixed(3) + ')';
-        ctx.fill();
-      }
-
-      requestAnimationFrame(dibuja);
-    }
-
-    // ⚠️ Se pinta UNA VEZ de entrada, no solo dentro del bucle. El reloj de
-    // animacion no corre mientras la pestana esta oculta, asi que una pagina
-    // abierta en segundo plano dejaba el hueco en blanco hasta que alguien la
-    // miraba. Dibujando el primer fotograma a mano, la esfera esta ahi desde el
-    // principio y el bucle solo la mueve.
-    dibuja(0);
+    var quieta = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(quieta) return;
+    var BOCAS = ['boca-media','boca-o','boca-abierta','boca-media','boca-sonrisa'], paso = 0, antes = false;
+    // Parpadea cada 3–6 s; pensando, entorna los ojos y mueve la boca.
+    (function parpadeo(){
+      setTimeout(function(){
+        if(!(ocupada && ocupada())){ ojos('ojos-cerrados'); setTimeout(function(){ if(!(ocupada && ocupada())) ojos('ojos-abiertos'); }, 130); }
+        parpadeo();
+      }, 3000 + Math.random()*3000);
+    })();
+    if(ocupada) setInterval(function(){
+      var si = !!ocupada();
+      if(si){ ojos('ojos-felices'); boca(BOCAS[paso++ % BOCAS.length]); }
+      else if(antes){ ojos('ojos-abiertos'); boca('boca-sonrisa'); }
+      antes = si;
+    }, 220);
   }
 
-  // La del panel: gira rapido mientras Alisa piensa.
-  montarEsfera(planeta, 56, function(){
+  // La del panel: mueve la boca mientras Alisa piensa.
+  montarMuneca(planeta, function(){
     return planeta.classList.contains('pensando');
   });
-
-  // La de la portada: mas grande y siempre en reposo — ahi no hay conversacion.
-  montarEsfera(document.getElementById('hero-alisa-planet'), 68, null);
+  // La de la portada y la del título: siempre en reposo, ahí no hay conversación.
+  montarMuneca(document.getElementById('hero-alisa-planet'), null);
+  montarMuneca(document.getElementById('alisa-head-muneca'), null);
   var estado  = document.getElementById('alisa-state');
   var chips   = document.getElementById('alisa-chips');
   if(!form) return;
