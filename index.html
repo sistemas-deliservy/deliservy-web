@@ -882,9 +882,12 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 .afilia-como{font-size:12px;color:rgba(255,255,255,.42);margin-top:10px;}
 
 /* Pedidos por WhatsApp para comercios (12-oct-2026): el video de la campaña y cómo activarlo. */
-.pxw{margin-top:22px;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:34px;align-items:center;
+.pxw{margin-top:22px;display:grid;grid-template-columns:1fr;gap:30px;align-items:start;
   background:var(--dark2);border:1px solid rgba(228,22,22,.26);border-radius:28px;padding:32px 36px;}
 .pxw-video{position:relative;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 24px 60px rgba(0,0,0,.45);aspect-ratio:16/9;width:100%;}
+.pxw-txt{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px 40px;align-items:start;}
+.pxw-txt .pxw-k,.pxw-txt .pxw-t{grid-column:1 / -1;}
+.pxw-lado{display:flex;flex-direction:column;gap:14px;}
 .pxw-video video{display:block;width:100%;height:100%;object-fit:cover;}
 .pxw-k{font-size:11.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
 .pxw-t{font-size:clamp(19px,2vw,24px);font-weight:900;letter-spacing:-.02em;line-height:1.22;margin-bottom:12px;}
@@ -892,10 +895,11 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 .pxw-l{list-style:none;display:grid;gap:9px;margin-bottom:18px;}
 .pxw-l li{display:flex;align-items:flex-start;gap:9px;font-size:14.5px;color:rgba(255,255,255,.88);line-height:1.45;}
 .pxw-l b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;flex:none;margin-top:1px;}
-.pxw-btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.pxw-btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center;flex-direction:column;align-items:stretch;}
+.pxw-btns .btn{justify-content:center;}
 .pxw-btns .btn-ghost{border:1px solid rgba(255,255,255,.18);color:#fff;}
-.pxw-fine{font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.46);margin-top:12px;}
-@media(max-width:900px){.pxw{grid-template-columns:1fr;padding:22px;gap:22px;text-align:center;} .pxw-l li{text-align:left;} .pxw-btns{justify-content:center;}}
+.pxw-fine{font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.46);margin-top:0;}
+@media(max-width:900px){.pxw{padding:22px;gap:22px;} .pxw-txt{grid-template-columns:1fr;} .pxw-btns{justify-content:flex-start;}}
 
 /* Alisa en su sección: la muñeca preside el título y la cabecera del chat. */
 .alisa-head{text-align:center;margin-bottom:48px;}
@@ -1176,20 +1180,24 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
                 style="border:0;position:absolute;top:0;left:0;width:100%;height:100%;"
                 allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;" allowfullscreen></iframe>
       </div>
-      <div>
+      <div class="pxw-txt">
         <div class="pxw-k">Pedidos por WhatsApp · Para su comercio</div>
         <h3 class="pxw-t">Nuestra flota de repartidores, sin costo de afiliación y sin porcentaje de sus ganancias.</h3>
+        <div>
         <p class="pxw-p">Funciona por WhatsApp, sin descargar nada y sin registros. Usted le escribe a Alisa (nuestra IA asistente virtual) y un repartidor sale de inmediato a su comercio por el producto y se lo lleva a su cliente.</p>
         <ul class="pxw-l">
           <li><b>1</b><span>Escríbale a Alisa «Cotizar envío a» y la dirección. Alisa le responde con el monto.</span></li>
           <li><b>2</b><span>Escríbale el nombre, el teléfono y la dirección de su cliente, y Alisa le manda un repartidor.</span></li>
           <li><b>3</b><span>Paga solo el envío, por pago móvil o transferencia, en el mismo chat: diario o semanal.</span></li>
         </ul>
+        </div>
+        <div class="pxw-lado">
         <div class="pxw-btns">
           <a href="https://wa.me/584265201529?text=Hola%2C%20quiero%20activar%20los%20pedidos%20por%20WhatsApp%20para%20mi%20comercio" class="btn btn-red" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> Activar por WhatsApp</a>
           <a href="https://deliservy.com/campana/pedidos-por-whatsapp.pdf" class="btn btn-ghost" target="_blank" rel="noopener"><i data-lucide="file-text"></i> Resumen en PDF</a>
         </div>
         <p class="pxw-fine">Entrega 100 % garantizada · Servicio 100 % seguro · Repartidores 100 % verificados.</p>
+        </div>
       </div>
     </div>
   </div>
