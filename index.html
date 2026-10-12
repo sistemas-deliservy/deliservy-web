@@ -882,7 +882,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 .afilia-como{font-size:12px;color:rgba(255,255,255,.42);margin-top:10px;}
 
 /* Pedidos por WhatsApp para comercios (12-oct-2026): el video de la campaña y cómo activarlo. */
-.pxw{margin-top:22px;display:grid;grid-template-columns:1fr;gap:30px;align-items:start;
+.pxw{margin-top:22px;scroll-margin-top:16px;display:grid;grid-template-columns:1fr;gap:30px;align-items:start;
   background:var(--dark2);border:1px solid rgba(228,22,22,.26);border-radius:28px;padding:32px 36px;}
 .pxw-video{position:relative;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 24px 60px rgba(0,0,0,.45);aspect-ratio:16/9;width:100%;}
 .pxw-txt{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px 40px;align-items:start;}
@@ -1888,6 +1888,13 @@ var io=new IntersectionObserver(function(entries){
   entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible');});
 },{threshold:0.1});
 document.querySelectorAll('.fade-up').forEach(function(el){io.observe(el);});
+// El enlace del correo (#pedidos-por-whatsapp) abre con el video CENTRADO en la pantalla, no pegado
+// arriba ni abajo (12-oct-2026). Se centra al cargar y otra vez cuando el video ya tiene su alto.
+(function(){
+  function centrar(){ var e=document.getElementById('pedidos-por-whatsapp'); if(!e) return; e.classList.add('visible'); e.scrollIntoView({block:'center',behavior:'auto'}); }
+  if (location.hash === '#pedidos-por-whatsapp') { centrar(); setTimeout(centrar, 400); window.addEventListener('load', function(){ setTimeout(centrar, 150); }); }
+  window.addEventListener('hashchange', function(){ if (location.hash === '#pedidos-por-whatsapp') centrar(); });
+})();
 
 // ── COUNTER ANIMATION ──
 var countIO=new IntersectionObserver(function(entries){
