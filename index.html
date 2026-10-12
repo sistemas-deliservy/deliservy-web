@@ -1891,7 +1891,7 @@ document.querySelectorAll('.fade-up').forEach(function(el){io.observe(el);});
 // El enlace del correo (#pedidos-por-whatsapp) abre con el video CENTRADO en la pantalla, no pegado
 // arriba ni abajo (12-oct-2026). Se centra al cargar y otra vez cuando el video ya tiene su alto.
 (function(){
-  function centrar(){ var e=document.getElementById('pedidos-por-whatsapp'); if(!e) return; e.classList.add('visible'); e.scrollIntoView({block:'center',behavior:'auto'}); }
+  function centrar(){ var e=document.getElementById('pedidos-por-whatsapp'); if(!e) return; e.classList.add('visible'); var v=e.querySelector('.pxw-video')||e; v.scrollIntoView({block:'center',behavior:'auto'}); }
   if (location.hash === '#pedidos-por-whatsapp') { centrar(); setTimeout(centrar, 400); window.addEventListener('load', function(){ setTimeout(centrar, 150); }); }
   window.addEventListener('hashchange', function(){ if (location.hash === '#pedidos-por-whatsapp') centrar(); });
 })();
