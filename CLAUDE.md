@@ -138,3 +138,16 @@ cd /var/www/deliservy && bash deploy.sh
   Las fotos de servicios y testimonios son URLs externas de Unsplash.
 - Los anclajes del nav dependen de `scroll-margin-top`; si cambias la altura del
   nav, actualiza ese valor o los títulos quedarán tapados.
+
+---
+
+## Idioma (inglés / español) — 13-oct-2026
+
+Las tres páginas llevan al final una **capa de idioma** (`<!-- capa-idioma: inicio/fin -->`):
+se abren en inglés si el navegador está en inglés y traen un botón «🌐 English / Español».
+El HTML sigue escrito SOLO en español; el inglés sale de `herramientas/idioma/diccionario.json`.
+
+- Después de editar cualquier página: `python3 herramientas/idioma/aplicar.py` (si no, el
+  texto nuevo sale en español también para quien la ve en inglés; no rompe nada).
+- Quitarla: `python3 herramientas/idioma/aplicar.py --quitar` (deja los archivos byte a byte).
+- `herramientas/` NO se sube a Ferozo: solo las tres páginas.
