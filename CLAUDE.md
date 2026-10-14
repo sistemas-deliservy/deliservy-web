@@ -101,7 +101,7 @@ Intenta abrir la app instalada antes de mandar a la tienda:
 
 ### Contacto
 - Soporte: `soporte@deliservy.com` · Contacto: `contacto@deliservy.com`
-- WhatsApp: `https://wa.me/584144957006` (0414-495-7006, donde contesta Alisa desde el 14-oct-2026; el +1 954-768-2019 sigue conectado y también contesta)
+- WhatsApp: `https://wa.me/584144957006` (0414-495-7006, donde contesta Alisa desde el 14-oct-2026; el número anterior se borró ese día)
 - Instagram: `https://www.instagram.com/deliservy.app`
 - Facebook: **sin URL todavía** — el icono del footer apunta a `#`
 
