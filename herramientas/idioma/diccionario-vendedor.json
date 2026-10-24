@@ -242,5 +242,6 @@
 "Ese RIF no es válido. Revisa los 9 números.": "That RIF isn't valid. Check the 9 digits.",
 "El pasaporte va con 5 a 19 letras o números.": "The passport has 5 to 19 letters or digits.",
 "Escribe un correo válido.": "Enter a valid email.",
-"Tu registro quedó guardado. Entra con tu WhatsApp para verlo.": "Your sign-up was saved. Sign in with your WhatsApp to see it."
+"Tu registro quedó guardado. Entra con tu WhatsApp para verlo.": "Your sign-up was saved. Sign in with your WhatsApp to see it.",
+"Falta correr las migraciones de Compra-Ventas en la base (2026-10-24_compra_ventas.sql y 2026-10-24_cv_vendedor_fiscal.sql).": "The Social Media Sales migrations still have to be run on the database (2026-10-24_compra_ventas.sql and 2026-10-24_cv_vendedor_fiscal.sql)."
 }

@@ -60,5 +60,6 @@
 "El pasaporte va con 5 a 19 letras o números.",
 "Escribe un correo válido.",
 "Tu registro quedó guardado. Entra con tu WhatsApp para verlo.",
-"El código tiene 6 números."
+"El código tiene 6 números.",
+"Falta correr las migraciones de Compra-Ventas en la base (2026-10-24_compra_ventas.sql y 2026-10-24_cv_vendedor_fiscal.sql)."
 ]
