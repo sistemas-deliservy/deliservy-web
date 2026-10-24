@@ -1,0 +1,23 @@
+# deliservy.com en Ferozo (Apache) — 24-oct-2026.
+#
+# La tienda del cliente y el seguimiento se abren AQUÍ (Gilberth: «vendedores, sus enlaces, la tienda del cliente y el
+# seguimiento, todo en www.deliservy.com»):
+#   /v/<codigo>      el enlace de un vendedor (6 a 16 minúsculas y cifras)
+#   /pedido/<ficha>  el seguimiento de un pedido de la tienda web (la ficha firmada que da la API)
+# Las dos las pinta `tienda.php`, por dentro: le pide la página a la API (api.deliservy.site) y la devuelve tal cual,
+# así que la barra del navegador sigue en www.deliservy.com. Lo demás de la web, como siempre.
+#
+# ⚠️ Si en Ferozo ya hay un .htaccess, JUNTAR estas reglas con las suyas (no reemplazarlo sin mirarlo).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^v/[a-z0-9]{6,16}/?$ tienda.php [L]
+  RewriteRule ^pedido/[A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43}/?$ tienda.php [L]
+</IfModule>
+
+# Sin mod_rewrite, al menos que los enlaces lleguen a la tienda (en api.deliservy.site).
+<IfModule !mod_rewrite.c>
+  RedirectMatch 302 ^/v/([a-z0-9]{6,16})/?$ https://api.deliservy.site/api/compartir/v/$1
+  RedirectMatch 302 ^/pedido/([A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43})/?$ https://api.deliservy.site/api/compartir/pedido/$1
+</IfModule>
