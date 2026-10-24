@@ -6,6 +6,8 @@
  * manda aquí, por dentro, dos direcciones:
  *   /v/<codigo>       el enlace de un vendedor (6 a 16 minúsculas y cifras)
  *   /pedido/<ficha>   el seguimiento de un pedido de la tienda web (la ficha firmada que da la API)
+ *   /p/<id>, /t/<id>  el producto o la tienda que se comparte desde la APP (2.8.8 en adelante): la misma página de
+ *                     `…/api/compartir/p/<id>` y `…/t/<id>` (la tienda web si se compra por la web; si no, la de la app)
  * Este archivo le pide la página a la API de Deliservy (`https://api.deliservy.site/api/compartir/v/<codigo>` o
  * `…/compartir/pedido/<ficha>`) y la devuelve TAL CUAL: la barra del navegador sigue en www.deliservy.com y la vista
  * previa de WhatsApp sale con la foto del producto. Reenvía el `User-Agent`, el `Referer` y la IP de quien la abre (y
@@ -155,6 +157,9 @@ if (preg_match('#^/v/([a-z0-9]{6,16})/?$#', $camino, $m)) {
     }
 } elseif (preg_match('#^/pedido/([A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43})/?$#', $camino, $m)) {
     $ruta = '/api/compartir/pedido/' . $m[1];
+} elseif (preg_match('#^/(p|t)/([0-9]{1,10})/?$#', $camino, $m)) {
+    // El producto (`p`) o la tienda (`t`) que se comparte desde la app.
+    $ruta = '/api/compartir/' . $m[1] . '/' . $m[2];
 } else {
     no_esta();
 }

@@ -148,9 +148,16 @@ admin.deliservy.site, queda solo para él). Tres piezas nuevas, todas en Ferozo 
 
 ```
 vendedor/           La página de los vendedores (index.html, app.js, app.css, idioma.js, fuentes/, .htaccess)
-.htaccess           /v/<codigo> y /pedido/<ficha> → tienda.php (por dentro: la barra sigue en www.deliservy.com)
-tienda.php          Le pide la página a la API (…/api/compartir/v/<codigo> o …/pedido/<ficha>) y la devuelve tal cual
+.htaccess           /v/<codigo>, /pedido/<ficha>, /p/<id> y /t/<id> → tienda.php (por dentro: la barra sigue en www)
+tienda.php          Le pide la página a la API (…/api/compartir/v|pedido|p|t/…) y la devuelve tal cual
+.well-known/        apple-app-site-association + assetlinks.json: con la app instalada, /p/* y /t/* abren la APP
 ```
+
+- `/p/<id>` y `/t/<id>` (24-oct-2026): los enlaces que comparte la app desde la 2.8.8 (antes,
+  api.deliservy.site/api/compartir/p|t/<id>, que siguen igual). ⚠️ Los dos archivos de `.well-known/` tienen que estar
+  EN VIVO antes de publicar la 2.8.8: el iPhone los lee al instalar. El del iPhone va sin extensión, como JSON
+  (`.well-known/.htaccess`), con 200 directo y sin redirecciones. Al subir, no borrar lo que ya haya en `.well-known/`
+  de Ferozo (p. ej. `acme-challenge` del certificado). Comprobar: `https://www.deliservy.com/p/1054` y los dos archivos.
 
 - `vendedor/` habla con `https://api.deliservy.site/api/vendedor/*` (en localhost, relativo para las pruebas) con un
   token en la cabecera `Authorization`. Lleva CSP: **nada de guiones ni estilos dentro del HTML** y nada de `innerHTML`
@@ -173,4 +180,4 @@ El HTML sigue escrito SOLO en español; el inglés sale de `herramientas/idioma/
   después, volver a aplicarla).
 - La página de los vendedores también la lleva (24-oct-2026), con su diccionario (`diccionario-vendedor.json`), su
   lista de textos del servidor (`siempre-vendedor.json`) y el motor aparte (`vendedor/idioma.js`, por su CSP).
-- `herramientas/` NO se sube a Ferozo: solo las páginas, `vendedor/`, `.htaccess` y `tienda.php`.
+- `herramientas/` NO se sube a Ferozo: solo las páginas, `vendedor/`, `.htaccess`, `tienda.php` y `.well-known/`.

@@ -1,0 +1,9 @@
+# Los dos archivos con los que la APP abre los enlaces de www.deliservy.com (/p/<id> y /t/<id>), 24-oct-2026.
+# El del iPhone no lleva extensión y Apple lo quiere como JSON, con 200 directo y sin redirecciones.
+# ⚠️ Solo toca ese archivo: lo demás de esta carpeta (p. ej. acme-challenge del certificado) sigue como siempre.
+<Files "apple-app-site-association">
+  ForceType application/json
+</Files>
+<Files "assetlinks.json">
+  ForceType application/json
+</Files>
