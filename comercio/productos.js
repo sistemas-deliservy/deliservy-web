@@ -26,7 +26,7 @@
 
   // ── La lista ───────────────────────────────────────────────────────────────
 
-  function filaDeProducto(ctx, p) {
+  function filaDeProducto(ctx, p, plan) {
     var foto = C.fotoSegura(p.imagen || p.image || (Array.isArray(p.images) ? p.images[0] : ''));
     var disponible = p.disponible !== false && p.availability !== false;
     var precio = C.num(p.precio != null ? p.precio : p.price);
@@ -52,7 +52,9 @@
             C.num(p.stock) > 0 ? C.pill('Stock ' + Math.round(C.num(p.stock)), '') : null,
             p.encargo ? C.pill('Por encargo', 'azul') : null,
             p.tieneOpciones ? C.pill('Con opciones', '') : null,
-            cv && cv.pausadoPorAdmin ? C.pill('Pausado por Deliservy', 'ambar') : cv && cv.activo && C.num(cv.pct) > 0 ? C.pill(C.porcentaje(cv.pct) + ' vendedores', 'verde') : null))),
+            cv && cv.pausadoPorAdmin ? C.pill('Pausado por Deliservy', 'ambar') : cv && cv.activo && C.num(cv.pct) > 0 ? C.pill(C.porcentaje(cv.pct) + ' vendedores', 'verde') : null),
+          plan && precio > 0 ? h('div', { class: 'chips cobro' }, h('span', { class: 'pill azul' }, h('span', null, C.cobro.textoPorVenta(precio, plan, p.cobroDeliservyUsd)),
+            C.cobro.textoApp(plan) ? [h('span', { 'aria-hidden': 'true' }, ' · '), h('span', null, C.cobro.textoApp(plan))] : null)) : null)),
       h('div', { class: 'fp-disp' }, sw.caja));
     if (!ctx.puede('productos')) sw.input.disabled = true;
     return fila;
@@ -63,9 +65,12 @@
     var grupos = [];
     var buscar = h('input', { class: 'campo', type: 'search', id: 'buscar-producto', placeholder: 'Busca un producto', value: filtro.buscar, autocomplete: 'off', enterkeyhint: 'search', 'aria-label': 'Buscar' });
     var selGrupo = h('select', { class: 'campo', 'aria-label': 'Grupo' }, h('option', { value: '' }, 'Todos los grupos'));
+    var plan = null;
     var cargar = function () {
       var url = '/productos?' + q(ctx) + (filtro.buscar ? '&buscar=' + encodeURIComponent(filtro.buscar) : '') + (filtro.grupoId ? '&grupoId=' + encodeURIComponent(filtro.grupoId) : '');
-      C.pedir('GET', url).then(function (d) {
+      Promise.all([C.pedir('GET', url), C.cobro ? C.cobro.planDe(ctx) : Promise.resolve(null)]).then(function (rr) {
+        var d = rr[0];
+        plan = rr[1];
         if (!v.viva()) return;
         var arr = Array.isArray(d) ? d : (d && Array.isArray(d.productos) ? d.productos : []);
         if (!arr.length) {
@@ -93,7 +98,7 @@
           var g = porGrupo[k];
           return h('section', { class: 'grupo-productos' },
             h('div', { class: 'etq-fila' }, g.nombre ? dato('span', { class: 'etq' }, g.nombre) : h('span', { class: 'etq' }, 'Sin grupo'), h('span', { class: 'cuenta' }, C.plural(g.productos.length, 'producto', 'productos'))),
-            h('div', { class: 'lista' }, g.productos.map(function (p) { return filaDeProducto(ctx, p); })));
+            h('div', { class: 'lista' }, g.productos.map(function (p) { return filaDeProducto(ctx, p, plan); })));
         }));
       }, function (e) { if (v.viva()) C.reemplazar(resultados, C.tarjetaError(e, cargar)); });
     };
@@ -225,7 +230,17 @@
     descripcion.value = p.descripcion || '';
     var precio = C.entrada({ id: 'p-precio', value: nuevo && !p.precio ? '' : C.enCampo(p.precio), inputmode: 'decimal', maxlength: '10', placeholder: '0,00' });
     var avisoCero = h('p', { class: 'ayuda ambar', hidden: true }, 'Con precio 0, este producto no se vende.');
-    var revisarCero = function () { var n = C.leerNumero(precio.value); avisoCero.hidden = !(n === 0); };
+    // Lo que cobra Deliservy por cada venta de este precio (web y vendedores), al momento.
+    var lineaCobro = h('p', { class: 'ayuda cobro-editor', hidden: true });
+    var planEditor = null;
+    var revisarCero = function () {
+      var n = C.leerNumero(precio.value);
+      avisoCero.hidden = !(n === 0);
+      var texto = planEditor && n > 0 ? C.cobro.textoPorVenta(n, planEditor) : null;
+      C.reemplazar(lineaCobro, texto ? [h('span', null, texto), ' (', h('span', null, 'web y vendedores'), ')', C.cobro.textoApp(planEditor) ? [' · ', h('span', null, C.cobro.textoApp(planEditor))] : null] : null);
+      lineaCobro.hidden = !texto;
+    };
+    if (C.cobro) C.cobro.planDe(ctx).then(function (pl) { planEditor = pl; revisarCero(); });
     precio.addEventListener('input', revisarCero);
     var selGrupo = h('select', { class: 'campo', id: 'p-grupo' }, h('option', { value: '' }, 'Sin grupo'),
       grupos.map(function (g) { var o = dato('option', { value: String(g.id) }, g.nombre || g.name || ''); if (Number(g.id) === p.grupoId) o.selected = true; return o; }));
@@ -418,7 +433,7 @@
             C.campo('p-nombre', 'Nombre', nombre),
             C.campo('p-descripcion', 'Descripción', descripcion),
             h('div', { class: 'dos-campos' },
-              h('div', null, C.campo('p-precio', 'Precio en dólares', precio), avisoCero),
+              h('div', null, C.campo('p-precio', 'Precio en dólares', precio), avisoCero, lineaCobro),
               C.campo('p-grupo', 'Grupo', h('div', { class: 'con-flecha' }, selGrupo, ico('abajo'))))),
           h('div', { class: 'tarjeta' },
             h('h2', null, 'Venta'),

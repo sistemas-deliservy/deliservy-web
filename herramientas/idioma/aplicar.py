@@ -36,7 +36,7 @@ PAGINAS = [
     # El panel del comercio (24-oct-2026): igual que la página del vendedor, con sus guiones repartidos en varios
     # archivos (todos se miran), su diccionario y su lista de textos que manda la API.
     {'archivo': 'comercio/index.html',
-     'textos': ['comercio/' + n + '.js' for n in ('base', 'mapa', 'fotos', 'graficas', 'pedidos', 'productos', 'vendedores',
+     'textos': ['comercio/' + n + '.js' for n in ('base', 'mapa', 'fotos', 'graficas', 'plan', 'pedidos', 'productos', 'vendedores',
                                                   'billetera', 'flota', 'estadisticas', 'tienda', 'app')],
      'diccionarios': ['diccionario.json', 'diccionario-comercio.json'], 'siempre': 'siempre-comercio.json',
      'motor_aparte': 'comercio/idioma.js'},

@@ -291,7 +291,20 @@
     });
   }
 
-  function seccionGanancia(g) {
+  /** Lo que se descontó Deliservy en este pedido: el % o el cobro por producto (§7), con sus líneas. */
+  function loQueSeDesconto(c) {
+    if (!c || typeof c !== 'object' || c.usd == null) return null;
+    var porProducto = c.modo === 'por_producto';
+    var lineas = Array.isArray(c.lineas) ? c.lineas : [];
+    return h('div', { class: 'descontado' },
+      h('div', { class: 'desc-cab' }, h('span', null, 'Deliservy se quedó'), h('b', null, C.dolares(c.usd))),
+      h('small', null, porProducto ? ['Por producto · plan ', h('span', null, (C.cobro && C.cobro.NOMBRES[c.plan]) || c.plan || '')] : ['Comisión de la app · ', C.porcentaje(c.pct)]),
+      porProducto && lineas.length ? h('ul', { class: 'desc-lineas' }, lineas.map(function (l) {
+        return h('li', null, h('span', null, Math.round(C.num(l.cantidad)) + '× ', dato('span', null, l.nombre || '')), h('span', null, C.dolares(l.porUnidadUsd), ' c/u · ', C.dolares(l.totalUsd)));
+      })) : null);
+  }
+
+  function seccionGanancia(g, cobro) {
     if (!g) return null;
     var lineas = Array.isArray(g.detalle) ? g.detalle : [];
     return h('div', { class: 'tarjeta ganancia' },
@@ -300,7 +313,8 @@
       g.abonada && g.bs != null ? h('p', { class: 'nota' }, 'Ya está en tu billetera: ', C.bolivares(g.bs)) : h('p', { class: 'nota' }, 'Se abona al entregarse.'),
       lineas.length ? h('dl', { class: 'desglose' }, lineas.map(function (l) {
         return [h('dt', null, l.texto || ''), h('dd', { class: C.num(l.usd) < 0 ? 'resta' : '' }, C.conSigno(l.usd))];
-      })) : null);
+      })) : null,
+      loQueSeDesconto(cobro));
   }
 
   function tarjetaRepartidor(d, enCurso) {
@@ -365,7 +379,7 @@
                 return h('li', null, h('span', { class: 'hora-evento' }, C.fechaHora(e.fecha || e.creadoEn || e.createdAt)), dato('span', null, e.texto || e.descripcion || e.tipo || ''));
               }))) : null),
           h('div', { class: 'col' },
-            seccionGanancia(g),
+            seccionGanancia(g, d.cobro),
             d.repartidor ? h('div', { class: 'tarjeta' }, tarjetaRepartidor(d, enCurso), mapaCaja) : null,
             df ? h('div', { class: 'tarjeta' },
               h('div', { class: 'cab-tarjeta' }, h('h2', null, 'Datos para la factura'),

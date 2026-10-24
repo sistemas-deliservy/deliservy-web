@@ -182,7 +182,7 @@ function revisarErrores(nombre, errores, page, esperadas) {
 const ERRORES_ESPERADOS = [
   /^POST \/api\/comercio\/codigo 404$/, /^POST \/api\/comercio\/entrar 400$/, /^GET \/api\/comercio\/pedidos\/999999 404$/,
   /^POST \/api\/comercio\/fotos 500$/, /^DELETE \/api\/comercio\/grupos\/\d+ 409$/, /^POST \/api\/comercio\/tienda\/\d+\/mostrar-en-app 409$/,
-  /^GET \/api\/comercio\/[\w/-]+ 401$/,
+  /^GET \/api\/comercio\/[\w/-]+ 401$/, /^POST \/api\/comercio\/plan\/pagar 402$/,
 ];
 
 // ── Las pruebas ──────────────────────────────────────────────────────────────
@@ -252,6 +252,7 @@ async function telefonoClaro(browser) {
   await ir(page, '#pedidos/2603', 3500);
   check('detalle: datos para la factura', /Deliservyapp/.test(await textoDe(page, '.datos-lista')));
   check('detalle: la ganancia de verdad', /Vendedor externo/.test(await textoDe(page, '.ganancia')));
+  check('detalle: lo que se descontó (por producto, Premium)', /Deliservy se quedó/.test(await textoDe(page, '.descontado')) && /Premium/.test(await textoDe(page, '.descontado')));
   check('detalle: el repartidor en el mapa', await page.isVisible('.pin-moto').catch(() => false) || await page.isVisible('.cargando-mapa.fallo').catch(() => false));
   await foto(page, '10-pedido-detalle', true);
   await ir(page, '#pedidos/2601', 600);
@@ -283,6 +284,7 @@ async function telefonoClaro(browser) {
   // Productos
   await ir(page, '#productos', 700);
   check('productos por grupo', (await page.$$('.grupo-productos')).length >= 3);
+  check('productos: «Deliservy: … por venta» y «En la app: 10 %»', /Deliservy: 0,12\u00a0\$ por venta/.test(await textoDe(page, '.fila-producto')) && /En la app: 10/.test(await textoDe(page, '.fila-producto')));
   await foto(page, '14-productos', true);
   await page.fill('#buscar-producto', 'pepiada reina');
   await esperar(900);
@@ -379,7 +381,7 @@ async function telefonoClaro(browser) {
 
   // Mi tienda
   await ir(page, '#tienda', 2500);
-  check('mi tienda: la comisión con su promoción', /hasta el/.test(await textoDe(page, '.comision')));
+  check('mi tienda: la comisión de la app y el enlace a «Mi plan»', /10/.test(await textoDe(page, '.comision')) && /Mi plan/.test(await textoDe(page, '.comision')));
   await foto(page, '27-mi-tienda-datos', true);
   await ir(page, '#tienda/horario', 700);
   await page.fill('.fila-horario:nth-child(1) input[type=time] >> nth=1', '07:00');
@@ -404,12 +406,93 @@ async function telefonoClaro(browser) {
   await esperar(900);
   check('trabajador agregado', /Gabriela Torres/.test(await textoDe(page, '#contenido')));
 
+  // Mi plan (§7): el cobro por producto, «Quiero…» y pagar la membresía con las cuatro formas de la plataforma
+  await ir(page, '#plan', 900);
+  check('mi plan: Premium activa', /Premium/.test(await textoDe(page, '.plan-actual')) && /Activa/.test(await textoDe(page, '.plan-actual')));
+  check('mi plan: la regla de Premium (la mitad, 0,10 a 0,50)', /La mitad/.test(await textoDe(page, '.regla')) && /0,50/.test(await textoDe(page, '.ejemplos')));
+  await foto(page, '48-mi-plan', true);
+  await page.locator('.plan .btn', { hasText: 'Quiero Deluxe' }).click();
+  await page.waitForSelector('.dialogo');
+  await page.click('.dialogo-pie .btn:not(.borde)');
+  await page.waitForSelector('.banda.info >> text=Pediste', { timeout: 10000 }).catch(() => {});
+  check('«Quiero Deluxe»: queda pedido y le avisan al admin', /Pediste/.test(await textoDe(page, '#contenido')) && /Ya lo pediste/.test(await textoDe(page, '.planes')));
+  await foto(page, '49-mi-plan-deluxe-pedido');
+  const pagosAntes = (await page.$$('.lista .renglon')).length;
+  const abrirPago = async (metodo) => {
+    await page.click('.plan-actual .btn');
+    await page.waitForSelector('.metodos');
+    await page.locator('.metodo', { hasText: metodo }).click();
+    await esperar(400);
+  };
+  await page.click('.plan-actual .btn');
+  await page.waitForSelector('.metodos');
+  check('pagar membresía: las cuatro formas (sin efectivo)', (await page.$$('.metodo')).length === 4 && !/efectivo/i.test(await textoDe(page, '.metodos')));
+  await foto(page, '50-pagar-membresia-formas');
+  await page.locator('.metodo', { hasText: 'Pago móvil' }).click();
+  await page.waitForSelector('#tel-pago');
+  await page.fill('#tel-pago', '0414-000-0000');
+  await page.click('.dialogo-pie .btn');
+  await page.waitForSelector('.dialogo .error:not([hidden])');
+  check('pago móvil: «aún no aparece»', /Aún no aparece/.test(await textoDe(page, '.dialogo .error')));
+  await page.fill('#tel-pago', '0412-555-0101');
+  await foto(page, '51-pagar-membresia-pago-movil');
+  await page.click('.dialogo-pie .btn');
+  await page.waitForSelector('.resultado-bien', { timeout: 10000 });
+  check('pago móvil: membresía pagada', /va hasta el/.test(await textoDe(page, '.resultado-bien')));
+  await foto(page, '52-membresia-pagada');
+  await page.click('.dialogo-pie .btn');
+  await esperar(1200);
+  await abrirPago('Transferencia');
+  await page.selectOption('#ced-letra', 'V');
+  await page.fill('#ced-pago', '12345678');
+  await page.click('.dialogo-pie .btn');
+  await page.waitForSelector('.resultado-bien', { timeout: 10000 });
+  check('transferencia (con la cédula): pagada', /va hasta el/.test(await textoDe(page, '.resultado-bien')));
+  await page.click('.dialogo-pie .btn');
+  await esperar(1200);
+  await abrirPago('Tarjeta de débito');
+  await page.fill('#t-titular', 'Ana Rodriguez');
+  await page.fill('#t-numero', '5555555555554444');
+  await page.type('#t-vence', '1228');
+  await page.fill('#t-cvv', '123');
+  await page.fill('#t-cedula', '12345678');
+  await page.fill('#t-pin', '1234');
+  check('débito: la tarjeta dibujada con su marca', /Mastercard/.test(await textoDe(page, '.tarjeta-viva')));
+  await foto(page, '53-pagar-membresia-debito');
+  await page.click('.dialogo-pie .btn');
+  await page.waitForSelector('.resultado-bien', { timeout: 10000 });
+  check('débito: pagada', /va hasta el/.test(await textoDe(page, '.resultado-bien')));
+  await page.click('.dialogo-pie .btn');
+  await esperar(1200);
+  await abrirPago('Tarjeta de crédito');
+  await page.fill('#t-titular', 'Ana Rodriguez');
+  await page.fill('#t-numero', '4000000000000002');
+  await page.type('#t-vence', '1228');
+  await page.fill('#t-cvv', '123');
+  await page.click('.dialogo-pie .btn');
+  await page.waitForSelector('.dialogo .error:not([hidden])', { timeout: 10000 });
+  check('crédito: el rechazo del banco, claro', /rechazó/.test(await textoDe(page, '.dialogo .error')));
+  await foto(page, '54-pagar-membresia-credito-rechazada');
+  await page.fill('#t-numero', '4111111111111111');
+  await page.click('.dialogo-pie .btn');
+  await page.waitForSelector('.resultado-bien', { timeout: 10000 });
+  check('crédito: pagada', /va hasta el/.test(await textoDe(page, '.resultado-bien')));
+  await page.click('.dialogo-pie .btn');
+  await esperar(1400);
+  const pagosDespues = (await page.$$('.lista .renglon')).length;
+  check('mi plan: los cuatro pagos nuevos en la lista', pagosDespues === pagosAntes + 4, pagosAntes + ' → ' + pagosDespues);
+  check('la tarjeta no queda guardada en el navegador', !(await page.evaluate(() => JSON.stringify(localStorage)).then((x) => /4111|5555|1234/.test(x))));
+  await foto(page, '55-mi-plan-pagos', true);
+
   // La tienda de solo flota
   await elegirTienda(page, 58);
   await ir(page, '#hoy', 800);
   check('solo flota: sin «Pedidos» ni «Billetera»', !(await page.$('.barra-abajo a[href="#pedidos"]')) && !(await page.$('.barra-abajo a[href="#billetera"]')));
   check('solo flota: «Hoy» dice lo que debe', /Debes/.test(await textoDe(page, '.deuda')));
   await foto(page, '32-hoy-flota', true);
+  await ir(page, '#plan', 900);
+  check('mi plan (promo 0 %): no te cobramos nada hasta el 28', /no te cobramos nada/.test(await textoDe(page, '#contenido')) && /Básica/.test(await textoDe(page, '.plan-actual')));
+  await foto(page, '56-mi-plan-basica-con-promocion', true);
   await ir(page, '#flota', 1200);
   await foto(page, '33-flota', true);
   await ir(page, '#flota/pagar', 1000);
@@ -523,8 +606,8 @@ async function computadora(browser, oscuro) {
   await entrar(page, TEL.dueno);
   check('barra lateral', await page.isVisible('.lateral'));
   const rutas = oscuro
-    ? [['#hoy', 'hoy'], ['#pedidos/2603', 'pedido-detalle'], ['#estadisticas', 'estadisticas']]
-    : [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/calendario', 'pedidos-calendario'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9013', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']];
+    ? [['#hoy', 'hoy'], ['#pedidos/2603', 'pedido-detalle'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan']]
+    : [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/calendario', 'pedidos-calendario'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9013', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']];
   for (const [h, n] of rutas) {
     await ir(page, h, h.indexOf('2603') > 0 || h === '#tienda' ? 3500 : 900);
     await foto(page, enGrupo(grupo, n));
@@ -572,7 +655,7 @@ async function telefonoOscuro(browser) {
   await page.waitForSelector('#telefono');
   await foto(page, enGrupo('oscuro', 'entrar-telefono'));
   await entrar(page, TEL.dueno);
-  for (const [h, n] of [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']]) {
+  for (const [h, n] of [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']]) {
     await ir(page, h, h.indexOf('2603') > 0 || h === '#tienda' ? 3500 : 900);
     await foto(page, enGrupo('oscuro', n), true);
     await sinAnchoDeMas(page, n + '-oscuro');
@@ -613,8 +696,8 @@ async function ingles(browser) {
     await entrar(page, TEL.dueno);
     const juntar = async () => (await page.evaluate(() => (window.idiomaFaltantes ? window.idiomaFaltantes() : []))).forEach((x) => faltan.add(x));
     const lista = vp === TELEFONO
-      ? [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario'], ['#tienda/trabajadores', 'mi-tienda-trabajadores']]
-      : [['#hoy', 'hoy'], ['#pedidos/2603', 'pedido-detalle'], ['#productos/9013', 'producto-editar'], ['#estadisticas', 'estadisticas']];
+      ? [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario'], ['#tienda/trabajadores', 'mi-tienda-trabajadores']]
+      : [['#hoy', 'hoy'], ['#pedidos/2603', 'pedido-detalle'], ['#productos/9013', 'producto-editar'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan']];
     for (const [h, n] of lista) {
       await ir(page, h, h.indexOf('2603') > 0 || h === '#tienda' ? 3500 : 900);
       await juntar();
@@ -637,6 +720,15 @@ async function ingles(browser) {
     await page.waitForSelector('#pagador');
     await juntar();
     if (vp === TELEFONO) await foto(page, enGrupo(grupo, 'flota-pagar-paso-2'));
+    await page.keyboard.press('Escape');
+    await elegirTienda(page, 31, vp === COMPUTADORA);
+    await ir(page, '#plan', 900);
+    await page.click('.plan-actual .btn');
+    await page.waitForSelector('.metodos');
+    await page.locator('.metodo').nth(0).click();
+    await page.waitForSelector('.tarjeta-viva');
+    await juntar();
+    await foto(page, enGrupo(grupo, 'pagar-membresia-debito'));
     const csp = await page.evaluate(() => window.__csp.length);
     check('sin violaciones de la CSP' + suf, csp === 0, String(csp));
     revisarErrores('inglés' + suf, errores, page, []);

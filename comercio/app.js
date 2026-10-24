@@ -16,7 +16,7 @@
   var app = documento.getElementById('app');
   if (!app) return;
 
-  var ORDEN = ['hoy', 'pedidos', 'productos', 'vendedores', 'billetera', 'flota', 'estadisticas', 'tienda'];
+  var ORDEN = ['hoy', 'pedidos', 'productos', 'vendedores', 'billetera', 'flota', 'estadisticas', 'plan', 'tienda'];
   var TITULO = 'Panel del comercio · Deliservy';
   var CLAVE_AVISOS = 'deliservy_comercio_avisos';
   var CLAVE_VISTOS = 'deliservy_comercio_vistos';
@@ -237,7 +237,7 @@
   }
   /** Lo que va en la barra de abajo del teléfono (lo demás, en «Más»): primero lo que más se usa. */
   function prioridad(id) {
-    var orden = ['hoy', 'pedidos', 'flota', 'productos', 'billetera', 'estadisticas', 'vendedores', 'tienda'];
+    var orden = ['hoy', 'pedidos', 'flota', 'productos', 'billetera', 'estadisticas', 'vendedores', 'plan', 'tienda'];
     if (id === 'flota' && !(ctx.tienda && ctx.tienda.flota)) return 50; // la invitación, al final
     return orden.indexOf(id);
   }

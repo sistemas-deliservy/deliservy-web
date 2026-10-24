@@ -968,3 +968,70 @@ input[type="date"].campo, input[type="time"].campo { min-height: 44px; }
   .fila-cv > .nota.pausa, .fila-cv > .error-campo { grid-column: 1 / -1; }
   .cv-campos { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
 }
+
+/* ── Mi plan y el cobro por producto (§7, 24-oct-2026) ── */
+.chips.cobro { margin-top: 5px; }
+.chips.cobro .pill { white-space: normal; text-align: left; }
+.cobro-editor, .cobro-cv { color: var(--az); font-weight: 700; }
+.cobro-cv { font-size: 12.5px; }
+.nota.centro { text-align: center; display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; }
+.comision-grande b.mediano { font-size: 26px; }
+.descontado { margin-top: 12px; background: var(--c2); border-radius: 12px; padding: 10px 12px; border: 1px solid var(--b); }
+.desc-cab { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
+.desc-cab b { color: var(--av); white-space: nowrap; }
+.descontado > small { display: block; color: var(--m); font-weight: 600; font-size: 12.5px; margin-top: 2px; }
+.desc-lineas { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.desc-lineas li { display: flex; justify-content: space-between; gap: 10px; color: var(--m); font-weight: 600; }
+.desc-lineas li span:last-child { white-space: nowrap; color: var(--t); }
+
+.plan-actual { position: relative; overflow: hidden; border-top: 4px solid var(--gr); }
+.plan-actual.plan-premium { border-top-color: var(--r); }
+.plan-actual.plan-deluxe { border-top-color: #B07D12; }
+.plan-actual > small { color: var(--m); font-weight: 800; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; }
+.plan-nombre { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 4px; }
+.plan-nombre b { font-size: 30px; font-weight: 800; line-height: 1.1; }
+.plan-actual p { margin: 4px 0 0; font-weight: 600; }
+.plan-actual .precio-plan { font-size: 17px; font-weight: 800; margin-top: 8px; }
+.regla { font-size: 16px; font-weight: 800; margin: 8px 0 0; }
+.ejemplos { margin-top: 12px; display: grid; gap: 6px; }
+.ejemplo { display: flex; justify-content: space-between; gap: 10px; background: var(--c2); border-radius: 10px; padding: 8px 12px; font-weight: 600; font-size: 14px; }
+.ejemplo b { color: var(--az); }
+.planes { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.planes > .tarjeta + .tarjeta { margin-top: 0; }
+.plan { display: flex; flex-direction: column; border-top: 4px solid var(--gr); }
+.plan.plan-premium { border-top-color: var(--r); }
+.plan.plan-deluxe { border-top-color: #B07D12; }
+.plan.es-el-tuyo { box-shadow: 0 0 0 2px var(--okf); }
+.plan-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plan-cab b { font-size: 18px; font-weight: 800; }
+.plan-cab .precio { font-weight: 800; color: var(--rt); white-space: nowrap; }
+.plan.plan-basica .plan-cab .precio { color: var(--ok); }
+.plan .botones { margin-top: auto; padding-top: 12px; }
+.plan .botones .pill { font-size: 13px; padding: 6px 12px; }
+.metodos { display: grid; border: 1px solid var(--b); border-radius: 12px; overflow: hidden; }
+.metodo { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--b); background: var(--c); color: var(--t); padding: 12px 14px; min-height: 56px; font-weight: 800; font-size: 15px; }
+.metodo:last-child { border-bottom: 0; }
+.metodo:hover { background: var(--c2); }
+.metodo .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--rs); color: var(--rt); display: grid; place-items: center; flex: 0 0 auto; }
+.metodo .ic .ico { width: 19px; height: 19px; }
+.metodo .n { flex: 1; }
+.metodo > .ico { color: var(--m); width: 18px; height: 18px; }
+.tarjeta-viva {
+  border-radius: 16px; padding: 16px 18px; color: #fff; background: linear-gradient(135deg, #1B2A4A, #3A1B4A 55%, #C8141F); margin-bottom: 4px;
+  aspect-ratio: 1.6 / 1; max-height: 210px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--sombra);
+}
+.tarjeta-viva .sup { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; letter-spacing: .04em; }
+.tarjeta-viva .chip-oro { width: 42px; height: 30px; border-radius: 7px; background: linear-gradient(135deg, #E9C46A, #B8860B); }
+.tarjeta-viva .num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 19px; letter-spacing: .08em; font-weight: 700; }
+.tarjeta-viva .inf { display: flex; justify-content: space-between; gap: 10px; }
+.tarjeta-viva .inf small { display: block; font-size: 10px; opacity: .8; letter-spacing: .08em; }
+.tarjeta-viva .inf b { font-size: 13px; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; max-width: 220px; }
+.tarjeta-viva .vence { text-align: right; }
+.dos-campos.fijo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.procesando { position: fixed; inset: 0; z-index: 95; background: var(--velo); display: grid; place-items: center; padding: 20px; }
+.procesando .caja { background: var(--c); border: 1px solid var(--b); border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; box-shadow: var(--sombra); }
+.procesando .rueda { width: 30px; height: 30px; border-width: 3px; }
+.procesando small { color: var(--m); font-weight: 600; }
+@media (min-width: 768px) {
+  .planes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

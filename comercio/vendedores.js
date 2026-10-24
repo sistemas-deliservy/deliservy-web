@@ -19,7 +19,7 @@
     return n;
   }
 
-  function filaProducto(ctx, p, tope, alGuardar) {
+  function filaProducto(ctx, p, tope, plan) {
     var precioApp = C.num(p.precioApp);
     var pausado = !!p.pausadoPorAdmin;
     var pct = C.entrada({ value: String(C.num(p.pct)).replace('.', ','), inputmode: 'decimal', maxlength: '5', 'aria-label': '% para el vendedor', disabled: pausado });
@@ -58,13 +58,14 @@
         p.activo = true;
         pintarEstado(cuerpo.pct);
         if (r != null) redes.value = C.enCampo(r);
-        if (alGuardar) alGuardar();
+
       }, function (e) { error.textContent = e.message; error.hidden = false; });
     });
     return h('div', { class: 'fila-cv' + (pausado ? ' pausado' : '') },
       h('div', { class: 'cv-producto' },
         foto ? h('img', { class: 'miniatura', src: foto, alt: '', loading: 'lazy' }) : dato('span', { class: 'miniatura sin-foto' }, C.inicial(p.nombre)),
         h('div', { class: 'txt' }, dato('b', null, p.nombre || ''), h('small', null, 'En la app: ', C.dolares(precioApp)), estado,
+          plan && C.cobro && precioApp > 0 ? h('small', { class: 'cobro-cv' }, C.cobro.textoPorVenta(C.num(p.precioRedes) > 0 ? p.precioRedes : precioApp, plan)) : null,
           p.subio ? h('small', { class: 'ambar' }, 'Subiste el precio: revisa el de redes.') : null)),
       h('div', { class: 'cv-campos' },
         h('label', { class: 'cv-campo' }, h('span', null, '% vendedor'), h('div', { class: 'con-sufijo' }, pct, h('span', null, '%'))),
@@ -115,7 +116,7 @@
             C.cifra('Cupones', C.dolares(u.cuponesUsd))),
           h('p', { class: 'nota' }, 'Lo del vendedor sale de tu ganancia, como la comisión.'))),
       h('div', { class: 'etq-fila' }, h('span', { class: 'etq' }, 'Tus productos'), h('span', { class: 'cuenta' }, C.plural(productos.length, 'producto', 'productos'))),
-      productos.length ? h('div', { class: 'lista' }, productos.map(function (p) { return filaProducto(ctx, p, tope); }))
+      productos.length ? h('div', { class: 'lista' }, productos.map(function (p) { return filaProducto(ctx, p, tope, d.__plan); }))
         : C.vacio('Aún no tienes productos', 'Agrega productos para venderlos con vendedores externos.', null, 'productos'),
       h('span', { class: 'etq' }, 'Ventas de vendedores'),
       ventas.length ? h('div', { class: 'lista' }, ventas.map(function (x) {
@@ -130,7 +131,11 @@
     id: 'vendedores', titulo: 'Vendedores externos', corto: 'Vendedores', icono: 'vendedores',
     visible: function (ctx) { return ctx.esDueno && !!ctx.tienda && ctx.tienda.visibleEnApp === true; },
     mostrar: function (ctx, sub, v) {
-      C.pedir('GET', '/vendedores-externos?storeId=' + encodeURIComponent(ctx.tienda.storeId)).then(function (d) { pintar(ctx, v, d || {}); }, function (e) { C.falloEnVista(v, e); });
+      Promise.all([C.pedir('GET', '/vendedores-externos?storeId=' + encodeURIComponent(ctx.tienda.storeId)), C.cobro ? C.cobro.planDe(ctx) : Promise.resolve(null)]).then(function (rr) {
+        var d = rr[0] || {};
+        d.__plan = rr[1];
+        pintar(ctx, v, d);
+      }, function (e) { C.falloEnVista(v, e); });
     },
   };
 })(window);

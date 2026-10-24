@@ -24,6 +24,14 @@
  *   POST /__simulado/fallar-fotos      la próxima subida de foto falla (500)
  *   GET  /__simulado/ultima-foto       lo que llegó en la última foto (tipo, bytes, ancho y alto)
  *   GET  /__simulado/bitacora          lo último que se escribió (como `comercio_bitacora`)
+ *
+ * «Mi plan» (§7 del contrato, sin rutas en él: las de aquí son la propuesta de la web):
+ *   GET  plan?storeId=               el plan que cuenta, la membresía, el cobro por producto, los ajustes y los pagos
+ *   POST plan/solicitar              {companyId, plan:'premium'|'deluxe'} «Quiero…» (le avisa al admin)
+ *   POST plan/pagar/cotizar          {companyId} → {pagoId, montoUsd, montoBs, tasa, periodo, pago:{banco, telefono, cuenta, rif, titular}}
+ *   POST plan/pagar                  {pagoId, metodo, telefonoPago | cedulaTipo+cedulaNumero | tarjeta} (el cuerpo de la tienda web)
+ *   Tarjetas de prueba: 4111 1111 1111 1111 sale bien; una que termine en 0002, el banco la rechaza. Pago móvil desde
+ *   0414-000-0000 o transferencia con la cédula 1111111: «aún no aparece».
  */
 'use strict';
 
@@ -88,6 +96,20 @@ function proximoJueves(ahora) {
   const dia = new Date(Date.UTC(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate() + falta, 23, 59, 0));
   if (dia.getTime() - CARACAS_MS < ahora) dia.setUTCDate(dia.getUTCDate() + 7);
   return dia.getTime() - CARACAS_MS;
+}
+
+// ── El cobro de Deliservy por producto (§7 del contrato) ─────────────────────
+
+const AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 25.99 };
+/** Por UNIDAD: 5 % del precio, mínimo 0,20 y máximo 0,99 (la mitad hacia arriba); Premium la mitad (0,10–0,50); Deluxe 0. */
+function cobroPorUnidad(precio, plan, promoViva, ajustes) {
+  const a = ajustes || AJUSTES;
+  if (promoViva || plan === 'deluxe') return 0;
+  const cents = Math.round(Number(precio) * 100);
+  let c = Math.floor((cents * a.pct + 50) / 100);
+  c = Math.min(Math.round(a.maximoUsd * 100), Math.max(Math.round(a.minimoUsd * 100), c));
+  if (plan === 'premium') c = Math.min(50, Math.max(10, Math.floor((c + 1) / 2)));
+  return c / 100;
 }
 
 // ── Lugares de Valencia (para el buscador y para Alisa) ──────────────────────
@@ -180,7 +202,7 @@ function datosNuevos() {
         direccion: 'Av. Bolívar Norte, C.C. Camoruco, local 12, Valencia', telefono: '584145550123',
         correo: 'elbudare@gmail.com', rif: 'J501234560', lat: 10.2187, lng: -68.0071,
         categoria: { id: 12, nombre: 'Comida venezolana' },
-        comisionPct: 0, comisionPromo: { pct: 0, hasta: '2026-11-29T03:59:59.000Z', luegoPct: 10 }, flota: null,
+        comisionPct: 10, comisionPromo: null, flota: null, cobroPorProducto: false,
         horarios: [
           { dia: 0, abre: '09:00', cierra: '15:00', cerrado: false }, { dia: 1, abre: '07:00', cierra: '22:00', cerrado: false },
           { dia: 2, abre: '07:00', cierra: '22:00', cerrado: false }, { dia: 3, abre: '07:00', cierra: '22:00', cerrado: false },
@@ -195,7 +217,7 @@ function datosNuevos() {
         direccion: 'Calle 137, C.C. Paseo La Granja, local 4, Naguanagua', telefono: '584125550160',
         correo: 'boutiquevalentina@gmail.com', rif: 'J412345670', lat: 10.2372, lng: -68.0151,
         categoria: { id: 30, nombre: 'Ropa y calzado' },
-        comisionPct: 10, comisionPromo: null,
+        comisionPct: 0, comisionPromo: { pct: 0, hasta: '2026-11-29T03:59:59.000Z', luegoPct: 10 }, cobroPorProducto: false,
         flota: { comercioId: 22, activo: true, bloqueado: false },
         horarios: [
           { dia: 0, abre: '00:00', cierra: '00:00', cerrado: true }, { dia: 1, abre: '09:00', cierra: '18:00', cerrado: false },
@@ -212,6 +234,19 @@ function datosNuevos() {
       { id: 32, nombre: 'Farmacia' },
     ],
     cuentaBancaria: { banco: 'Banco Nacional de Crédito (0191)', titular: 'Ana Rodríguez', cuentaParaVer: '0191 •••• •••• •••• 3456' },
+    ajustesCobro: Object.assign({}, AJUSTES),
+    planes: {
+      // La Arepera: Premium activa (la pagó dos veces); la boutique: Básica.
+      107: {
+        membresia: { plan: 'premium', estado: 'activa', activaDesde: iso(ahora - 40 * DIA_MS), activaHasta: iso(ahora + 21 * DIA_MS), precioUsd: 14.99 },
+        solicitud: null,
+        pagos: [
+          { id: 2, fecha: iso(ahora - 9 * DIA_MS), metodo: 'pago_movil', montoUsd: 14.99, montoBs: redondo(14.99 * 213.1), referencia: '004512', estado: 'aprobado', periodoDesde: iso(ahora - 9 * DIA_MS), periodoHasta: iso(ahora + 21 * DIA_MS) },
+          { id: 1, fecha: iso(ahora - 40 * DIA_MS), metodo: 'debito', montoUsd: 14.99, montoBs: redondo(14.99 * 205.4), referencia: '771203', estado: 'aprobado', periodoDesde: iso(ahora - 40 * DIA_MS), periodoHasta: iso(ahora - 9 * DIA_MS) },
+        ],
+      },
+      140: { membresia: null, solicitud: null, pagos: [] },
+    },
     billetera: { disponibleBs: 18452.3, retenidoBs: 1204.5, liberaEn: iso(ahora + 9 * HORA_MS), retiroBloqueadoHasta: null },
     grupos: [
       { id: 401, companyId: 107, nombre: 'Arepas' }, { id: 402, companyId: 107, nombre: 'Bebidas' },
@@ -300,8 +335,11 @@ function datosNuevos() {
       const cancelado = azar() < 0.05;
       const canal = azar() < 0.12 ? 'vendedor' : azar() < 0.15 ? 'web' : 'app';
       const vendedorUsd = canal === 'vendedor' ? redondo(productosUsd * 0.1) : 0;
-      const comision = creado < promoDesde ? 0.1 : 0;
-      const gananciaUsd = cancelado ? 0 : redondo(productosUsd * (1 - comision) - vendedorUsd);
+      const comision = 0.1;
+      const planEntonces = creado >= ahora - 40 * DIA_MS ? 'premium' : 'basica';
+      const cobroModo = canal !== 'app' ? 'por_producto' : 'porcentaje';
+      const cobroUsd = cobroModo === 'por_producto' ? redondo(lineas.reduce((x, l) => x + cobroPorUnidad(l.precioUsd, planEntonces, false) * l.cantidad, 0)) : redondo(productosUsd * comision);
+      const gananciaUsd = cancelado ? 0 : redondo(productosUsd - cobroUsd - vendedorUsd);
       id += 1;
       const rep = repartidores[Math.floor(azar() * repartidores.length)];
       d.pedidos.push({
@@ -309,7 +347,7 @@ function datosNuevos() {
         lineas, productosUsd, envioUsd, propinaUsd: azar() < 0.3 ? 1 : 0, cliente: clientes[Math.floor(azar() * clientes.length)],
         paraRecoger: azar() < 0.1, repartidor: rep, canal, vendedor: canal === 'vendedor' ? 12 + Math.floor(azar() * 3) : null,
         cupon: azar() < 0.08 ? { codigo: 'BIENVENIDO', descuentoUsd: 1, pagaLaTienda: 0 } : null,
-        vendedorUsd, comision, gananciaUsd, abonado: !cancelado, motivo: cancelado ? 'El cliente canceló' : null,
+        vendedorUsd, comision, cobroModo, cobroUsd, planComercio: planEntonces, gananciaUsd, abonado: !cancelado, motivo: cancelado ? 'El cliente canceló' : null,
         calificacion: !cancelado && azar() < 0.4 ? (azar() < 0.75 ? 5 : 4) : null, prueba: false,
       });
       if (canal === 'vendedor' && !cancelado && creado > ahora - 30 * DIA_MS) {
@@ -330,7 +368,11 @@ function datosNuevos() {
   const nuevo = (o) => {
     o.productosUsd = redondo(o.lineas.reduce((s, l) => s + l.totalUsd, 0));
     o.envioUsd = o.paraRecoger ? 0 : 2;
-    o.gananciaUsd = redondo(o.productosUsd * (1 - o.comision) - o.vendedorUsd);
+    o.comision = 0.1;
+    o.planComercio = 'premium';
+    o.cobroModo = o.canal && o.canal !== 'app' ? 'por_producto' : 'porcentaje';
+    o.cobroUsd = o.cobroModo === 'por_producto' ? redondo(o.lineas.reduce((x, l) => x + cobroPorUnidad(l.precioUsd, 'premium', false) * l.cantidad, 0)) : redondo(o.productosUsd * 0.1);
+    o.gananciaUsd = redondo(o.productosUsd - o.cobroUsd - o.vendedorUsd - (o.cupon ? o.cupon.pagaLaTienda : 0));
     d.pedidos.push(enCurso(o));
   };
   nuevo({ id: 2601, creado: ahora - 3 * 60000, estado: 1, cliente: 'Mariana V.', lineas: [linea(9001, 2, [{ grupo: 'Tipo de masa', nombre: 'Maíz blanco', precioUsd: 0 }, { grupo: 'Extras', nombre: 'Queso guayanés', precioUsd: 1.5 }], 'Una sin mayonesa'), linea(9007, 2)], comision: 0, vendedorUsd: 0 });
@@ -529,10 +571,14 @@ function detalle(p) {
   if (p.estado >= 200 && p.estado < 400) eventos.push({ fecha: iso(p.entregado), texto: 'Entregado al cliente' });
   if (p.estado === 400) eventos.push({ fecha: iso(p.creado + 30 * 60000), texto: 'Cancelado: ' + (p.motivo || '') });
   const dev = D.devoluciones.find((x) => x.orderId === p.id);
-  const detalleGanancia = [{ texto: 'Productos', usd: p.productosUsd }, { texto: 'Comisión de Deliservy (' + Math.round(p.comision * 100) + ' %)', usd: -comisionUsd }];
+  const porProducto = p.cobroModo === 'por_producto';
+  const cobroUsd = p.cobroUsd != null ? p.cobroUsd : comisionUsd;
+  const nombrePlan = { basica: 'Básica', premium: 'Premium', deluxe: 'Deluxe' }[p.planComercio || 'basica'];
+  const detalleGanancia = [{ texto: 'Productos', usd: p.productosUsd },
+    porProducto ? { texto: 'Deliservy por producto (' + nombrePlan + ')', usd: -cobroUsd } : { texto: 'Comisión de Deliservy (' + Math.round(p.comision * 100) + ' %)', usd: -cobroUsd }];
   if (p.cupon && p.cupon.pagaLaTienda) detalleGanancia.push({ texto: 'Cupón ' + p.cupon.codigo, usd: -p.cupon.pagaLaTienda });
   if (p.vendedorUsd) detalleGanancia.push({ texto: 'Vendedor externo', usd: -p.vendedorUsd });
-  const ganancia = p.estado === 400 ? 0 : redondo(p.productosUsd - comisionUsd - (p.cupon ? p.cupon.pagaLaTienda : 0) - p.vendedorUsd);
+  const ganancia = p.estado === 400 ? 0 : redondo(p.productosUsd - cobroUsd - (p.cupon ? p.cupon.pagaLaTienda : 0) - p.vendedorUsd);
   return {
     id: p.id, storeId: p.storeId, tienda: t ? t.nombre : '', creadoEn: iso(p.creado), entregadoEn: p.entregado ? iso(p.entregado) : null,
     estado: p.estado, cartel: cartelDe(p), paraRecoger: p.paraRecoger,
@@ -546,6 +592,10 @@ function detalle(p) {
     canal: p.canal, canalTexto: p.canal === 'vendedor' ? 'Vendedor #' + p.vendedor : p.canal === 'web' ? 'Tienda web' : 'App',
     cupon: p.cupon ? { codigo: p.cupon.codigo, descuentoUsd: p.cupon.descuentoUsd, pagaLaTiendaUsd: p.cupon.pagaLaTienda } : null,
     ganancia: { usd: ganancia, bs: p.abonado ? redondo(ganancia * TASA) : null, abonada: !!p.abonado, detalle: detalleGanancia },
+    cobro: {
+      modo: porProducto ? 'por_producto' : 'porcentaje', usd: cobroUsd, plan: p.planComercio || 'basica', pct: porProducto ? null : Math.round(p.comision * 100),
+      lineas: porProducto ? p.lineas.map((l) => ({ nombre: l.nombre, cantidad: l.cantidad, porUnidadUsd: cobroPorUnidad(l.precioUsd, p.planComercio || 'basica', false), totalUsd: redondo(cobroPorUnidad(l.precioUsd, p.planComercio || 'basica', false) * l.cantidad) })) : [],
+    },
     tieneRepartidorEnVivo: p.estado >= 100 && p.estado < 200 && !!p.repartidor,
     destino: p.paraRecoger ? null : { lat: 10.2121, lng: -68.0110 },
     tiendaUbicacion: t ? { lat: t.lat, lng: t.lng } : null,
@@ -822,10 +872,10 @@ async function api(req, res, url) {
       cuenta: { nombre: w ? w.nombre : D.cuentas[s.userId].nombre, telefonoParaVer: telefonoParaVer(s.telefono), rol: s.rol, permisos: s.permisos },
       tiendas: tiendasDeLaSesion(s).map((t) => ({
         storeId: t.storeId, companyId: t.companyId, nombre: t.nombre, logo: t.logo, tipo: t.tipo,
-        visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, comisionPct: t.comisionPct, comisionPromo: t.comisionPromo,
+        visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto,
         flota: t.flota,
       })),
-      avisos: s.rol === 'dueno' ? ['Hasta el 28 de noviembre, Deliservy no te cobra comisión.'] : [],
+      avisos: s.rol === 'dueno' ? ['Nuevo: en la tienda web y con vendedores, Deliservy cobra por producto.'] : [],
     };
   }
   if (metodo === 'GET' && ruta === 'hoy') {
@@ -1353,6 +1403,72 @@ async function api(req, res, url) {
     throw noEncontrado();
   }
 
+  // ── Mi plan (§7): el cobro por producto y las membresías ──
+  if (partesRuta[0] === 'plan') {
+    if (metodo === 'GET' && ruta === 'plan') {
+      if (s.rol !== 'dueno' && !s.permisos.includes('productos')) throw new Fallo(403, 'No tienes permiso para esto.');
+      const t = laTienda(s, q.storeId);
+      if (!t) throw noEncontrado();
+      return vistaPlan(t);
+    }
+    soloDueno(s);
+    const t = laEmpresa(s, body.companyId);
+    if (!t) throw noEncontrado();
+    const pl = D.planes[t.companyId] || (D.planes[t.companyId] = { membresia: null, solicitud: null, pagos: [] });
+    if (metodo === 'POST' && ruta === 'plan/solicitar') {
+      if (!['premium', 'deluxe'].includes(body.plan)) throw new Fallo(400, 'Elige Premium o Deluxe.');
+      if (vistaPlan(t).plan === body.plan) throw new Fallo(409, 'Ya tienes ese plan.');
+      pl.solicitud = { plan: body.plan, fecha: iso(ahora) };
+      anotar(s, 'plan_solicitar', 'membresia', t.companyId, null, pl.solicitud);
+      return { ok: true, mensaje: 'Listo: le avisamos a Deliservy. Te escribimos pronto.', solicitud: pl.solicitud };
+    }
+    if (metodo === 'POST' && ruta === 'plan/pagar/cotizar') {
+      const m = pl.membresia;
+      if (!m || m.estado === 'quitada') throw new Fallo(409, 'Primero pide un plan: Deliservy te lo asigna.');
+      const desde = m.estado === 'activa' && Date.parse(m.activaHasta) > ahora ? Date.parse(m.activaHasta) : ahora;
+      const pagoId = ++D.siguienteId;
+      const pago = { pagoId, companyId: t.companyId, plan: m.plan, montoUsd: m.precioUsd, tasa: TASA, montoBs: redondo(m.precioUsd * TASA), desde, hasta: sumarUnMes(desde) };
+      D.pagosPlan = D.pagosPlan || new Map();
+      D.pagosPlan.set(pagoId, pago);
+      return {
+        pagoId, plan: m.plan, montoUsd: pago.montoUsd, montoBs: pago.montoBs, tasa: TASA, periodo: { desde: iso(desde), hasta: iso(pago.hasta) },
+        pago: { banco: 'Banco Nacional de Crédito', codigoBanco: '0191', telefono: '04144957006', cuenta: '0191-0123-45-2100012345', titular: 'Deliservyapp, C.A.', rif: 'J-504754129' },
+      };
+    }
+    if (metodo === 'POST' && ruta === 'plan/pagar') {
+      const pago = D.pagosPlan && D.pagosPlan.get(Number(body.pagoId));
+      if (!pago || pago.companyId !== t.companyId) throw noEncontrado();
+      if (pago.usado) throw new Fallo(409, 'Ese pago ya se registró.');
+      const m = body.metodo;
+      if (m === 'pago_movil') {
+        if (!telefonoNormal(body.telefonoPago)) throw new Fallo(400, 'Escribe el teléfono desde el que pagaste.');
+        if (String(body.telefonoPago).replace(/\D/g, '').endsWith('4140000000')) return { ok: false, mensaje: 'Aún no aparece. Revisa el número y vuelve a intentarlo en un minuto.' };
+      } else if (m === 'transferencia') {
+        if (!/^[VEJG]$/.test(String(body.cedulaTipo || '')) || !/^\d{6,9}$/.test(String(body.cedulaNumero || ''))) throw new Fallo(400, 'Escribe la cédula o el RIF del titular.');
+        if (body.cedulaNumero === '1111111') return { ok: false, mensaje: 'Aún no aparece. Revisa la cédula y vuelve a intentarlo en un minuto.' };
+      } else if (m === 'debito' || m === 'credito') {
+        const tj = body.tarjeta || {};
+        const n = String(tj.numero || '');
+        if (!/^\d{15,16}$/.test(n) || !luhn(n)) throw new Fallo(400, 'Revisa el número de la tarjeta.');
+        if (!/^\d{2}\/\d{2}$/.test(String(tj.vence || '')) || !/^\d{3,4}$/.test(String(tj.cvv || '')) || String(tj.titular || '').trim().length < 3) throw new Fallo(400, 'Completa todos los datos de la tarjeta');
+        if (m === 'debito' && (!/^\d{6,9}$/.test(String(tj.cedula || '')) || !/^\d{4}$/.test(String(tj.clave || '')))) throw new Fallo(400, 'Completa todos los datos de la tarjeta');
+        if (n.endsWith('0002')) throw new Fallo(402, 'El banco rechazó el pago. Revisa los datos e inténtalo de nuevo.');
+      } else throw new Fallo(400, 'Elige cómo pagas.');
+      pago.usado = true;
+      const mem = pl.membresia;
+      const estabaActiva = mem.estado === 'activa' && Date.parse(mem.activaHasta) > ahora;
+      mem.estado = 'activa';
+      if (!estabaActiva) mem.activaDesde = iso(pago.desde);
+      mem.activaHasta = iso(pago.hasta);
+      pl.solicitud = null;
+      pl.pagos.unshift({ id: pago.pagoId, fecha: iso(ahora), metodo: m, montoUsd: pago.montoUsd, montoBs: pago.montoBs, referencia: String(100000 + Math.floor(Math.random() * 899999)), estado: 'aprobado', periodoDesde: iso(pago.desde), periodoHasta: iso(pago.hasta) });
+      anotar(s, 'plan_pagar', 'membresia', t.companyId, null, { metodo: m, montoUsd: pago.montoUsd });
+      const hasta = new Date(pago.hasta).toLocaleDateString('es-VE', { timeZone: 'America/Caracas', day: 'numeric', month: 'short' }).replace(/\.$/, '');
+      return { ok: true, pagado: true, mensaje: 'Listo: tu plan ' + (mem.plan === 'deluxe' ? 'Deluxe' : 'Premium') + ' va hasta el ' + hasta + '.', membresia: Object.assign({}, mem) };
+    }
+    throw noEncontrado();
+  }
+
   // ── Estadísticas y opiniones ──
   if (ruta === 'estadisticas' && metodo === 'GET') {
     exigir(s, 'estadisticas');
@@ -1521,6 +1637,29 @@ async function api(req, res, url) {
   throw noEncontrado();
 }
 
+function vistaPlan(t) {
+  const pl = D.planes[t.companyId] || { membresia: null, solicitud: null, pagos: [] };
+  const m = pl.membresia;
+  if (m && m.estado === 'activa' && Date.parse(m.activaHasta) < Date.now()) m.estado = 'vencida';
+  const promoViva = t.comisionPromo && Date.parse(t.comisionPromo.hasta) > Date.now();
+  return {
+    companyId: t.companyId, storeId: t.storeId, plan: m && m.estado === 'activa' ? m.plan : 'basica', membresia: m ? Object.assign({}, m) : null,
+    cobroPorProducto: !!t.cobroPorProducto, comisionPct: t.comisionPct, promo: promoViva ? { pct: t.comisionPromo.pct, hasta: t.comisionPromo.hasta } : null,
+    ajustes: Object.assign({}, D.ajustesCobro), solicitud: pl.solicitud, pagos: pl.pagos.slice(), tasaBs: TASA,
+  };
+}
+/** El mismo día del mes siguiente (o el último, si ese mes no lo tiene). */
+function sumarUnMes(ms) {
+  const c = new Date(ms + CARACAS_MS);
+  const y = c.getUTCFullYear(), m = c.getUTCMonth(), d = c.getUTCDate();
+  const ultimo = new Date(Date.UTC(y, m + 2, 0)).getUTCDate();
+  return Date.UTC(y, m + 1, Math.min(d, ultimo), c.getUTCHours(), c.getUTCMinutes()) - CARACAS_MS;
+}
+function luhn(n) {
+  let suma = 0, doble = false;
+  for (let i = n.length - 1; i >= 0; i--) { let x = Number(n.charAt(i)); if (doble) { x *= 2; if (x > 9) x -= 9; } suma += x; doble = !doble; }
+  return suma % 10 === 0;
+}
 function requisitos(t) {
   const conFoto = D.productos.filter((p) => p.companyId === t.companyId && !p.borrado && p.images.length && p.precio > 0).length;
   const r = {
@@ -1542,7 +1681,7 @@ function vistaTienda(t) {
     ubicacion: { lat: t.lat, lng: t.lng }, categoria: t.categoria, categorias: D.categorias,
     logo: t.logo, banner: t.banner, marcador: t.marcador,
     horarios: t.horarios.map((h) => Object.assign({}, h)),
-    comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cuentaBancaria: D.cuentaBancaria,
+    comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto, cuentaBancaria: D.cuentaBancaria,
     visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, tieneFlota: !!t.flota, requisitos: requisitos(t).r,
   };
 }
@@ -1605,7 +1744,7 @@ const servidor = http.createServer(async (req, res) => {
         const lineas = [{ productId: pr.id, nombre: pr.nombre, cantidad: 2, precioUsd: pr.precio, totalUsd: redondo(pr.precio * 2), opciones: [], nota: '' },
           { productId: pr2.id, nombre: pr2.nombre, cantidad: 1, precioUsd: 3, totalUsd: 3, opciones: [{ grupo: 'Tamaño', nombre: 'Grande', precioUsd: 1 }], nota: '' }];
         const productosUsd = redondo(lineas.reduce((x, l) => x + l.totalUsd, 0));
-        D.pedidos.push({ id, storeId: 31, creado: Date.now(), estado: 1, entregado: null, lineas, productosUsd, envioUsd: 2, propinaUsd: 0, cliente: 'Andreína C.', paraRecoger: false, repartidor: null, canal: 'app', vendedor: null, cupon: null, vendedorUsd: 0, comision: 0, gananciaUsd: productosUsd, abonado: false, motivo: null, calificacion: null, prueba: false });
+        D.pedidos.push({ id, storeId: 31, creado: Date.now(), estado: 1, entregado: null, lineas, productosUsd, envioUsd: 2, propinaUsd: 0, cliente: 'Andreína C.', paraRecoger: false, repartidor: null, canal: 'app', vendedor: null, cupon: null, vendedorUsd: 0, comision: 0.1, cobroModo: 'porcentaje', cobroUsd: redondo(productosUsd * 0.1), planComercio: 'premium', gananciaUsd: redondo(productosUsd * 0.9), abonado: false, motivo: null, calificacion: null, prueba: false });
         responder(res, 200, { ok: true, id }); return;
       }
       if (req.method === 'POST' && p === '/__simulado/vencer-sesiones') { for (const s of D.sesiones.values()) s.venceEn = Date.now() - 1000; responder(res, 200, { ok: true }); return; }

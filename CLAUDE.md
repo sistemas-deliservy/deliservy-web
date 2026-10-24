@@ -197,7 +197,8 @@ claro/oscuro, inglés, `.htaccess` con los mismos encabezados). Contrato y captu
 `…/Documents/Deliservy - Panel del comercio (propuesta 24-oct-2026)/` (`CONTRATO-panel-del-comercio.md`).
 
 - Varios guiones con `defer`, en orden: `base.js` (utilidades, `h()`, la red, ventanas) · `mapa.js` · `fotos.js` ·
-  `graficas.js` · una por sección (`pedidos`, `productos`, `vendedores`, `billetera`, `flota`, `estadisticas`, `tienda`) ·
+  `graficas.js` · `plan.js` · una por sección (`pedidos`, `productos`, `vendedores`, `billetera`, `flota`, `estadisticas`,
+  `tienda`) ·
   `app.js` (entrar, el marco, la consulta de pedidos nuevos cada 10 s). Mapa: MapLibre + pmtiles en `comercio/mapa/`, con
   los estilos de `www.deliservy.website/mapa/estilos/`. Tono de pedido nuevo: `comercio/sonidos/pedido.mp3` (copia del de
   la app).
@@ -209,4 +210,10 @@ claro/oscuro, inglés, `.htaccess` con los mismos encabezados). Contrato y captu
   playwright-core; falla con un error de consola, una violación de la CSP o scroll horizontal).
 - Idioma: `diccionario-comercio.json` + `siempre-comercio.json` (lo que manda la API); `aplicar.py` mira todos los
   `comercio/*.js`.
+- «Mi plan» (`plan.js`, §7 del contrato): el cobro de Deliservy por producto (5 %, mínimo 0,20 y máximo 0,99 por
+  unidad; Premium la mitad, Deluxe nada; con promoción de 0 %, nada) y las membresías (Premium 14,99 $, Deluxe 25,99 $
+  al mes), con «Quiero…» y «Pagar membresía» por tarjeta de débito o crédito, pago móvil o transferencia, como la tienda
+  web. La misma cuenta da las pastillas «Deliservy: 0,50 $ por venta» de Productos y Vendedores externos. El contrato no
+  fija sus rutas: las de la API simulada (`GET plan`, `POST plan/solicitar`, `plan/pagar/cotizar`, `plan/pagar`) son la
+  propuesta.
 - ⚠️ Orden al desplegar: primero la API (rama `panel-comercio` del servidor), después `comercio/` a Ferozo.
