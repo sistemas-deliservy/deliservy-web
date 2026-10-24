@@ -163,7 +163,7 @@ tienda.php          Le pide la página a la API (…/api/compartir/v|pedido|p|t/
   token en la cabecera `Authorization`. Lleva CSP: **nada de guiones ni estilos dentro del HTML** y nada de `innerHTML`
   con datos (todo con `createElement`/`textContent`).
 - `tienda.php` reenvía User-Agent, Referer, la IP y `?red=` (así la API cuenta la visita y su red). Si la API no contesta
-  en 6 s, se cae o frena: 302 a la misma página en api.deliservy.site. Solo acepta esas dos formas de dirección.
+  en 6 s, se cae o frena: 302 a la misma página en api.deliservy.site. Solo acepta esas cuatro formas de dirección.
 - ⚠️ Antes de subir el `.htaccess` a Ferozo, mirar si ya hay uno allí y JUNTAR las reglas.
 - ⚠️ Orden al desplegar: primero la API (rama `tienda-web` del servidor: el armazón con direcciones enteras y
   `/api/vendedor/*`), después esto.
