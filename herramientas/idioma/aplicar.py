@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pone (o quita) la capa de idioma en las páginas de la web.
 
-    python3 herramientas/idioma/aplicar.py            # la pone en index.html, privacidad.html, terminos.html y vendedor/
+    python3 herramientas/idioma/aplicar.py            # la pone en index.html, privacidad.html, terminos.html, vendedor/ y comercio/
     python3 herramientas/idioma/aplicar.py --quitar   # deja los archivos como estaban, byte a byte
 
 La capa son DOS bloques pegados justo antes de </body>: el diccionario
@@ -14,6 +14,9 @@ La página de los vendedores (`vendedor/index.html`, 24-oct-2026) va aparte:
   servidor (`siempre-vendedor.json`): así las otras tres páginas quedan igual que antes;
 - lleva CSP (ningún guion escrito dentro de la página): el motor va en un archivo, `vendedor/idioma.js` (copia de
   `motor.js`, que este guion escribe), y el diccionario sigue dentro, como datos JSON (eso la CSP sí lo deja).
+
+El panel del comercio (`comercio/index.html`, 24-oct-2026) va igual que la del vendedor: sus textos en sus guiones
+(`comercio/*.js`), `diccionario-comercio.json`, `siempre-comercio.json` y el motor en `comercio/idioma.js`.
 """
 import hashlib, json, os, re, sys, html
 
@@ -30,6 +33,13 @@ PAGINAS = [
     {'archivo': 'vendedor/index.html', 'textos': ['vendedor/app.js'],
      'diccionarios': ['diccionario.json', 'diccionario-vendedor.json'], 'siempre': 'siempre-vendedor.json',
      'motor_aparte': 'vendedor/idioma.js'},
+    # El panel del comercio (24-oct-2026): igual que la página del vendedor, con sus guiones repartidos en varios
+    # archivos (todos se miran), su diccionario y su lista de textos que manda la API.
+    {'archivo': 'comercio/index.html',
+     'textos': ['comercio/' + n + '.js' for n in ('base', 'mapa', 'fotos', 'graficas', 'pedidos', 'productos', 'vendedores',
+                                                  'billetera', 'flota', 'estadisticas', 'tienda', 'app')],
+     'diccionarios': ['diccionario.json', 'diccionario-comercio.json'], 'siempre': 'siempre-comercio.json',
+     'motor_aparte': 'comercio/idioma.js'},
 ]
 
 

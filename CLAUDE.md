@@ -188,4 +188,25 @@ El HTML sigue escrito SOLO en español; el inglés sale de `herramientas/idioma/
   después, volver a aplicarla).
 - La página de los vendedores también la lleva (24-oct-2026), con su diccionario (`diccionario-vendedor.json`), su
   lista de textos del servidor (`siempre-vendedor.json`) y el motor aparte (`vendedor/idioma.js`, por su CSP).
-- `herramientas/` NO se sube a Ferozo: solo las páginas, `vendedor/`, `.htaccess`, `tienda.php` y `.well-known/`.
+- `herramientas/` NO se sube a Ferozo: solo las páginas, `vendedor/`, `comercio/`, `.htaccess`, `tienda.php` y `.well-known/`.
+
+## Panel del comercio — 24-oct-2026
+
+`comercio/` = `www.deliservy.com/comercio/`, hermano de `vendedor/` (misma base: código por WhatsApp en 6 casillas,
+claro/oscuro, inglés, `.htaccess` con los mismos encabezados). Contrato y capturas: carpeta
+`…/Documents/Deliservy - Panel del comercio (propuesta 24-oct-2026)/` (`CONTRATO-panel-del-comercio.md`).
+
+- Varios guiones con `defer`, en orden: `base.js` (utilidades, `h()`, la red, ventanas) · `mapa.js` · `fotos.js` ·
+  `graficas.js` · una por sección (`pedidos`, `productos`, `vendedores`, `billetera`, `flota`, `estadisticas`, `tienda`) ·
+  `app.js` (entrar, el marco, la consulta de pedidos nuevos cada 10 s). Mapa: MapLibre + pmtiles en `comercio/mapa/`, con
+  los estilos de `www.deliservy.website/mapa/estilos/`. Tono de pedido nuevo: `comercio/sonidos/pedido.mp3` (copia del de
+  la app).
+- Habla con `https://api.deliservy.site/api/comercio/*` (en localhost, relativo) con el token en `Authorization`; el
+  buscador de direcciones, con `/api/client/address/*` (sin token). CSP en el `<meta>`: solo lo nuestro, `worker-src blob:`
+  por MapLibre y `connect-src` a `www.deliservy.website` por el mapa. Nada de `innerHTML` con datos.
+- Probar: `node herramientas/comercio-simulado/servidor.js` (API simulada en el puerto 8787; código 123456; Ana
+  `0412-555-0101`, el cajero `0412-555-0102`) y `node herramientas/comercio-simulado/prueba-en-navegador.js` (Chrome con
+  playwright-core; falla con un error de consola, una violación de la CSP o scroll horizontal).
+- Idioma: `diccionario-comercio.json` + `siempre-comercio.json` (lo que manda la API); `aplicar.py` mira todos los
+  `comercio/*.js`.
+- ⚠️ Orden al desplegar: primero la API (rama `panel-comercio` del servidor), después `comercio/` a Ferozo.
