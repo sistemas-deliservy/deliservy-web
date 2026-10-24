@@ -86,22 +86,26 @@
     return resto >= 10 ? 0 : resto;
   }
   /**
-   * El documento como se guarda: la letra y el número, sin guion — `V12345678` (V/E: 6 a 9 cifras), `J504754129`
-   * (J/G: 9 cifras, la última su verificador, como `rifEscrito`) o `PAB123456` (P + 5 a 20 letras o cifras).
-   * `{ documento }` o `{ error }` con la frase para enseñar. El número puede venir con puntos, guiones o su letra.
+   * El documento, como lo valida la API (`documentoNormalizado` de `datos-fiscales.ts`): `{ documento, numero }` o
+   * `{ error }` con la misma frase. `documento` es como se guarda (la letra y el número, sin guion: `V12345678`,
+   * `J504754129`, `PAB123456`); `numero`, lo que viaja en el campo `documento` (sin la letra: la letra va en
+   * `tipoDocumento`). V/E: 6 a 9 cifras, sin los ceros de delante; J/G: 9 cifras, la última su verificador (como
+   * `rifEscrito`); P: 5 a 19 letras o cifras. El número puede venir con puntos, guiones o con su letra delante.
    */
   function documentoNormalizado(tipo, numero) {
     var t = String(tipo || '').toUpperCase();
     if (!/^[VEJGP]$/.test(t)) return { error: 'Elige el tipo de documento.' };
     var limpio = String(numero == null ? '' : numero).toUpperCase().replace(/[\s.\-_/]/g, '');
-    if (t !== 'P' && limpio.charAt(0) === t) limpio = limpio.slice(1);
-    if (!limpio) return { error: t === 'P' ? 'Escribe el número de tu pasaporte.' : (t === 'J' || t === 'G') ? 'Escribe el RIF.' : 'Escribe tu cédula.' };
-    if (t === 'V' || t === 'E') return /^\d{6,9}$/.test(limpio) ? { documento: t + limpio } : { error: 'La cédula lleva de 6 a 9 números.' };
-    if (t === 'J' || t === 'G') {
-      if (!/^\d{9}$/.test(limpio)) return { error: 'El RIF lleva 9 números, como J-504754129.' };
-      return verificadorDelRif(t, limpio.slice(0, 8)) === Number(limpio.charAt(8)) ? { documento: t + limpio } : { error: 'Ese RIF no es válido: revisa sus números.' };
+    if (!limpio) return { error: 'Escribe el número de cédula, RIF o pasaporte.' };
+    if (t === 'P') return /^[A-Z0-9]{5,19}$/.test(limpio) ? { documento: 'P' + limpio, numero: limpio } : { error: 'El pasaporte va con 5 a 19 letras o números.' };
+    var m = /^([VEJGP])?(\d+)$/.exec(limpio);
+    if (t === 'V' || t === 'E') {
+      var cifras = m ? m[2].replace(/^0+/, '') : '';
+      return /^\d{6,9}$/.test(cifras) ? { documento: t + cifras, numero: cifras } : { error: 'La cédula va con 6 a 9 números.' };
     }
-    return /^[A-Z0-9]{5,20}$/.test(limpio) ? { documento: 'P' + limpio } : { error: 'El pasaporte lleva de 5 a 20 letras o números.' };
+    var nueve = m && m[2].length === 9 ? m[2] : '';
+    return nueve && verificadorDelRif(t, nueve.slice(0, 8)) === Number(nueve.charAt(8))
+      ? { documento: t + nueve, numero: nueve } : { error: 'Ese RIF no es válido. Revisa los 9 números.' };
   }
   /** Para verlo: `V-12345678`, `J-504754129` (letra, guion y el número COMPLETO), `Pasaporte AB123456`. */
   function documentoParaVer(doc) {
@@ -143,12 +147,13 @@
     else if (rs && (rs.length < 2 || rs.length > 150)) errores.razonSocial = 'La razón social va de 2 a 150 caracteres.';
     datos.razonSocial = rs || null;
     if (o.conDocumento) {
+      // Viaja como lo pide la API: la letra en `tipoDocumento` y el número, sin ella, en `documento`.
       var d = documentoNormalizado(c.tipoDocumento, c.numero);
-      if (d.error) errores.documento = d.error; else { datos.tipoDocumento = tipo; datos.documento = d.documento; }
+      if (d.error) errores.documento = d.error; else { datos.tipoDocumento = tipo; datos.documento = d.numero; }
     }
     var correo = String(c.correo == null ? '' : c.correo).trim();
     if (!correo) errores.correo = 'Escribe tu correo: ahí te llega tu factura.';
-    else if (!correoValido(correo)) errores.correo = 'Ese correo no es válido.';
+    else if (!correoValido(correo)) errores.correo = 'Escribe un correo válido.';
     else datos.correo = correoValido(correo);
     var dir = textoLimpio(c.direccion);
     if (dir.length < 10) errores.direccion = 'Escribe tu dirección completa.';
@@ -390,7 +395,7 @@
 
   /** El tipo de documento y su número, en una fila. `alCambiar(tipo)`: para el rótulo de la razón social. */
   function campoDeDocumento(prefijo, tipo, numero, alCambiar) {
-    var PISTA = { V: '12345678', E: '81234567', J: '504754129', G: '200000000', P: 'AB123456' };
+    var PISTA = { V: '12345678', E: '81234567', J: '504754129', G: '200000007', P: 'AB123456' };
     var select = h('select', { class: 'campo', id: prefijo + '-tipo', name: 'tipoDocumento', 'aria-label': 'Tipo de documento' },
       TIPOS_DE_DOCUMENTO.map(function (t) { var o = h('option', { value: t[0] }, t[1]); if (t[0] === tipo) o.selected = true; return o; }));
     var input = h('input', {
@@ -612,7 +617,7 @@
         // La razón social: lo escrito; vacía y antes tenía una → null (borrarla); vacía y no tenía → no se manda.
         if (r.datos.razonSocial) cuerpo.razonSocial = r.datos.razonSocial;
         else if (x.razonSocial) cuerpo.razonSocial = null;
-        if (doc && r.datos.documento && r.datos.documento !== String(x.documento || '').toUpperCase()) {
+        if (doc && r.datos.documento && r.datos.tipoDocumento + r.datos.documento !== String(x.documento || '').toUpperCase()) {
           cuerpo.tipoDocumento = r.datos.tipoDocumento;
           cuerpo.documento = r.datos.documento;
         }
@@ -1010,6 +1015,7 @@
         e.status = r.status;
         // El registro y «Mis datos»: el servidor dice qué casilla está mal (`campo`) o si ese número ya vende.
         e.campo = j && typeof j.campo === 'string' ? j.campo : null;
+        e.yaEsVendedor = !!(j && j.yaEsVendedor === true);
         throw e;
       });
     }, function () {
@@ -1275,6 +1281,7 @@
     }, function (e) {
       reg.enviando = false;
       if (boton) boton.disabled = false;
+      if (e.yaEsVendedor) { clearInterval(entrada.espera); pintar(registro('ya')); return; }
       if (e.campo === 'codigo') {
         reg.codigo = '';
         pintar(registro('codigo', { error: e.message }));
