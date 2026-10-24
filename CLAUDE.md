@@ -141,6 +141,26 @@ cd /var/www/deliservy && bash deploy.sh
 
 ---
 
+## Vendedores, tienda del cliente y seguimiento — 24-oct-2026
+
+Gilberth: «vendedores, sus enlaces, la tienda del cliente y el seguimiento, todo en www.deliservy.com» (el panel,
+admin.deliservy.site, queda solo para él). Tres piezas nuevas, todas en Ferozo junto a las páginas:
+
+```
+vendedor/           La página de los vendedores (index.html, app.js, app.css, idioma.js, fuentes/, .htaccess)
+.htaccess           /v/<codigo> y /pedido/<ficha> → tienda.php (por dentro: la barra sigue en www.deliservy.com)
+tienda.php          Le pide la página a la API (…/api/compartir/v/<codigo> o …/pedido/<ficha>) y la devuelve tal cual
+```
+
+- `vendedor/` habla con `https://api.deliservy.site/api/vendedor/*` (en localhost, relativo para las pruebas) con un
+  token en la cabecera `Authorization`. Lleva CSP: **nada de guiones ni estilos dentro del HTML** y nada de `innerHTML`
+  con datos (todo con `createElement`/`textContent`).
+- `tienda.php` reenvía User-Agent, Referer, la IP y `?red=` (así la API cuenta la visita y su red). Si la API no contesta
+  en 6 s, se cae o frena: 302 a la misma página en api.deliservy.site. Solo acepta esas dos formas de dirección.
+- ⚠️ Antes de subir el `.htaccess` a Ferozo, mirar si ya hay uno allí y JUNTAR las reglas.
+- ⚠️ Orden al desplegar: primero la API (rama `tienda-web` del servidor: el armazón con direcciones enteras y
+  `/api/vendedor/*`), después esto.
+
 ## Idioma (inglés / español) — 13-oct-2026
 
 Las tres páginas llevan al final una **capa de idioma** (`<!-- capa-idioma: inicio/fin -->`):
@@ -149,5 +169,8 @@ El HTML sigue escrito SOLO en español; el inglés sale de `herramientas/idioma/
 
 - Después de editar cualquier página: `python3 herramientas/idioma/aplicar.py` (si no, el
   texto nuevo sale en español también para quien la ve en inglés; no rompe nada).
-- Quitarla: `python3 herramientas/idioma/aplicar.py --quitar` (deja los archivos byte a byte).
-- `herramientas/` NO se sube a Ferozo: solo las tres páginas.
+- Quitarla: `python3 herramientas/idioma/aplicar.py --quitar` (deja los archivos byte a byte; ⚠️ de TODAS las páginas:
+  después, volver a aplicarla).
+- La página de los vendedores también la lleva (24-oct-2026), con su diccionario (`diccionario-vendedor.json`), su
+  lista de textos del servidor (`siempre-vendedor.json`) y el motor aparte (`vendedor/idioma.js`, por su CSP).
+- `herramientas/` NO se sube a Ferozo: solo las páginas, `vendedor/`, `.htaccess` y `tienda.php`.
