@@ -162,6 +162,14 @@ tienda.php          Le pide la página a la API (…/api/compartir/v|pedido|p|t/
 - `vendedor/` habla con `https://api.deliservy.site/api/vendedor/*` (en localhost, relativo para las pruebas) con un
   token en la cabecera `Authorization`. Lleva CSP: **nada de guiones ni estilos dentro del HTML** y nada de `innerHTML`
   con datos (todo con `createElement`/`textContent`).
+- Registro propio y datos para facturar (24-oct-2026, «CONTRATO-registro-y-factura-del-vendedor.md» §6): en «Entrar»,
+  «Regístrate» (enlace directo: `www.deliservy.com/vendedor/#registro`) → WhatsApp → código en 6 casillas → nombre,
+  razón social (obligatoria con J o G), tipo de documento + número, correo, dirección y redes → «en revisión». Rutas:
+  `POST …/vendedor/registro/codigo`, `POST …/vendedor/registro` (400 con `campo`), `GET …/vendedor/yo` (`datos`,
+  `faltanDatos`) y `POST …/vendedor/datos`. «Mis datos» va en Cobros y en la pantalla de revisión; si faltan datos, un
+  aviso arriba con «Completar». El documento viaja como se guarda: letra + número sin guion (`V12345678`,
+  `J504754129`, `PAB123456`); se enseña `J-504754129`. La pista del `<textarea>` de la dirección se pone en el guion
+  según el idioma (la capa no toca los `<textarea>`).
 - `tienda.php` reenvía User-Agent, Referer, la IP y `?red=` (así la API cuenta la visita y su red). Si la API no contesta
   en 6 s, se cae o frena: 302 a la misma página en api.deliservy.site. Solo acepta esas cuatro formas de dirección.
 - ⚠️ Antes de subir el `.htaccess` a Ferozo, mirar si ya hay uno allí y JUNTAR las reglas.

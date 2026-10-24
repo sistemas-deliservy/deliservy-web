@@ -68,6 +68,7 @@ button { cursor: pointer; }
 a { color: var(--rt); }
 :focus-visible { outline: 2px solid var(--r); outline-offset: 2px; }
 [hidden] { display: none !important; }
+.sin-cortes { white-space: nowrap; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sin-js { max-width: 520px; margin: 40px auto; padding: 0 16px; color: var(--m); text-align: center; }
 .cargando-todo { min-height: 60vh; display: grid; place-items: center; color: var(--m); font-weight: 700; }
@@ -149,16 +150,69 @@ select.campo { appearance: none; -webkit-appearance: none; background-image: non
 .prefijo { position: relative; }
 .prefijo > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 800; color: var(--m); pointer-events: none; }
 .prefijo > .campo { padding-left: 54px; }
-.codigo { letter-spacing: .5em; text-align: center; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+/* Dentro de una tarjeta blanca, los campos con relleno suave (nada blanco sobre blanco). */
+.tarjeta .campo { background: var(--c2); }
+.tarjeta .campo:focus { background: var(--c); }
+.campo.mal { border-color: var(--rt); }
+textarea.campo { min-height: 78px; resize: vertical; line-height: 1.4; font-weight: 600; }
+
+/* El código en 6 casillas (como la tienda web): un campo invisible encima de las seis. */
+.codigo-6 { position: relative; }
+.codigo-6 .codigo-oculto {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; margin: 0;
+  font-size: 16px; color: transparent; caret-color: transparent; background: transparent; letter-spacing: 0;
+}
+.codigo-6 .casillas { display: flex; gap: 8px; pointer-events: none; }
+.codigo-6 .casillas span {
+  flex: 1; min-width: 0; height: 56px; border-radius: 12px; border: 1.5px solid var(--b); background: var(--c2);
+  display: grid; place-items: center; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.codigo-6 .casillas span.foco { border-color: var(--r); box-shadow: 0 0 0 3px var(--rs); }
 .ayuda { font-size: 13px; color: var(--m); margin: 7px 2px 0; }
 .error { color: var(--rt); font-weight: 700; font-size: 14px; margin: 10px 2px 0; }
 .bien { color: var(--ok); font-weight: 700; font-size: 14px; margin: 10px 2px 0; }
 .fila-campos { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; }
-label.etq-campo { display: block; font-size: 13px; font-weight: 700; color: var(--m); margin: 12px 2px 6px; }
+.fila-doc { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 8px; }
+.con-flecha { position: relative; min-width: 0; }
+.con-flecha select.campo { padding-right: 36px; text-overflow: ellipsis; }
+.con-flecha .ico { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--m); pointer-events: none; }
+.grupo-campo .etq-campo { margin-top: 14px; }
+.error-campo { color: var(--rt); font-weight: 700; font-size: 13px; margin: 6px 2px 0; }
+.redes-campos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.redes-campos .campo { min-height: 46px; font-size: 15px; padding: 10px 12px 10px 104px; }
+.prefijo.red > span { font-size: 13.5px; font-weight: 800; }
+.form-datos h2 { font-size: 18px; margin: 2px 0 0; font-weight: 800; letter-spacing: -.01em; }
+.form-datos > .nota { margin-top: 4px; }
+.paso { font-size: 11.5px; font-weight: 800; color: var(--rt); text-transform: uppercase; letter-spacing: .07em; margin: 0 2px 4px; }
+button.enlace {
+  background: none; border: 0; padding: 2px 2px; color: var(--rt); font-weight: 800; text-decoration: underline;
+  text-underline-offset: 3px; cursor: pointer; font-size: inherit; min-height: 32px;
+}
+.ya-registrado { text-align: center; padding: 6px 0 2px; }
+.ya-registrado b { display: block; font-size: 17px; }
+.ya-registrado .nota { color: var(--m); margin: 6px 0 0; }
+.etq-campo { display: block; font-size: 13px; font-weight: 700; color: var(--m); margin: 12px 2px 6px; }
 .opciones-radio { display: flex; gap: 8px; }
 .opciones-radio label { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border: 1.5px solid var(--b); border-radius: 12px; font-weight: 700; cursor: pointer; background: var(--c); }
 .opciones-radio input { accent-color: var(--r); }
 .opciones-radio label:has(input:checked) { border-color: var(--r); background: var(--rs); color: var(--rt); }
+
+/* «Mis datos» (los de su factura semanal) y el aviso de arriba si le faltan */
+.separado { margin-top: 10px; }
+.datos-lista { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr); gap: 8px 14px; margin: 12px 0 0; font-size: 14px; }
+.datos-lista dt { color: var(--m); font-weight: 700; font-size: 13px; }
+.datos-lista dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.dato-fijo { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--c2); font-weight: 700; }
+.zona-aviso-datos { max-width: 1080px; margin: 0 auto; padding: 12px 14px 0; }
+.aviso-datos {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: var(--avs); color: var(--av); border: 1px solid var(--b); border-radius: var(--radio); padding: 10px 12px;
+  font-size: 13.5px; font-weight: 700;
+}
+.aviso-datos p { margin: 0; flex: 1 1 200px; }
+.aviso-datos .btn { flex: 0 0 auto; }
+.revision { max-width: 640px; margin: 0 auto; }
+.revision .tarjeta + .tarjeta { margin-top: 10px; }
 
 /* Pastillas */
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 4px 10px; background: var(--c2); color: var(--m); white-space: nowrap; }
@@ -174,7 +228,7 @@ label.etq-campo { display: block; font-size: 13px; font-weight: 700; color: var(
 .entrar .marca .logo-d { width: 54px; height: 54px; border-radius: 16px; font-size: 26px; margin: 0 auto 12px; }
 .entrar .marca small { display: block; font-size: 11px; font-weight: 800; color: var(--rt); text-transform: uppercase; letter-spacing: .08em; }
 .entrar h1 { font-size: 24px; line-height: 1.2; margin: 6px 0 6px; font-weight: 800; letter-spacing: -.015em; }
-.entrar p { color: var(--m); margin: 0; }
+.entrar .marca p { color: var(--m); margin: 0; }
 .entrar .tarjeta { padding: 18px; }
 .entrar .pie-entrar { text-align: center; color: var(--m); font-size: 13px; margin-top: 16px; }
 .entrar .pie-idioma { display: flex; justify-content: center; margin-top: 14px; }
@@ -277,6 +331,7 @@ label.etq-campo { display: block; font-size: 13px; font-weight: 700; color: var(
   .pestanas a[aria-current="page"] { background: var(--c); color: var(--rt); border-color: var(--b); }
   .pestanas .ico { width: 18px; height: 18px; }
   .contenido { padding: 16px 20px 40px; }
+  .zona-aviso-datos { padding: 14px 20px 0; }
   .aviso { bottom: 28px; }
   .productos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .rejilla.dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
@@ -297,5 +352,7 @@ label.etq-campo { display: block; font-size: 13px; font-weight: 700; color: var(
 }
 @media (max-width: 360px) {
   .cifras { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fila-doc { grid-template-columns: minmax(0, 1fr); }
+  .codigo-6 .casillas { gap: 6px; }
   .productos { gap: 8px; }
 }

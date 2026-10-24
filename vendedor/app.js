@@ -27,6 +27,11 @@
   var CLAVE_IDIOMA = 'deliservy_idioma';
   var NOTA_PAGO = 'Se te paga solo cada noche a las 11:00 p. m. si tienes cuenta bancaria y saldo disponible.';
   var EN_REVISION = 'Tu cuenta está en revisión. Te avisaremos por WhatsApp cuando esté lista.';
+  /** El WhatsApp de Deliservy (0414-495-7006): para cambiar la cédula o el RIF de una cuenta ya aprobada. */
+  var WHATSAPP_DELISERVY = 'https://wa.me/584144957006';
+  /** Registro propio y datos para facturar (24-oct-2026): los tipos de documento del contrato (§1). */
+  var TIPOS_DE_DOCUMENTO = [['V', 'V · Venezolano'], ['E', 'E · Extranjero'], ['J', 'J · Empresa'], ['G', 'G · Gobierno'], ['P', 'Pasaporte']];
+  var REDES_DEL_REGISTRO = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['facebook', 'Facebook']];
   var NBSP = ' ';
 
   // ── Utilidades (puras) ─────────────────────────────────────────────────────
@@ -66,6 +71,96 @@
     };
   }
   function plural(n, uno, varios) { return Math.round(num(n)) + ' ' + (Math.round(num(n)) === 1 ? uno : varios); }
+
+  // ── Los datos para facturar (puros: los mismos que mira la API, §1 del contrato) ──
+
+  var VALOR_DE_LA_LETRA = { V: 1, E: 2, J: 3, P: 4, G: 5, C: 3 };
+  var PESOS_DEL_RIF = [3, 2, 7, 6, 5, 4, 3, 2];
+  /** El dígito verificador de un RIF (módulo 11 del SENIAT), como `verificadorDelRif` de `src/common/rif.ts`. */
+  function verificadorDelRif(letra, ocho) {
+    var valor = VALOR_DE_LA_LETRA[String(letra || '').toUpperCase()];
+    if (!valor || !/^\d{8}$/.test(String(ocho || ''))) return null;
+    var suma = valor * 4;
+    for (var i = 0; i < 8; i++) suma += Number(ocho.charAt(i)) * PESOS_DEL_RIF[i];
+    var resto = 11 - (suma % 11);
+    return resto >= 10 ? 0 : resto;
+  }
+  /**
+   * El documento como se guarda: la letra y el número, sin guion — `V12345678` (V/E: 6 a 9 cifras), `J504754129`
+   * (J/G: 9 cifras, la última su verificador, como `rifEscrito`) o `PAB123456` (P + 5 a 20 letras o cifras).
+   * `{ documento }` o `{ error }` con la frase para enseñar. El número puede venir con puntos, guiones o su letra.
+   */
+  function documentoNormalizado(tipo, numero) {
+    var t = String(tipo || '').toUpperCase();
+    if (!/^[VEJGP]$/.test(t)) return { error: 'Elige el tipo de documento.' };
+    var limpio = String(numero == null ? '' : numero).toUpperCase().replace(/[\s.\-_/]/g, '');
+    if (t !== 'P' && limpio.charAt(0) === t) limpio = limpio.slice(1);
+    if (!limpio) return { error: t === 'P' ? 'Escribe el número de tu pasaporte.' : (t === 'J' || t === 'G') ? 'Escribe el RIF.' : 'Escribe tu cédula.' };
+    if (t === 'V' || t === 'E') return /^\d{6,9}$/.test(limpio) ? { documento: t + limpio } : { error: 'La cédula lleva de 6 a 9 números.' };
+    if (t === 'J' || t === 'G') {
+      if (!/^\d{9}$/.test(limpio)) return { error: 'El RIF lleva 9 números, como J-504754129.' };
+      return verificadorDelRif(t, limpio.slice(0, 8)) === Number(limpio.charAt(8)) ? { documento: t + limpio } : { error: 'Ese RIF no es válido: revisa sus números.' };
+    }
+    return /^[A-Z0-9]{5,20}$/.test(limpio) ? { documento: 'P' + limpio } : { error: 'El pasaporte lleva de 5 a 20 letras o números.' };
+  }
+  /** Para verlo: `V-12345678`, `J-504754129` (letra, guion y el número COMPLETO), `Pasaporte AB123456`. */
+  function documentoParaVer(doc) {
+    var d = String(doc == null ? '' : doc).toUpperCase();
+    if (/^[VEJG]\d+$/.test(d)) return d.charAt(0) + '-' + d.slice(1);
+    if (/^P[A-Z0-9]+$/.test(d)) return 'Pasaporte ' + d.slice(1);
+    return d;
+  }
+  /** El número sin su letra (para ponerlo en el campo al cambiar los datos). */
+  function numeroDelDocumento(doc) { var d = String(doc == null ? '' : doc).toUpperCase(); return /^[VEJGP]/.test(d) ? d.slice(1) : d; }
+  /** Sin `<` ni `>` y sin espacios de más (lo mismo que hace la API con un texto libre). */
+  function textoLimpio(t) { return String(t == null ? '' : t).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim(); }
+  /** Un nombre de persona (como `normalizarNombre` de la API): de 2 a 60, ni HTML ni enlaces. */
+  function nombreValido(t) {
+    var n = String(t == null ? '' : t).replace(/\s+/g, ' ').trim();
+    return n.length >= 2 && n.length <= 60 && !/[<>"'`{}\\/@]|https?:/i.test(n) ? n : null;
+  }
+  /** Un correo que se puede poner en la factura (como `normalizarCorreo` de la API). */
+  function correoValido(t) {
+    var c = String(t == null ? '' : t).trim().toLowerCase();
+    return c.length <= 120 && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(c) ? c : null;
+  }
+  /**
+   * Lo escrito en un formulario de datos, revisado: `{ datos, errores }` (errores por campo, con la frase). `c`:
+   * { nombre?, razonSocial, tipoDocumento, numero, correo, direccion, redes? }. Con `conDocumento: false` el
+   * documento no se mira ni se manda (cuenta ya aprobada); `tipoActual` dice si la razón social es obligatoria.
+   */
+  function revisarDatos(c, opciones) {
+    var o = opciones || {};
+    var errores = {};
+    var datos = {};
+    if (o.conNombre) {
+      var n = nombreValido(c.nombre);
+      if (n) datos.nombre = n; else errores.nombre = 'Escribe tu nombre y apellido.';
+    }
+    var tipo = String((o.conDocumento ? c.tipoDocumento : o.tipoActual) || '').toUpperCase();
+    var rs = textoLimpio(c.razonSocial);
+    if (!rs && (tipo === 'J' || tipo === 'G')) errores.razonSocial = 'Escribe la razón social de la empresa.';
+    else if (rs && (rs.length < 2 || rs.length > 150)) errores.razonSocial = 'La razón social va de 2 a 150 caracteres.';
+    datos.razonSocial = rs || null;
+    if (o.conDocumento) {
+      var d = documentoNormalizado(c.tipoDocumento, c.numero);
+      if (d.error) errores.documento = d.error; else { datos.tipoDocumento = tipo; datos.documento = d.documento; }
+    }
+    var correo = String(c.correo == null ? '' : c.correo).trim();
+    if (!correo) errores.correo = 'Escribe tu correo: ahí te llega tu factura.';
+    else if (!correoValido(correo)) errores.correo = 'Ese correo no es válido.';
+    else datos.correo = correoValido(correo);
+    var dir = textoLimpio(c.direccion);
+    if (dir.length < 10) errores.direccion = 'Escribe tu dirección completa.';
+    else if (dir.length > 300) errores.direccion = 'La dirección va hasta 300 caracteres.';
+    else datos.direccion = dir;
+    if (c.redes) {
+      var redes = {};
+      REDES_DEL_REGISTRO.forEach(function (r) { var v = textoLimpio(c.redes[r[0]]).slice(0, 120); if (v) redes[r[0]] = v; });
+      if (Object.keys(redes).length) datos.redes = redes;
+    }
+    return { datos: datos, errores: errores, hayErrores: Object.keys(errores).length > 0 };
+  }
 
   // ── Armar la página (el texto entra SIEMPRE como texto) ─────────────────────
 
@@ -112,6 +207,7 @@
     facebook: [['path', { d: 'M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8z' }]],
     x: [['path', { d: 'M4 4l16 16M20 4 4 20' }]],
     reloj: [['circle', { cx: 12, cy: 12, r: 9 }], ['path', { d: 'M12 7v5l3 2' }]],
+    abajo: [['path', { d: 'm6 9 6 6 6-6' }]],
   };
   function ico(nombre) {
     var svg = documento.createElementNS(NS, 'svg');
@@ -135,6 +231,12 @@
     var nav = raiz.navigator || {};
     return /^en\b/i.test((nav.languages && nav.languages[0]) || nav.language || '') ? 'en' : 'es';
   }
+  /**
+   * Un texto que la capa de idioma no alcanza: la pista de un <textarea> (la capa no toca lo que se escribe en un
+   * <textarea>, tampoco su pista). Los demás textos se traducen con el diccionario.
+   */
+  function segunIdioma(es, en) { return idiomaActual() === 'en' ? en : es; }
+
   function botonIdioma() {
     var en = idiomaActual() === 'en';
     return h('button', {
@@ -167,33 +269,83 @@
 
   function marco(seccion, yo, contenido) {
     var main = h('main', { class: 'contenido', id: 'contenido' }, h('div', { class: 'vista' }, contenido));
+    // Arriba de cada sección, si le faltan datos para facturar: «Completa tus datos para tus facturas: …».
+    var aviso = h('div', { class: 'zona-aviso-datos', id: 'aviso-datos' }, avisoDatos());
+    aviso.hidden = !aviso.firstChild;
     var f = documento.createDocumentFragment();
-    poner(f, [cabecera(yo, true), navegacion('pestanas', seccion), main, navegacion('navegacion', seccion)]);
+    poner(f, [cabecera(yo, true), navegacion('pestanas', seccion), aviso, main, navegacion('navegacion', seccion)]);
     return f;
+  }
+
+  /** «0412-555-0198» (un móvil de Venezuela); otro número, como lo escribió. */
+  function telefonoParaVer(t) {
+    var d = String(t == null ? '' : t).replace(/\D/g, '');
+    if (d.length === 12 && d.slice(0, 2) === '58') d = '0' + d.slice(2);
+    else if (d.length === 10 && d.charAt(0) === '4') d = '0' + d;
+    return /^04\d{9}$/.test(d) ? d.slice(0, 4) + '-' + d.slice(4, 7) + '-' + d.slice(7) : String(t == null ? '' : t).trim();
+  }
+
+  /**
+   * El código en 6 casillas (como la tienda web): un solo campo invisible encima de las seis, así el teléfono lo
+   * autocompleta desde WhatsApp y se puede pegar. Al escribir el sexto número, `alCompletar(codigo)` (una vez por código,
+   * y solo al escribir: entrar o salir del campo no lo vuelve a mandar).
+   */
+  function casillasDeCodigo(id, alCompletar) {
+    var input = h('input', {
+      class: 'codigo-oculto', id: id, name: id, type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code',
+      maxlength: '6', pattern: '[0-9]*', enterkeyhint: 'done', 'aria-label': 'Código de 6 números',
+    });
+    var casillas = h('div', { class: 'casillas', 'aria-hidden': 'true' }, [0, 1, 2, 3, 4, 5].map(function () { return h('span'); }));
+    var mandado = '';
+    var dibujar = function (ev) {
+      var v = String(input.value || '').replace(/\D/g, '').slice(0, 6);
+      if (v !== input.value) input.value = v;
+      for (var k = 0; k < 6; k++) {
+        var c = casillas.children[k];
+        c.textContent = v.charAt(k);
+        c.className = documento.activeElement === input && k === Math.min(v.length, 5) ? 'foco' : '';
+      }
+      if (v.length < 6) mandado = '';
+      else if (ev && ev.type === 'input' && v !== mandado && alCompletar) { mandado = v; alCompletar(v); }
+    };
+    input.addEventListener('input', dibujar);
+    input.addEventListener('focus', dibujar);
+    input.addEventListener('blur', dibujar);
+    dibujar();
+    return { caja: h('div', { class: 'codigo-6' }, casillas, input), valor: function () { return String(input.value || '').replace(/\D/g, ''); } };
+  }
+
+  /** El marco de las pantallas sin sesión (entrar y registrarse): la marca, la tarjeta y el pie. */
+  function sinSesion(texto, cuerpo, pie) {
+    return h('div', { class: 'entrar vista' },
+      h('div', { class: 'marca' },
+        h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
+        h('small', null, 'Deliservy · Vendedores'),
+        h('h1', null, 'Compra-Ventas Redes Sociales'),
+        h('p', null, texto)),
+      h('div', { class: 'tarjeta' }, cuerpo),
+      pie,
+      h('div', { class: 'pie-idioma' }, botonIdioma()));
   }
 
   function entrar(paso, d) {
     d = d || {};
     var cuerpo;
     if (paso === 'codigo') {
-      var codigo = h('input', {
-        class: 'campo codigo', id: 'codigo', name: 'codigo', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '6',
-        pattern: '[0-9]*', placeholder: '······', required: true, 'aria-label': 'Código de 6 números',
-        oninput: function () { codigo.value = codigo.value.replace(/\D/g, '').slice(0, 6); },
-      });
+      var casillas = casillasDeCodigo('codigo', function (cod) { verificar(cod, null); });
       var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () { pedirCodigo(entrada.telefono, reenviar); } }, 'Reenviar código');
       cuerpo = h('form', {
         novalidate: true,
         onsubmit: function (ev) {
           ev.preventDefault();
-          var cod = String(codigo.value || '').replace(/\D/g, '');
+          var cod = casillas.valor();
           if (cod.length !== 6) { pintar(entrar('codigo', { error: 'El código tiene 6 números.' })); cuentaAtras(); return; }
           verificar(cod, ev.target.querySelector('button[type="submit"]'));
         },
       },
       h('p', { class: 'bien' }, d.mensaje || 'Si ese número es de un vendedor, te llegó un código por WhatsApp.'),
       h('label', { class: 'etq-campo', for: 'codigo' }, 'Código de 6 números'),
-      codigo,
+      casillas.caja,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Entrar')),
       h('div', { class: 'botones' },
@@ -219,23 +371,261 @@
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'));
     }
-    return h('div', { class: 'entrar vista' },
-      h('div', { class: 'marca' },
-        h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
-        h('small', null, 'Deliservy · Vendedores'),
-        h('h1', null, 'Compra-Ventas Redes Sociales'),
-        h('p', null, 'Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.')),
-      h('div', { class: 'tarjeta' }, cuerpo),
-      h('p', { class: 'pie-entrar' }, '¿Aún no vendes con nosotros? Pídele a Deliservy que te registre.'),
-      h('div', { class: 'pie-idioma' }, botonIdioma()));
+    return sinSesion('Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.', cuerpo,
+      h('p', { class: 'pie-entrar' }, '¿Quieres vender con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: irARegistro }, 'Regístrate')));
+  }
+
+  // ── El registro propio (24-oct-2026): WhatsApp → código → datos para facturar → «en revisión» ──
+
+  /** Un campo con su rótulo, su ayuda y su error debajo (el campo, en rojo). */
+  function grupoDeCampo(id, rotulo, control, error, ayuda, marcado) {
+    var marcar = marcado || control;
+    if (error && marcar && marcar.classList) { marcar.classList.add('mal'); marcar.setAttribute('aria-invalid', 'true'); }
+    return h('div', { class: 'grupo-campo' },
+      h('label', { class: 'etq-campo', for: id }, rotulo),
+      control,
+      ayuda ? h('p', { class: 'ayuda' }, ayuda) : null,
+      error ? h('p', { class: 'error-campo', role: 'alert' }, error) : null);
+  }
+
+  /** El tipo de documento y su número, en una fila. `alCambiar(tipo)`: para el rótulo de la razón social. */
+  function campoDeDocumento(prefijo, tipo, numero, alCambiar) {
+    var PISTA = { V: '12345678', E: '81234567', J: '504754129', G: '200000000', P: 'AB123456' };
+    var select = h('select', { class: 'campo', id: prefijo + '-tipo', name: 'tipoDocumento', 'aria-label': 'Tipo de documento' },
+      TIPOS_DE_DOCUMENTO.map(function (t) { var o = h('option', { value: t[0] }, t[1]); if (t[0] === tipo) o.selected = true; return o; }));
+    var input = h('input', {
+      class: 'campo', id: prefijo + '-documento', name: 'documento', maxlength: '24', autocomplete: 'off', autocapitalize: 'characters',
+      spellcheck: 'false', value: numero || '', 'aria-label': 'Número del documento',
+    });
+    var ajustar = function () {
+      var t = select.value;
+      input.setAttribute('placeholder', PISTA[t] || '');
+      input.setAttribute('inputmode', t === 'P' ? 'text' : 'numeric');
+      if (alCambiar) alCambiar(t);
+    };
+    select.addEventListener('change', ajustar);
+    ajustar();
+    return { fila: h('div', { class: 'fila-doc' }, h('div', { class: 'con-flecha' }, select, ico('abajo')), input), select: select, input: input };
+  }
+
+  /** «Razón social (opcional)», u obligatoria con J o G. */
+  function rotuloDeRazon(tipo) { return tipo === 'J' || tipo === 'G' ? 'Razón social' : 'Razón social (opcional)'; }
+
+  function registro(paso, d) {
+    d = d || {};
+    var cuerpo;
+    if (paso === 'ya') {
+      cuerpo = h('div', { class: 'ya-registrado' },
+        h('b', null, 'Ese número ya está registrado'),
+        dato('p', { class: 'nota sin-cortes' }, telefonoParaVer(reg.telefono)),
+        h('p', { class: 'nota' }, 'Entra con tu WhatsApp.'),
+        h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'button', onclick: function () { irAEntrar(reg.telefono); } }, 'Entrar')));
+    } else if (paso === 'codigo') {
+      var casillas = casillasDeCodigo('r-codigo', function (cod) { codigoDeRegistro(cod); });
+      var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () { pedirCodigoDeRegistro(reg.telefono, reenviar, true); } }, 'Reenviar código');
+      cuerpo = h('form', {
+        novalidate: true,
+        onsubmit: function (ev) {
+          ev.preventDefault();
+          var cod = casillas.valor();
+          if (cod.length !== 6) { pintar(registro('codigo', { error: 'El código tiene 6 números.' })); cuentaAtras(); return; }
+          codigoDeRegistro(cod);
+        },
+      },
+      h('p', { class: 'paso' }, 'Paso 2 de 3'),
+      h('p', { class: 'bien' }, 'Te enviamos un código por WhatsApp al ', dato('span', { class: 'sin-cortes' }, telefonoParaVer(reg.telefono)), '.'),
+      h('label', { class: 'etq-campo', for: 'r-codigo' }, 'Código de 6 números'),
+      casillas.caja,
+      d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, reg.listo ? 'Enviar' : 'Seguir')),
+      h('div', { class: 'botones' },
+        h('button', { class: 'btn borde chico', type: 'button', onclick: function () { clearInterval(entrada.espera); pintar(registro('telefono', { telefono: reg.telefono })); } }, 'Cambiar número'),
+        reenviar));
+    } else if (paso === 'datos') {
+      cuerpo = formularioDeRegistro(d);
+    } else {
+      var telefono = h('input', {
+        class: 'campo', id: 'r-telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
+        placeholder: '412 555 0198', value: d.telefono || '', required: true,
+      });
+      cuerpo = h('form', {
+        novalidate: true,
+        onsubmit: function (ev) {
+          ev.preventDefault();
+          var tel = String(telefono.value || '').trim();
+          if (tel.replace(/\D/g, '').length < 10) { pintar(registro('telefono', { telefono: tel, error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' })); return; }
+          pedirCodigoDeRegistro(tel, ev.target.querySelector('button[type="submit"]'), false);
+        },
+      },
+      h('p', { class: 'paso' }, 'Paso 1 de 3'),
+      h('label', { class: 'etq-campo', for: 'r-telefono' }, 'Tu número de WhatsApp'),
+      h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
+      d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
+      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp para confirmarlo.'));
+    }
+    return sinSesion('Regístrate y gana en cada venta que hagas con tus enlaces.', cuerpo,
+      h('p', { class: 'pie-entrar' }, '¿Ya vendes con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: function () { irAEntrar(reg.telefono); } }, 'Entrar')));
+  }
+
+  /** Paso 3: los datos para facturar. Lo escrito vive en `reg.escrito` (así un error no borra nada). */
+  function formularioDeRegistro(d) {
+    var v = reg.escrito || {};
+    var e = d.errores || {};
+    var redes = v.redes || {};
+    var nombre = h('input', { class: 'campo', id: 'r-nombre', name: 'nombre', autocomplete: 'name', maxlength: '60', placeholder: 'María Pérez', value: v.nombre || '' });
+    var etqRazon = h('span', null, rotuloDeRazon(v.tipoDocumento || 'V'));
+    var razon = h('input', { class: 'campo', id: 'r-razon', name: 'razonSocial', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si es una empresa', value: v.razonSocial || '' });
+    var doc = campoDeDocumento('r', v.tipoDocumento || 'V', v.numero || '', function (t) { etqRazon.textContent = rotuloDeRazon(t); });
+    var correo = h('input', { class: 'campo', id: 'r-correo', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '120', placeholder: 'tucorreo@gmail.com', value: v.correo || '' });
+    var direccion = h('textarea', { class: 'campo', id: 'r-direccion', name: 'direccion', rows: '2', maxlength: '300', autocomplete: 'street-address', placeholder: segunIdioma('Calle, sector y ciudad', 'Street, area and city') });
+    direccion.value = v.direccion || '';
+    // Cada red con su nombre delante (como el +58 del WhatsApp): escrito, se sigue sabiendo cuál es cuál.
+    var campoRed = function (r) {
+      return h('div', { class: 'prefijo red' }, h('span', { 'aria-hidden': 'true' }, r[1]),
+        h('input', { class: 'campo', name: 'red-' + r[0], maxlength: '120', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false', placeholder: '@usuario', 'aria-label': r[1], value: redes[r[0]] || '' }));
+    };
+    var boton = h('button', { class: 'btn', type: 'submit' }, 'Enviar');
+    return h('form', {
+      novalidate: true, class: 'form-datos',
+      onsubmit: function (ev) {
+        ev.preventDefault();
+        var f = ev.target;
+        var escrito = {
+          nombre: f.elements.nombre.value, razonSocial: f.elements.razonSocial.value, tipoDocumento: f.elements.tipoDocumento.value,
+          numero: f.elements.documento.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value, redes: {},
+        };
+        REDES_DEL_REGISTRO.forEach(function (r) { escrito.redes[r[0]] = f.elements['red-' + r[0]].value; });
+        reg.escrito = escrito;
+        var r = revisarDatos(escrito, { conNombre: true, conDocumento: true });
+        if (r.hayErrores) { pintar(registro('datos', { errores: r.errores })); enfocarError(r.errores, 'r'); return; }
+        reg.listo = true;
+        reg.paraEnviar = r.datos;
+        enviarRegistro(boton);
+      },
+    },
+    h('p', { class: 'paso' }, 'Paso 3 de 3'),
+    h('h2', null, 'Tus datos para facturar'),
+    h('p', { class: 'nota' }, 'Con ellos te llega tu factura cada semana.'),
+    grupoDeCampo('r-nombre', 'Nombre y apellido', nombre, e.nombre),
+    grupoDeCampo('r-razon', etqRazon, razon, e.razonSocial),
+    grupoDeCampo('r-documento', 'Cédula, RIF o pasaporte', doc.fila, e.documento, null, doc.input),
+    grupoDeCampo('r-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
+    grupoDeCampo('r-direccion', 'Dirección', direccion, e.direccion),
+    h('div', { class: 'grupo-campo' },
+      h('span', { class: 'etq-campo' }, 'Tus redes (opcional)'),
+      h('div', { class: 'redes-campos' }, REDES_DEL_REGISTRO.map(campoRed))),
+    d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+    h('div', { class: 'botones' }, boton),
+    h('p', { class: 'ayuda' }, 'Al enviar, tu cuenta queda en revisión. Te avisamos por WhatsApp.'));
   }
 
   function revision(yo) {
     var f = documento.createDocumentFragment();
-    poner(f, [cabecera(yo, true), h('main', { class: 'contenido' }, h('div', { class: 'vista' },
+    poner(f, [cabecera(yo, true), h('main', { class: 'contenido' }, h('div', { class: 'vista revision' },
       h('div', { class: 'tarjeta vacio' }, ico('reloj'), h('b', null, 'Tu cuenta está en revisión'),
-        h('p', { class: 'nota' }, 'Te avisaremos por WhatsApp cuando esté lista. Después podrás entrar aquí con tu número.'))))]);
+        h('p', { class: 'nota' }, 'Te avisaremos por WhatsApp cuando esté lista. Después podrás entrar aquí con tu número.')),
+      estado.datos ? tarjetaMisDatos() : null))]);
     return f;
+  }
+
+  // ── Mis datos (los de su factura semanal) ──────────────────────────────────
+
+  /** El aviso de arriba si le faltan datos para facturar (`faltanDatos` de la API). */
+  function avisoDatos() {
+    var faltan = (estado.faltan || []).filter(function (x) { return typeof x === 'string' && x.trim(); });
+    if (!faltan.length || !estado.datos) return null;
+    return h('div', { class: 'aviso-datos', role: 'status' },
+      h('p', null, 'Completa tus datos para tus facturas: ', faltan.map(function (x, i) { return [i ? ', ' : '', h('b', null, x)]; }), '.'),
+      h('button', { class: 'btn chico', type: 'button', onclick: completarDatos }, 'Completar'));
+  }
+
+  /**
+   * «Mis datos»: nombre, razón social, cédula o RIF, correo, WhatsApp y dirección. Cambia la razón social, el correo y la
+   * dirección; la cédula o el RIF, solo si la cuenta está en revisión o aún no lo tiene (si no, por WhatsApp).
+   */
+  function tarjetaMisDatos(d) {
+    d = d || {};
+    var x = estado.datos || {};
+    var tipo = String(x.tipoDocumento || (x.documento ? String(x.documento).charAt(0) : '')).toUpperCase();
+    var cuerpo;
+    if (!estado.editarDatos) {
+      var fila = function (rotulo, valor) {
+        return [h('dt', null, rotulo), valor ? dato('dd', null, valor) : h('dd', null, h('span', { class: 'pill ambar' }, 'Falta'))];
+      };
+      var ver = x.documentoParaVer || documentoParaVer(x.documento);
+      var docHtml = !ver ? h('dd', null, h('span', { class: 'pill ambar' }, 'Falta'))
+        : /^Pasaporte /.test(ver) ? h('dd', null, 'Pasaporte ', dato('span', null, ver.slice(10))) : dato('dd', null, ver);
+      cuerpo = [
+        h('dl', { class: 'datos-lista' },
+          fila('Nombre', x.nombre),
+          x.razonSocial || tipo === 'J' || tipo === 'G' ? fila('Razón social', x.razonSocial) : null,
+          h('dt', null, 'Cédula o RIF'), docHtml,
+          fila('Correo', x.correo),
+          fila('WhatsApp', x.telefonoParaVer || telefonoParaVer(estado.yo && estado.yo.telefono)),
+          fila('Dirección', x.direccion)),
+        h('div', { class: 'botones' }, h('button', {
+          class: 'btn borde chico', type: 'button',
+          onclick: function () { estado.editarDatos = true; estado.datosEscritos = null; pintarMisDatos(); enfocar('d-razon'); },
+        }, 'Cambiar mis datos'))];
+    } else {
+      cuerpo = formularioMisDatos(d, x, tipo);
+    }
+    return h('section', { class: 'tarjeta mis-datos', id: 'mis-datos', 'aria-labelledby': 'mis-datos-titulo' },
+      h('h2', { id: 'mis-datos-titulo' }, 'Mis datos'),
+      h('p', { class: 'nota' }, 'Con ellos te llega tu factura cada semana.'),
+      cuerpo);
+  }
+
+  function formularioMisDatos(d, x, tipo) {
+    var e = d.errores || {};
+    var enRevision = !!(estado.yo && estado.yo.estado === 'pendiente');
+    var puedeDocumento = enRevision || !x.documento;
+    var v = estado.datosEscritos || {
+      razonSocial: x.razonSocial || '', tipoDocumento: tipo || 'V', numero: numeroDelDocumento(x.documento), correo: x.correo || '', direccion: x.direccion || '',
+    };
+    var etqRazon = h('span', null, rotuloDeRazon(puedeDocumento ? v.tipoDocumento : tipo));
+    var razon = h('input', { class: 'campo', id: 'd-razon', name: 'razonSocial', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si es una empresa', value: v.razonSocial || '' });
+    var doc = puedeDocumento ? campoDeDocumento('d', v.tipoDocumento || 'V', v.numero || '', function (t) { etqRazon.textContent = rotuloDeRazon(t); }) : null;
+    var correo = h('input', { class: 'campo', id: 'd-correo', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '120', placeholder: 'tucorreo@gmail.com', value: v.correo || '' });
+    var direccion = h('textarea', { class: 'campo', id: 'd-direccion', name: 'direccion', rows: '2', maxlength: '300', autocomplete: 'street-address', placeholder: segunIdioma('Calle, sector y ciudad', 'Street, area and city') });
+    direccion.value = v.direccion || '';
+    var docFijo = h('div', { class: 'grupo-campo' },
+      h('span', { class: 'etq-campo' }, 'Cédula, RIF o pasaporte'),
+      dato('p', { class: 'dato-fijo' }, x.documentoParaVer || documentoParaVer(x.documento)),
+      h('p', { class: 'ayuda' }, 'Para cambiarlo, escríbenos por ', h('a', { href: WHATSAPP_DELISERVY, target: '_blank', rel: 'noopener noreferrer' }, 'WhatsApp'), '.'),
+      e.documento ? h('p', { class: 'error-campo', role: 'alert' }, e.documento) : null);
+    var boton = h('button', { class: 'btn', type: 'submit' }, 'Guardar');
+    return h('form', {
+      novalidate: true, class: 'form-datos',
+      onsubmit: function (ev) {
+        ev.preventDefault();
+        var f = ev.target;
+        var escrito = {
+          razonSocial: f.elements.razonSocial.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value,
+          tipoDocumento: doc ? doc.select.value : tipo, numero: doc ? doc.input.value : numeroDelDocumento(x.documento),
+        };
+        estado.datosEscritos = escrito;
+        var r = revisarDatos(escrito, { conDocumento: !!doc, tipoActual: tipo });
+        if (r.hayErrores) { pintarMisDatos({ errores: r.errores }); enfocarError(r.errores, 'd'); return; }
+        var cuerpo = { correo: r.datos.correo, direccion: r.datos.direccion };
+        // La razón social: lo escrito; vacía y antes tenía una → null (borrarla); vacía y no tenía → no se manda.
+        if (r.datos.razonSocial) cuerpo.razonSocial = r.datos.razonSocial;
+        else if (x.razonSocial) cuerpo.razonSocial = null;
+        if (doc && r.datos.documento && r.datos.documento !== String(x.documento || '').toUpperCase()) {
+          cuerpo.tipoDocumento = r.datos.tipoDocumento;
+          cuerpo.documento = r.datos.documento;
+        }
+        guardarMisDatos(cuerpo, boton);
+      },
+    },
+    grupoDeCampo('d-razon', etqRazon, razon, e.razonSocial),
+    doc ? grupoDeCampo('d-documento', 'Cédula, RIF o pasaporte', doc.fila, e.documento, null, doc.input) : docFijo,
+    grupoDeCampo('d-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
+    grupoDeCampo('d-direccion', 'Dirección', direccion, e.direccion),
+    d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+    h('div', { class: 'botones' }, boton,
+      h('button', { class: 'btn borde', type: 'button', onclick: function () { estado.editarDatos = false; estado.datosEscritos = null; pintarMisDatos(); } }, 'Cancelar')));
   }
 
   function vacio(titulo, texto, extra) {
@@ -527,6 +917,7 @@
         h('div', { class: 'tarjeta' }, h('h2', null, 'Tu cuenta bancaria'), cuentaHtml,
           cuenta && !editar ? h('div', { class: 'botones' }, h('button', { class: 'btn borde chico', type: 'button', onclick: function () { pintarCobros(true); } }, 'Cambiar cuenta')) : null,
           formulario, s ? null : h('p', { class: 'nota' }, NOTA_PAGO))),
+      estado.datos ? h('div', { class: 'separado' }, tarjetaMisDatos()) : null,
       h('span', { class: 'etq' }, 'Tus cobros'),
       retiros.length ? h('div', { class: 'lista' }, retiros.map(function (r) {
         var e = ESTADO_DEL_COBRO[r.estado] || [r.estado || '—', ''];
@@ -566,6 +957,9 @@
   raiz.VendedorPagina = {
     baseDeLaApi: baseDeLaApi, dolares: dolares, bolivares: bolivares, porcentaje: porcentaje, sinCortes: sinCortes,
     fotoSegura: fotoSegura, urlSegura: urlSegura, hrefSeguro: hrefSeguro, enlacesParaCompartir: enlacesParaCompartir,
+    verificadorDelRif: verificadorDelRif, documentoNormalizado: documentoNormalizado, documentoParaVer: documentoParaVer,
+    numeroDelDocumento: numeroDelDocumento, nombreValido: nombreValido, correoValido: correoValido, revisarDatos: revisarDatos,
+    telefonoParaVer: telefonoParaVer,
   };
 
   if (!documento || !documento.getElementById || !documento.getElementById('app')) return; // (en las pruebas, hasta aquí)
@@ -591,8 +985,15 @@
   // ── El estado y la red ─────────────────────────────────────────────────────
 
   var app = documento.getElementById('app');
-  var estado = { yo: null, seccion: 'inicio', filtros: { q: '', tienda: '', categoria: '' }, catalogo: null, ventas: null, cobros: null };
-  var entrada = { paso: 'telefono', telefono: '', espera: null };
+  var estado = {
+    yo: null, seccion: 'inicio', filtros: { q: '', tienda: '', categoria: '' }, catalogo: null, ventas: null, cobros: null,
+    // Sus datos para facturar (`GET /yo`: `datos` y `faltanDatos`) y si «Mis datos» está abierto para cambiarlos.
+    datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false,
+  };
+  var entrada = { paso: 'telefono', telefono: '', espera: null, verificando: false };
+  /** El registro en curso: su WhatsApp, el código, lo escrito en el formulario y lo que se manda. */
+  function registroNuevo() { return { telefono: '', codigo: '', escrito: null, paraEnviar: null, listo: false, enviando: false }; }
+  var reg = registroNuevo();
 
   function pedir(metodo, ruta, cuerpo) {
     var cab = { Accept: 'application/json' };
@@ -607,6 +1008,8 @@
         if (r.status === 429 && (!m || /Throttler|Too Many/i.test(String(m)))) m = 'Hiciste muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.';
         var e = new Error(Array.isArray(m) ? m.join(' ') : (m ? String(m) : 'Algo salió mal. Intenta de nuevo.'));
         e.status = r.status;
+        // El registro y «Mis datos»: el servidor dice qué casilla está mal (`campo`) o si ese número ya vende.
+        e.campo = j && typeof j.campo === 'string' ? j.campo : null;
         throw e;
       });
     }, function () {
@@ -679,7 +1082,7 @@
     else if (s === 'catalogo') pedir('GET', '/catalogo' + consultaDelCatalogo()).then(function (d) { estado.catalogo = d; enContenido(catalogo(d, estado.filtros)); }, mal);
     else if (s === 'enlaces') pedir('GET', '/enlaces').then(function (d) { enContenido(enlaces(d)); }, mal);
     else if (s === 'ventas') pedir('GET', '/ventas?pagina=1').then(function (d) { estado.ventas = d; enContenido(ventas(d)); }, mal);
-    else if (s === 'cobros') pedir('GET', '/cobros').then(function (d) { estado.cobros = d; enContenido(cobros(d, false)); }, mal);
+    else if (s === 'cobros') pedir('GET', '/cobros').then(function (d) { estado.cobros = d; enContenido(cobros(d, false)); irAMisDatosSiToca(); }, mal);
     raiz.scrollTo(0, 0);
   }
 
@@ -714,10 +1117,13 @@
   function pintarCobros(editar) { if (estado.cobros) enContenido(cobros(estado.cobros, editar)); }
 
   function arrancar() {
-    if (!sesion.leer()) { pintar(entrar('telefono')); return; }
+    if (!sesion.leer()) { if (raiz.location.hash === '#registro') mostrarRegistro(); else pintar(entrar('telefono')); return; }
     pedir('GET', '/yo').then(function (r) {
       estado.yo = r.vendedor || {};
       estado.yo.cupon = r.cupon;
+      // Sus datos para facturar (24-oct-2026). Sin ellos (una API de antes), la página sigue como estaba.
+      estado.datos = r.datos && typeof r.datos === 'object' ? r.datos : null;
+      estado.faltan = Array.isArray(r.faltanDatos) ? r.faltanDatos.filter(function (x) { return typeof x === 'string'; }) : [];
       mostrar();
     }, function (e) {
       if (e.status === 401) { sesion.borrar(); pintar(entrar('telefono')); return; }
@@ -729,6 +1135,8 @@
     pedir('POST', '/acceso/salir').catch(function () { return null; }).then(function () {
       sesion.borrar();
       estado.yo = null; entrada.paso = 'telefono';
+      estado.datos = null; estado.faltan = []; estado.editarDatos = false; estado.datosEscritos = null;
+      reg = registroNuevo();
       try { raiz.history.replaceState(null, '', raiz.location.pathname); } catch (_) { raiz.location.hash = ''; }
       pintar(entrar('telefono'));
     });
@@ -766,16 +1174,173 @@
   }
 
   function verificar(codigo, boton) {
+    if (entrada.verificando) return;
+    entrada.verificando = true;
     if (boton) boton.disabled = true;
     pedir('POST', '/acceso/verificar', { telefono: entrada.telefono, codigo: codigo }).then(function (r) {
+      entrada.verificando = false;
       clearInterval(entrada.espera);
       if (r && typeof r.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(r.token)) sesion.guardar(r.token);
       raiz.location.hash = '#inicio';
       arrancar();
     }, function (e) {
+      entrada.verificando = false;
       if (boton) boton.disabled = false;
       pintar(entrar('codigo', { error: e.message, mensaje: 'Escribe el código que te llegó por WhatsApp.' }));
+      enfocar('codigo');
       cuentaAtras();
+    });
+  }
+
+  // ── El registro ────────────────────────────────────────────────────────────
+
+  /** Pone el foco en un campo (y lo trae a la vista) después de pintar. */
+  function enfocar(id) {
+    var el = documento.getElementById(id);
+    if (!el) return;
+    try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+    if (el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+  }
+  /** El primer campo con error (en el orden del formulario). */
+  function enfocarError(errores, prefijo) {
+    var ids = { nombre: 'nombre', razonSocial: 'razon', documento: 'documento', correo: 'correo', direccion: 'direccion' };
+    var orden = ['nombre', 'razonSocial', 'documento', 'correo', 'direccion'];
+    for (var i = 0; i < orden.length; i++) if (errores[orden[i]]) { enfocar(prefijo + '-' + ids[orden[i]]); return; }
+  }
+
+  function irARegistro() {
+    clearInterval(entrada.espera);
+    if (raiz.location.hash === '#registro') mostrarRegistro(); else raiz.location.hash = '#registro';
+  }
+  function mostrarRegistro() {
+    clearInterval(entrada.espera);
+    pintar(registro('telefono', { telefono: reg.telefono || entrada.telefono }));
+  }
+  /** «Entrar» (desde el registro): la pantalla de entrar con su número ya escrito. */
+  function irAEntrar(telefono) {
+    clearInterval(entrada.espera);
+    entrada.paso = 'telefono';
+    entrada.telefono = telefono || '';
+    if (raiz.location.hash === '#registro') { try { raiz.history.pushState(null, '', raiz.location.pathname); } catch (_) { /* se queda el «#» */ } }
+    pintar(entrar('telefono', { telefono: entrada.telefono }));
+  }
+
+  /** Paso 1: el código por WhatsApp. Si ese número ya vende, «Ese número ya está registrado» y «Entrar». */
+  function pedirCodigoDeRegistro(telefono, boton, reenvio) {
+    if (boton) boton.disabled = true;
+    pedir('POST', '/registro/codigo', { telefono: telefono }).then(function (r) {
+      reg.telefono = telefono;
+      if (r && r.yaEsVendedor) { clearInterval(entrada.espera); pintar(registro('ya')); return; }
+      pintar(registro('codigo'));
+      enfocar('r-codigo');
+      cuentaAtras();
+      if (reenvio) avisar('Te enviamos otro código');
+    }, function (e) {
+      if (boton) boton.disabled = false;
+      pintar(registro(reenvio ? 'codigo' : 'telefono', { telefono: telefono, error: e.message }));
+      if (reenvio) cuentaAtras();
+    });
+  }
+
+  /** Paso 2: el código escrito. Si ya llenó sus datos (el código había fallado), se manda todo otra vez. */
+  function codigoDeRegistro(codigo) {
+    reg.codigo = codigo;
+    if (reg.listo && reg.paraEnviar) { enviarRegistro(documento.querySelector('#app button[type="submit"]')); return; }
+    pintar(registro('datos'));
+    enfocar('r-nombre');
+  }
+
+  /**
+   * Paso 3: «Enviar» → `POST /registro`. Bien: su sesión y «Tu cuenta está en revisión». Un error con `campo`: debajo de
+   * esa casilla (el del código, de vuelta a las casillas: al escribirlo otra vez se manda solo).
+   */
+  function enviarRegistro(boton) {
+    if (reg.enviando) return;
+    reg.enviando = true;
+    if (boton) boton.disabled = true;
+    var cuerpo = { telefono: reg.telefono, codigo: reg.codigo };
+    for (var k in reg.paraEnviar) if (Object.prototype.hasOwnProperty.call(reg.paraEnviar, k) && reg.paraEnviar[k] != null) cuerpo[k] = reg.paraEnviar[k];
+    pedir('POST', '/registro', cuerpo).then(function (r) {
+      reg.enviando = false;
+      if (!r || typeof r.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(r.token)) {
+        if (boton) boton.disabled = false;
+        pintar(registro('datos', { error: 'Algo salió mal. Intenta de nuevo.' }));
+        return;
+      }
+      clearInterval(entrada.espera);
+      sesion.guardar(r.token);
+      reg = registroNuevo();
+      try { raiz.history.replaceState(null, '', raiz.location.pathname + '#inicio'); } catch (_) { raiz.location.hash = '#inicio'; }
+      arrancar();
+    }, function (e) {
+      reg.enviando = false;
+      if (boton) boton.disabled = false;
+      if (e.campo === 'codigo') {
+        reg.codigo = '';
+        pintar(registro('codigo', { error: e.message }));
+        enfocar('r-codigo');
+        cuentaAtras();
+        return;
+      }
+      // Un 409 sin casilla es la cédula o el RIF de otro vendedor.
+      var campo = e.campo || (e.status === 409 && /c[ée]dula|RIF|pasaporte|documento/i.test(e.message) ? 'documento' : null);
+      var errores = {};
+      if (campo) errores[campo] = e.message;
+      pintar(registro('datos', { errores: errores, error: campo ? null : e.message }));
+      if (campo) enfocarError(errores, 'r');
+    });
+  }
+
+  // ── Mis datos ──────────────────────────────────────────────────────────────
+
+  function pintarMisDatos(d) {
+    var viejo = documento.getElementById('mis-datos');
+    if (viejo && viejo.parentNode) viejo.parentNode.replaceChild(tarjetaMisDatos(d), viejo);
+  }
+  function pintarAvisoDatos() {
+    var z = documento.getElementById('aviso-datos');
+    if (!z) return;
+    vaciar(z);
+    var a = avisoDatos();
+    if (a) z.appendChild(a);
+    z.hidden = !a;
+  }
+  /** «Completar» (del aviso de arriba): Cobros, con «Mis datos» abierto. */
+  function completarDatos() {
+    estado.editarDatos = true;
+    estado.datosEscritos = null;
+    if (estado.seccion === 'cobros' && documento.getElementById('mis-datos')) { pintarMisDatos(); irAMisDatos(); return; }
+    estado.irAMisDatos = true;
+    raiz.location.hash = '#cobros';
+  }
+  function irAMisDatos() {
+    var c = documento.getElementById('mis-datos');
+    if (c && c.scrollIntoView) c.scrollIntoView({ block: 'start' });
+    var vacio = ['d-razon', 'd-documento', 'd-correo', 'd-direccion'].map(function (i) { return documento.getElementById(i); })
+      .filter(function (el) { return el && !String(el.value || '').trim(); })[0];
+    if (vacio) { try { vacio.focus({ preventScroll: true }); } catch (_) { vacio.focus(); } }
+  }
+  function irAMisDatosSiToca() { if (estado.irAMisDatos) { estado.irAMisDatos = false; irAMisDatos(); } }
+
+  /** «Guardar» → `POST /datos`. Bien: sus datos nuevos y el aviso al día. Mal: debajo de la casilla. */
+  function guardarMisDatos(cuerpo, boton) {
+    if (boton) boton.disabled = true;
+    pedir('POST', '/datos', cuerpo).then(function (r) {
+      if (r && r.datos && typeof r.datos === 'object') estado.datos = r.datos;
+      if (r && Array.isArray(r.faltanDatos)) estado.faltan = r.faltanDatos.filter(function (x) { return typeof x === 'string'; });
+      estado.editarDatos = false;
+      estado.datosEscritos = null;
+      pintarMisDatos();
+      pintarAvisoDatos();
+      avisar('Datos guardados');
+    }, function (e) {
+      if (boton) boton.disabled = false;
+      if (e.status === 401) { fallo(e); return; }
+      var campo = e.campo || (e.status === 409 ? 'documento' : null);
+      var errores = {};
+      if (campo) errores[campo] = e.message;
+      pintarMisDatos({ errores: errores, error: campo ? null : e.message });
+      if (campo) enfocarError(errores, 'd');
     });
   }
 
@@ -804,6 +1369,11 @@
   }
 
   documento.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cerrarHoja(); });
-  raiz.addEventListener('hashchange', function () { if (estado.yo) mostrar(); });
+  raiz.addEventListener('hashchange', function () {
+    if (estado.yo) { mostrar(); return; }
+    if (sesion.leer()) return; // entrando: lo pinta `arrancar`
+    if (raiz.location.hash === '#registro') mostrarRegistro();
+    else pintar(entrar('telefono', { telefono: entrada.telefono }));
+  });
   arrancar();
 })(typeof window !== 'undefined' ? window : globalThis);

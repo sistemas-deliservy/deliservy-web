@@ -41,5 +41,20 @@
 "Comisión ⟦⟧ − 16 % (⟦⟧) = ⟦⟧",
 "Tienes ⟦⟧ de pagos con tarjeta de crédito: se liberan 24 horas después del cobro.",
 "Otra",
-"Directo"
+"Directo",
+"Ese número ya está registrado. Entra con tu WhatsApp.",
+"Esa cédula o RIF ya es de otro vendedor.",
+"Para cambiar tu cédula o RIF, escríbenos por WhatsApp al 0414-495-7006.",
+"Escribe tu dirección completa.",
+"Te enviamos un código por WhatsApp.",
+"Esa cédula o RIF no es válido.",
+"Escribe un correo válido: ahí te llega tu factura.",
+"Escribe tu nombre y apellido.",
+"Escribe la razón social de la empresa.",
+"La razón social va de 2 a 150 caracteres.",
+"Ese correo no es válido.",
+"cédula o RIF",
+"dirección",
+"correo",
+"razón social"
 ]
