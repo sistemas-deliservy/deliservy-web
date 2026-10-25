@@ -211,7 +211,7 @@ claro/oscuro, inglés, `.htaccess` con los mismos encabezados). Contrato y captu
 - Idioma: `diccionario-comercio.json` + `siempre-comercio.json` (lo que manda la API); `aplicar.py` mira todos los
   `comercio/*.js`.
 - «Mi plan» (`plan.js`, §7 del contrato): el cobro de Deliservy por producto (5 %, mínimo 0,20 y máximo 0,99 por
-  unidad; Premium la mitad, Deluxe nada; con promoción de 0 %, nada) y las membresías (Premium 14,99 $, Deluxe 24,99 $
+  unidad; Premium la mitad, Deluxe nada; con promoción de 0 %, nada) y las membresías (Premium 14,99 $, Deluxe 25,99 $
   al mes), con «Quiero…» y «Pagar membresía» por tarjeta de débito o crédito, pago móvil o transferencia, como la tienda
   web. La misma cuenta da las pastillas «Deliservy: 0,50 $ por venta» de Productos y Vendedores externos. El contrato no
   fija sus rutas: las de la API simulada (`GET plan`, `POST plan/solicitar`, `plan/pagar/cotizar`, `plan/pagar`) son la

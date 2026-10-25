@@ -100,7 +100,7 @@ function proximoJueves(ahora) {
 
 // ── El cobro de Deliservy por producto (§7 del contrato) ─────────────────────
 
-const AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 24.99 };
+const AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 25.99 };
 /** Por UNIDAD: 5 % del precio, mínimo 0,20 y máximo 0,99 (la mitad hacia arriba); Premium la mitad (0,10–0,50); Deluxe 0. */
 function cobroPorUnidad(precio, plan, promoViva, ajustes) {
   const a = ajustes || AJUSTES;

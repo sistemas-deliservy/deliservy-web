@@ -4,7 +4,7 @@
  *
  * Gilberth: «no cobra una comisión, sino un pago por producto». Por UNIDAD vendida: el 5 % del precio, mínimo 0,20 $
  * y máximo 0,99 $ (redondeado al céntimo, la mitad hacia arriba). Premium (14,99 $ al mes) paga la mitad (0,10 a
- * 0,50); Deluxe (24,99 $ al mes), nada. Con una promoción de 0 % viva, nada hasta que venza. Desde el 25-oct-2026
+ * 0,50); Deluxe (25,99 $ al mes), nada. Con una promoción de 0 % viva, nada hasta que venza. Desde el 25-oct-2026
  * vale para las ventas del comercio afiliado (app, tienda web y promotores) según las dos casillas de Comisiones:
  * «Producto» (Básica entera, Premium la mitad, Deluxe nada) y «10%» (el porcentaje de la tienda). Las dos, se suman.
  * Sin ninguna, no se cobra nada. Un 0 % permanente apaga solo el porcentaje. La promo de 0 % apaga las dos.
@@ -23,7 +23,7 @@
   var h = C.h, dato = C.dato, ico = C.ico;
   var NOMBRES = { basica: 'Básica', premium: 'Premium', deluxe: 'Deluxe' };
   var METODOS = { pago_movil: 'Pago móvil', transferencia: 'Transferencia', debito: 'Tarjeta de débito', credito: 'Tarjeta de crédito' };
-  var AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 24.99 };
+  var AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 25.99 };
 
   // ── La regla (la misma de la API: una sola cuenta) ─────────────────────────
 
