@@ -63,5 +63,12 @@
 "Escribe un correo válido.",
 "Tu registro quedó guardado. Entra con tu WhatsApp para verlo.",
 "El código tiene 6 números.",
-"Falta correr las migraciones de Compra-Ventas en la base (2026-10-24_compra_ventas.sql y 2026-10-24_cv_vendedor_fiscal.sql)."
+"Falta correr las migraciones de Compra-Ventas en la base (2026-10-24_compra_ventas.sql, 2026-10-24_cv_vendedor_fiscal.sql y 2026-10-25_cv_vendedor_sexo.sql).",
+"Elige si eres promotor o promotora.",
+"Tu cuenta de promotora está pausada. Si crees que es un error, escríbenos.",
+"Tu cuenta de promotora ya no está activa.",
+"Tu cuenta de promotora no está activa.",
+"Esa cédula o RIF ya es de otra promotora.",
+"Ese teléfono ya es de una promotora.",
+"Esa cuenta ya es de una promotora."
 ]

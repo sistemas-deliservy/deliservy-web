@@ -173,6 +173,12 @@ textarea.campo { min-height: 78px; resize: vertical; line-height: 1.4; font-weig
 .bien { color: var(--ok); font-weight: 700; font-size: 14px; margin: 10px 2px 0; }
 .fila-campos { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; }
 .fila-doc { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 8px; }
+.sexo { display: flex; gap: 8px; }
+.sexo .opcion-sexo {
+  flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--b); border-radius: 12px; padding: 10px 12px; background: var(--c2);
+}
+.sexo .opcion-sexo:has(input:checked) { border-color: var(--r); background: var(--rs); }
 .con-flecha { position: relative; min-width: 0; }
 .con-flecha select.campo { padding-right: 36px; text-overflow: ellipsis; }
 .con-flecha .ico { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--m); pointer-events: none; }

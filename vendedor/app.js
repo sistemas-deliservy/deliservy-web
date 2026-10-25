@@ -159,6 +159,13 @@
     if (dir.length < 10) errores.direccion = 'Escribe tu dirección completa.';
     else if (dir.length > 300) errores.direccion = 'La dirección va hasta 300 caracteres.';
     else datos.direccion = dir;
+    var empresa = tipo === 'J' || tipo === 'G';
+    if (empresa) datos.sexo = null;
+    else if (o.conSexo !== false) {
+      var sx = String(c.sexo || '').toUpperCase();
+      if (sx === 'M' || sx === 'F') datos.sexo = sx;
+      else errores.sexo = 'Elige si eres promotor o promotora.';
+    }
     if (c.redes) {
       var redes = {};
       REDES_DEL_REGISTRO.forEach(function (r) { var v = textoLimpio(c.redes[r[0]]).slice(0, 120); if (v) redes[r[0]] = v; });
@@ -416,6 +423,16 @@
   /** «Razón social (opcional)», u obligatoria con J o G. */
   function rotuloDeRazon(tipo) { return tipo === 'J' || tipo === 'G' ? 'Razón social' : 'Razón social (opcional)'; }
 
+  /** Promotor o promotora. No viene marcado: hay que elegirlo. Con J o G el grupo se esconde. */
+  function campoDeSexo(prefijo, valor) {
+    function radio(val, texto) {
+      return h('label', { class: 'opcion-sexo' },
+        h('input', { type: 'radio', name: 'sexo', value: val, checked: valor === val }),
+        h('span', null, texto));
+    }
+    return h('div', { class: 'sexo', id: prefijo + '-sexo', tabIndex: '-1' }, radio('M', 'Promotor'), radio('F', 'Promotora'));
+  }
+
   function registro(paso, d) {
     d = d || {};
     var cuerpo;
@@ -481,7 +498,12 @@
     var nombre = h('input', { class: 'campo', id: 'r-nombre', name: 'nombre', autocomplete: 'name', maxlength: '60', placeholder: 'María Pérez', value: v.nombre || '' });
     var etqRazon = h('span', null, rotuloDeRazon(v.tipoDocumento || 'V'));
     var razon = h('input', { class: 'campo', id: 'r-razon', name: 'razonSocial', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si es una empresa', value: v.razonSocial || '' });
-    var doc = campoDeDocumento('r', v.tipoDocumento || 'V', v.numero || '', function (t) { etqRazon.textContent = rotuloDeRazon(t); });
+    var grupoSexo;
+    var cajaSexo = campoDeSexo('r', v.sexo);
+    var doc = campoDeDocumento('r', v.tipoDocumento || 'V', v.numero || '', function (t) {
+      etqRazon.textContent = rotuloDeRazon(t);
+      if (grupoSexo) grupoSexo.hidden = t === 'J' || t === 'G';
+    });
     var correo = h('input', { class: 'campo', id: 'r-correo', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '120', placeholder: 'tucorreo@gmail.com', value: v.correo || '' });
     var direccion = h('textarea', { class: 'campo', id: 'r-direccion', name: 'direccion', rows: '2', maxlength: '300', autocomplete: 'street-address', placeholder: segunIdioma('Calle, sector y ciudad', 'Street, area and city') });
     direccion.value = v.direccion || '';
@@ -491,7 +513,7 @@
         h('input', { class: 'campo', name: 'red-' + r[0], maxlength: '120', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false', placeholder: '@usuario', 'aria-label': r[1], value: redes[r[0]] || '' }));
     };
     var boton = h('button', { class: 'btn', type: 'submit' }, 'Enviar');
-    return h('form', {
+    var form = h('form', {
       novalidate: true, class: 'form-datos',
       onsubmit: function (ev) {
         ev.preventDefault();
@@ -499,6 +521,7 @@
         var escrito = {
           nombre: f.elements.nombre.value, razonSocial: f.elements.razonSocial.value, tipoDocumento: f.elements.tipoDocumento.value,
           numero: f.elements.documento.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value, redes: {},
+          sexo: grupoSexo.hidden ? '' : ((f.querySelector('input[name="sexo"]:checked') || {}).value || ''),
         };
         REDES_DEL_REGISTRO.forEach(function (r) { escrito.redes[r[0]] = f.elements['red-' + r[0]].value; });
         reg.escrito = escrito;
@@ -515,6 +538,7 @@
     grupoDeCampo('r-nombre', 'Nombre y apellido', nombre, e.nombre),
     grupoDeCampo('r-razon', etqRazon, razon, e.razonSocial),
     grupoDeCampo('r-documento', 'Cédula, RIF o pasaporte', doc.fila, e.documento, null, doc.input),
+    grupoSexo = grupoDeCampo('r-sexo', 'Promotor o promotora', cajaSexo, e.sexo, 'Una empresa no elige esto.'),
     grupoDeCampo('r-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
     grupoDeCampo('r-direccion', 'Dirección', direccion, e.direccion),
     h('div', { class: 'grupo-campo' },
@@ -523,6 +547,8 @@
     d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
     h('div', { class: 'botones' }, boton),
     h('p', { class: 'ayuda' }, 'Al enviar, tu cuenta queda en revisión. Te avisamos por WhatsApp.'));
+    grupoSexo.hidden = doc.select.value === 'J' || doc.select.value === 'G';
+    return form;
   }
 
   function revision(yo) {
@@ -564,6 +590,7 @@
       cuerpo = [
         h('dl', { class: 'datos-lista' },
           fila('Nombre', x.nombre),
+          tipo === 'J' || tipo === 'G' ? null : fila('Promotor o promotora', x.sexo === 'F' ? 'Promotora' : x.sexo === 'M' ? 'Promotor' : ''),
           x.razonSocial || tipo === 'J' || tipo === 'G' ? fila('Razón social', x.razonSocial) : null,
           h('dt', null, 'Cédula o RIF'), docHtml,
           fila('Correo', x.correo),
@@ -587,11 +614,16 @@
     var enRevision = !!(estado.yo && estado.yo.estado === 'pendiente');
     var puedeDocumento = enRevision || !x.documento;
     var v = estado.datosEscritos || {
-      razonSocial: x.razonSocial || '', tipoDocumento: tipo || 'V', numero: numeroDelDocumento(x.documento), correo: x.correo || '', direccion: x.direccion || '',
+      razonSocial: x.razonSocial || '', tipoDocumento: tipo || 'V', numero: numeroDelDocumento(x.documento), correo: x.correo || '', direccion: x.direccion || '', sexo: x.sexo || '',
     };
     var etqRazon = h('span', null, rotuloDeRazon(puedeDocumento ? v.tipoDocumento : tipo));
     var razon = h('input', { class: 'campo', id: 'd-razon', name: 'razonSocial', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si es una empresa', value: v.razonSocial || '' });
-    var doc = puedeDocumento ? campoDeDocumento('d', v.tipoDocumento || 'V', v.numero || '', function (t) { etqRazon.textContent = rotuloDeRazon(t); }) : null;
+    var grupoSexo;
+    var cajaSexo = campoDeSexo('d', v.sexo);
+    var doc = puedeDocumento ? campoDeDocumento('d', v.tipoDocumento || 'V', v.numero || '', function (t) {
+      etqRazon.textContent = rotuloDeRazon(t);
+      if (grupoSexo) grupoSexo.hidden = t === 'J' || t === 'G';
+    }) : null;
     var correo = h('input', { class: 'campo', id: 'd-correo', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '120', placeholder: 'tucorreo@gmail.com', value: v.correo || '' });
     var direccion = h('textarea', { class: 'campo', id: 'd-direccion', name: 'direccion', rows: '2', maxlength: '300', autocomplete: 'street-address', placeholder: segunIdioma('Calle, sector y ciudad', 'Street, area and city') });
     direccion.value = v.direccion || '';
@@ -601,7 +633,7 @@
       h('p', { class: 'ayuda' }, 'Para cambiarlo, escríbenos por ', h('a', { href: WHATSAPP_DELISERVY, target: '_blank', rel: 'noopener noreferrer' }, 'WhatsApp'), '.'),
       e.documento ? h('p', { class: 'error-campo', role: 'alert' }, e.documento) : null);
     var boton = h('button', { class: 'btn', type: 'submit' }, 'Guardar');
-    return h('form', {
+    var form = h('form', {
       novalidate: true, class: 'form-datos',
       onsubmit: function (ev) {
         ev.preventDefault();
@@ -609,6 +641,7 @@
         var escrito = {
           razonSocial: f.elements.razonSocial.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value,
           tipoDocumento: doc ? doc.select.value : tipo, numero: doc ? doc.input.value : numeroDelDocumento(x.documento),
+          sexo: grupoSexo.hidden ? '' : ((f.querySelector('input[name="sexo"]:checked') || {}).value || ''),
         };
         estado.datosEscritos = escrito;
         var r = revisarDatos(escrito, { conDocumento: !!doc, tipoActual: tipo });
@@ -617,6 +650,8 @@
         // La razón social: lo escrito; vacía y antes tenía una → null (borrarla); vacía y no tenía → no se manda.
         if (r.datos.razonSocial) cuerpo.razonSocial = r.datos.razonSocial;
         else if (x.razonSocial) cuerpo.razonSocial = null;
+        if (r.datos.sexo) cuerpo.sexo = r.datos.sexo;
+        else if (r.datos.sexo === null) cuerpo.sexo = null;
         if (doc && r.datos.documento && r.datos.tipoDocumento + r.datos.documento !== String(x.documento || '').toUpperCase()) {
           cuerpo.tipoDocumento = r.datos.tipoDocumento;
           cuerpo.documento = r.datos.documento;
@@ -626,11 +661,14 @@
     },
     grupoDeCampo('d-razon', etqRazon, razon, e.razonSocial),
     doc ? grupoDeCampo('d-documento', 'Cédula, RIF o pasaporte', doc.fila, e.documento, null, doc.input) : docFijo,
+    grupoSexo = grupoDeCampo('d-sexo', 'Promotor o promotora', cajaSexo, e.sexo, 'Una empresa no elige esto.'),
     grupoDeCampo('d-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
     grupoDeCampo('d-direccion', 'Dirección', direccion, e.direccion),
     d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
     h('div', { class: 'botones' }, boton,
       h('button', { class: 'btn borde', type: 'button', onclick: function () { estado.editarDatos = false; estado.datosEscritos = null; pintarMisDatos(); } }, 'Cancelar')));
+    grupoSexo.hidden = (doc ? doc.select.value : tipo) === 'J' || (doc ? doc.select.value : tipo) === 'G';
+    return form;
   }
 
   function vacio(titulo, texto, extra) {
@@ -1122,6 +1160,28 @@
 
   function pintarCobros(editar) { if (estado.cobros) enContenido(cobros(estado.cobros, editar)); }
 
+  function elegirSexo(error) {
+    function elegir(sexo, boton) {
+      if (boton) boton.disabled = true;
+      pedir('POST', '/datos', { sexo: sexo }).then(function (r) {
+        if (r && r.datos && typeof r.datos === 'object') estado.datos = r.datos;
+        else if (estado.datos) estado.datos.sexo = sexo;
+        mostrar();
+      }, function (e) {
+        if (boton) boton.disabled = false;
+        pintar(elegirSexo(e.message || 'No se pudo guardar. Intenta de nuevo.'));
+      });
+    }
+    return sinSesion('Así te hablamos bien.', h('div', null,
+      h('h2', null, '¿Eres promotor o promotora?'),
+      h('p', { class: 'nota' }, 'Elige uno. Si eres una empresa, no hace falta: entra y no verás esta pregunta.'),
+      error ? h('p', { class: 'error', role: 'alert' }, error) : null,
+      h('div', { class: 'botones' },
+        h('button', { class: 'btn', type: 'button', onclick: function (ev) { elegir('M', ev.currentTarget); } }, 'Promotor'),
+        h('button', { class: 'btn borde', type: 'button', onclick: function (ev) { elegir('F', ev.currentTarget); } }, 'Promotora'))),
+    null);
+  }
+
   function arrancar() {
     if (!sesion.leer()) { if (raiz.location.hash === '#registro') mostrarRegistro(); else pintar(entrar('telefono')); return; }
     pedir('GET', '/yo').then(function (r) {
@@ -1130,6 +1190,7 @@
       // Sus datos para facturar (24-oct-2026). Sin ellos (una API de antes), la página sigue como estaba.
       estado.datos = r.datos && typeof r.datos === 'object' ? r.datos : null;
       estado.faltan = Array.isArray(r.faltanDatos) ? r.faltanDatos.filter(function (x) { return typeof x === 'string'; }) : [];
+      if (r.pedirSexo === true) { pintar(elegirSexo()); return; }
       mostrar();
     }, function (e) {
       if (e.status === 401) { sesion.borrar(); pintar(entrar('telefono')); return; }
@@ -1209,8 +1270,8 @@
   }
   /** El primer campo con error (en el orden del formulario). */
   function enfocarError(errores, prefijo) {
-    var ids = { nombre: 'nombre', razonSocial: 'razon', documento: 'documento', correo: 'correo', direccion: 'direccion' };
-    var orden = ['nombre', 'razonSocial', 'documento', 'correo', 'direccion'];
+    var ids = { nombre: 'nombre', razonSocial: 'razon', documento: 'documento', correo: 'correo', direccion: 'direccion', sexo: 'sexo' };
+    var orden = ['nombre', 'razonSocial', 'documento', 'sexo', 'correo', 'direccion'];
     for (var i = 0; i < orden.length; i++) if (errores[orden[i]]) { enfocar(prefijo + '-' + ids[orden[i]]); return; }
   }
 
