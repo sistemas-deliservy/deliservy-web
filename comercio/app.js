@@ -28,7 +28,7 @@
     esDueno: false,
     puede: function (permiso) { return ctx.esDueno || (ctx.cuenta && (ctx.cuenta.permisos || []).indexOf(permiso) >= 0); },
   };
-  var entrada = { paso: 'telefono', telefono: '', espera: null, verificando: false };
+  var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', correo: '', espera: null, verificando: false };
 
   /** Los pedidos que ya abrió en este navegador (para la pastilla «Nuevo»). */
   var vistos = (function () { var v = C.almacen.leer(CLAVE_VISTOS); return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'number'; }) : []; })();
@@ -80,8 +80,11 @@
     d = d || {};
     var cuerpo;
     if (paso === 'codigo') {
+      var porCorreo = entrada.medio === 'correo';
       var casillas = C.casillasDeCodigo('codigo', function (cod) { verificar(cod, null); });
-      var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () { pedirCodigo(entrada.telefono, reenviar, true); } }, 'Reenviar código');
+      var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () {
+        if (porCorreo) pedirCodigoDeCorreo(entrada.correo, reenviar, true); else pedirCodigo(entrada.telefono, reenviar, true);
+      } }, 'Reenviar código');
       cuerpo = h('form', {
         novalidate: true,
         onsubmit: function (ev) {
@@ -91,14 +94,38 @@
           verificar(cod, ev.target.querySelector('button[type="submit"]'));
         },
       },
-      h('p', { class: 'bien' }, d.mensaje || 'Te enviamos un código por WhatsApp al ', d.mensaje ? null : dato('span', { class: 'sin-cortes' }, C.telefonoParaVer(entrada.telefono)), d.mensaje ? null : '.'),
+      h('p', { class: 'bien' }, d.mensaje || (porCorreo ? 'Si ese correo es del dueño de una tienda, te llegó un código.' : null), porCorreo || d.mensaje ? null : 'Te enviamos un código por WhatsApp al ', porCorreo || d.mensaje ? null : dato('span', { class: 'sin-cortes' }, C.telefonoParaVer(entrada.telefono)), porCorreo || d.mensaje ? null : '.'),
       h('label', { class: 'etq-campo', for: 'codigo' }, 'Código de 6 números'),
       casillas.caja,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Entrar')),
       h('div', { class: 'botones' },
-        h('button', { class: 'btn borde chico', type: 'button', onclick: function () { clearInterval(entrada.espera); entrada.paso = 'telefono'; pintar(pantallaEntrar('telefono', { telefono: entrada.telefono })); enfocar('telefono'); } }, 'Cambiar número'),
+        h('button', { class: 'btn borde chico', type: 'button', onclick: function () {
+          clearInterval(entrada.espera);
+          if (porCorreo) { entrada.paso = 'correo'; pintar(pantallaEntrar('correo', { correo: entrada.correo })); enfocar('correo-entrar'); }
+          else { entrada.paso = 'telefono'; pintar(pantallaEntrar('telefono', { telefono: entrada.telefono })); enfocar('telefono'); }
+        } }, porCorreo ? 'Cambiar correo' : 'Cambiar número'),
         reenviar));
+    } else if (paso === 'correo') {
+      var correo = h('input', {
+        class: 'campo', id: 'correo-entrar', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email',
+        placeholder: 'tu@correo.com', value: d.correo || entrada.correo || '', required: true, maxlength: '120',
+      });
+      cuerpo = h('form', {
+        novalidate: true,
+        onsubmit: function (ev) {
+          ev.preventDefault();
+          var c = String(correo.value || '').trim();
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) { pintar(pantallaEntrar('correo', { correo: c, error: 'Escribe un correo válido.' })); enfocar('correo-entrar'); return; }
+          pedirCodigoDeCorreo(c, ev.target.querySelector('button[type="submit"]'), false);
+        },
+      },
+      h('label', { class: 'etq-campo', for: 'correo-entrar' }, 'Tu correo'),
+      correo,
+      d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
+      h('p', { class: 'ayuda' }, 'Te mandamos un código al correo de la cuenta del dueño. El cajero entra con WhatsApp.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'whatsapp'; entrada.paso = 'telefono'; pintar(pantallaEntrar('telefono')); enfocar('telefono'); } }, 'Entrar con WhatsApp')));
     } else {
       var telefono = h('input', {
         class: 'campo', id: 'telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
@@ -118,7 +145,8 @@
       h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
-      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'));
+      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(pantallaEntrar('correo')); enfocar('correo-entrar'); } }, 'Entrar con correo')));
     }
     return h('div', { class: 'entrar' },
       h('div', { class: 'marca' },
@@ -161,11 +189,30 @@
       if (entrada.paso === 'codigo') { cuentaAtras(); enfocar('codigo'); } else enfocar('telefono');
     });
   }
+  function pedirCodigoDeCorreo(correo, boton, reenvio) {
+    if (boton) boton.disabled = true;
+    entrada.medio = 'correo';
+    C.pedir('POST', '/correo', { correo: correo }, { sinSesion: true }).then(function (r) {
+      entrada.paso = 'codigo';
+      entrada.correo = correo;
+      pintar(pantallaEntrar('codigo', { mensaje: r && r.mensaje }));
+      enfocar('codigo');
+      cuentaAtras();
+      if (reenvio) C.avisar('Te enviamos otro código');
+    }, function (e) {
+      if (boton) boton.disabled = false;
+      pintar(pantallaEntrar(entrada.paso === 'codigo' ? 'codigo' : 'correo', { correo: correo, error: e.message }));
+      if (entrada.paso === 'codigo') { cuentaAtras(); enfocar('codigo'); } else enfocar('correo-entrar');
+    });
+  }
   function verificar(codigo, boton) {
     if (entrada.verificando) return;
     entrada.verificando = true;
     if (boton) boton.disabled = true;
-    C.pedir('POST', '/entrar', { telefono: entrada.telefono, codigo: codigo }, { sinSesion: true }).then(function (r) {
+    var porCorreo = entrada.medio === 'correo';
+    var ruta = porCorreo ? '/entrar-correo' : '/entrar';
+    var cuerpo = porCorreo ? { correo: entrada.correo, codigo: codigo } : { telefono: entrada.telefono, codigo: codigo };
+    C.pedir('POST', ruta, cuerpo, { sinSesion: true }).then(function (r) {
       entrada.verificando = false;
       clearInterval(entrada.espera);
       if (!r || typeof r.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(r.token)) {
@@ -180,7 +227,7 @@
     }, function (e) {
       entrada.verificando = false;
       if (boton) boton.disabled = false;
-      pintar(pantallaEntrar('codigo', { error: e.message, mensaje: 'Escribe el código que te llegó por WhatsApp.' }));
+      pintar(pantallaEntrar('codigo', { error: e.message, mensaje: entrada.medio === 'correo' ? 'Escribe el código que te llegó por correo.' : 'Escribe el código que te llegó por WhatsApp.' }));
       enfocar('codigo');
       cuentaAtras();
     });

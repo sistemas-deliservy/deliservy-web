@@ -920,5 +920,12 @@
 "Completa todos los datos de la tarjeta": "Fill in all the card details",
 "Elige cómo pagas.": "Choose how you pay.",
 "MM/AA": "MM/YY",
-"¿Quieres pagar menos por producto? Pide Premium o Deluxe.": "Want to pay less per product? Ask for Premium or Deluxe."
+"¿Quieres pagar menos por producto? Pide Premium o Deluxe.": "Want to pay less per product? Ask for Premium or Deluxe.",
+"Entrar con correo": "Sign in with email",
+"Entrar con WhatsApp": "Sign in with WhatsApp",
+"Tu correo": "Your email",
+"Si ese correo es del dueño de una tienda, te llegó un código.": "If that email belongs to a store owner, a code was sent.",
+"Te mandamos un código al correo de la cuenta del dueño. El cajero entra con WhatsApp.": "We send a code to the store owner's account email. A cashier signs in with WhatsApp.",
+"Cambiar correo": "Change email",
+"Escribe el código que te llegó por correo.": "Enter the code you got by email."
 }
