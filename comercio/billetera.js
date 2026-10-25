@@ -12,7 +12,7 @@
   var C = raiz.Comercio;
   var h = C.h, dato = C.dato, ico = C.ico;
   var rango = { modo: '30', desde: null, hasta: null };
-  var TIPOS = { MANAGER: 'Comisión', FLOTA: 'Flota', VENDEDOR: 'Vendedores' };
+  var TIPOS = { MANAGER: 'Comisión', FLOTA: 'Flota', VENDEDOR: 'Vendedores', MEMBRESIA: 'Membresía' };
 
   function rangoDelModo(modo) {
     var hoy = C.diaCaracas();
