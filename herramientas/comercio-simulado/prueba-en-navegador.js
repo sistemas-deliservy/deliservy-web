@@ -251,7 +251,7 @@ async function telefonoClaro(browser) {
   await foto(page, '09-pedidos-calendario');
   await ir(page, '#pedidos/2603', 3500);
   check('detalle: datos para la factura', /Deliservyapp/.test(await textoDe(page, '.datos-lista')));
-  check('detalle: la ganancia de verdad', /Vendedor externo/.test(await textoDe(page, '.ganancia')));
+  check('detalle: la ganancia de verdad', /Promotor externo/.test(await textoDe(page, '.ganancia')));
   check('detalle: lo que se descontó (por producto, Premium)', /Deliservy se quedó/.test(await textoDe(page, '.descontado')) && /Premium/.test(await textoDe(page, '.descontado')));
   check('detalle: el repartidor en el mapa', await page.isVisible('.pin-moto').catch(() => false) || await page.isVisible('.cargando-mapa.fallo').catch(() => false));
   await foto(page, '10-pedido-detalle', true);

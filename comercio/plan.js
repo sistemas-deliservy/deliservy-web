@@ -104,7 +104,7 @@
       h('h2', null, 'Lo que te cobra Deliservy'),
       promo ? h('p', { class: 'bien' }, ico('check'), ' Hasta el ', C.diaMes(info.promo.hasta), ' no te cobramos nada.') : null,
       h('p', { class: 'regla' }, promo ? 'Luego: ' : null, regla(plan, info)),
-      h('p', { class: 'nota' }, info.cobroPorProducto ? 'En todos tus pedidos: app, tienda web y vendedores externos.' : 'En la tienda web y con vendedores externos.'),
+      h('p', { class: 'nota' }, info.cobroPorProducto ? 'En todos tus pedidos: app, tienda web y promotores externos.' : 'En la tienda web y con promotores externos.'),
       !info.cobroPorProducto ? h('p', { class: 'nota' }, 'En la app: ', C.porcentaje(promo ? info.promo.pct : info.comisionPct), ' de cada venta.') : null,
       h('div', { class: 'ejemplos' }, h('span', { class: 'etq-mini' }, 'Por cada unidad vendida'), ejemplos));
   }

@@ -22,7 +22,7 @@
   function filaProducto(ctx, p, tope, plan) {
     var precioApp = C.num(p.precioApp);
     var pausado = !!p.pausadoPorAdmin;
-    var pct = C.entrada({ value: String(C.num(p.pct)).replace('.', ','), inputmode: 'decimal', maxlength: '5', 'aria-label': '% para el vendedor', disabled: pausado });
+    var pct = C.entrada({ value: String(C.num(p.pct)).replace('.', ','), inputmode: 'decimal', maxlength: '5', 'aria-label': '% para el promotor', disabled: pausado });
     var redes = C.entrada({ value: p.precioRedes != null && C.num(p.precioRedes) > 0 ? C.enCampo(p.precioRedes) : '', inputmode: 'decimal', maxlength: '10', placeholder: C.enCampo(precioApp), 'aria-label': 'Precio en redes', disabled: pausado });
     var tallas = Array.isArray(p.preciosTalla) ? p.preciosTalla.filter(function (t) { return t && typeof t === 'object'; }) : [];
     var camposTalla = tallas.map(function (t) {
@@ -68,7 +68,7 @@
           plan && C.cobro && precioApp > 0 ? h('small', { class: 'cobro-cv' }, C.cobro.textoPorVenta(C.num(p.precioRedes) > 0 ? p.precioRedes : precioApp, plan)) : null,
           p.subio ? h('small', { class: 'ambar' }, 'Subiste el precio: revisa el de redes.') : null)),
       h('div', { class: 'cv-campos' },
-        h('label', { class: 'cv-campo' }, h('span', null, '% vendedor'), h('div', { class: 'con-sufijo' }, pct, h('span', null, '%'))),
+        h('label', { class: 'cv-campo' }, h('span', null, '% promotor'), h('div', { class: 'con-sufijo' }, pct, h('span', null, '%'))),
         h('label', { class: 'cv-campo' }, h('span', null, 'Precio en redes'), h('div', { class: 'con-sufijo' }, redes, h('span', null, '$'))),
         camposTalla.map(function (c) {
           return h('label', { class: 'cv-campo' }, h('span', null, dato('span', null, c.t.titulo || ''), ' (', C.dolares(c.t.precioApp), ')'), h('div', { class: 'con-sufijo' }, c.input, h('span', null, '$')));
@@ -99,7 +99,7 @@
       }, function (e) { errorT.textContent = e.message; errorT.hidden = false; });
     });
     C.enContenido(v, [
-      C.cabeceraDeSeccion('Vendedores externos', 'Personas que venden tus productos en sus redes. Tú decides cuánto ganan.'),
+      C.cabeceraDeSeccion('Promotores externos', 'Personas que venden tus productos en sus redes. Tú decides cuánto ganan.'),
       h('div', { class: 'rejilla dos' },
         h('div', { class: 'tarjeta' },
           h('h2', null, '% de tu tienda'),
@@ -114,21 +114,21 @@
             C.cifra('Vendido', C.dolares(u.ventasUsd)),
             C.cifra('Les pagaste', C.dolares(u.comisionUsd), 'ambar'),
             C.cifra('Cupones', C.dolares(u.cuponesUsd))),
-          h('p', { class: 'nota' }, 'Lo del vendedor sale de tu ganancia, como la comisión.'))),
+          h('p', { class: 'nota' }, 'Lo del promotor sale de tu ganancia, como la comisión.'))),
       h('div', { class: 'etq-fila' }, h('span', { class: 'etq' }, 'Tus productos'), h('span', { class: 'cuenta' }, C.plural(productos.length, 'producto', 'productos'))),
       productos.length ? h('div', { class: 'lista' }, productos.map(function (p) { return filaProducto(ctx, p, tope, d.__plan); }))
-        : C.vacio('Aún no tienes productos', 'Agrega productos para venderlos con vendedores externos.', null, 'productos'),
-      h('span', { class: 'etq' }, 'Ventas de vendedores'),
+        : C.vacio('Aún no tienes productos', 'Agrega productos para venderlos con promotores externos.', null, 'productos'),
+      h('span', { class: 'etq' }, 'Ventas de promotores'),
       ventas.length ? h('div', { class: 'lista' }, ventas.map(function (x) {
         return h('div', { class: 'renglon' },
-          h('div', { class: 'txt' }, h('b', null, 'Pedido #' + Math.round(C.num(x.orderId))), h('small', null, C.fechaHora(x.fecha), ' · ', dato('span', null, x.vendedor || 'Vendedor'))),
+          h('div', { class: 'txt' }, h('b', null, 'Pedido #' + Math.round(C.num(x.orderId))), h('small', null, C.fechaHora(x.fecha), ' · ', dato('span', null, x.vendedor || 'Promotor'))),
           h('div', { class: 'monto' }, h('b', null, C.dolares(x.ventasUsd)), h('small', { class: 'ambar' }, 'Comisión ', C.dolares(x.comisionUsd)), C.num(x.cuponUsd) ? h('small', null, 'Cupón ', C.dolares(x.cuponUsd)) : null));
-      })) : C.vacio('Aún no hay ventas de vendedores', 'Cuando un vendedor venda tus productos, lo verás aquí.', null, 'vendedores'),
+      })) : C.vacio('Aún no hay ventas de promotores', 'Cuando un promotor venda tus productos, lo verás aquí.', null, 'vendedores'),
     ]);
   }
 
   C.secciones.vendedores = {
-    id: 'vendedores', titulo: 'Vendedores externos', corto: 'Vendedores', icono: 'vendedores',
+    id: 'vendedores', titulo: 'Promotores externos', corto: 'Promotores', icono: 'vendedores',
     visible: function (ctx) { return ctx.esDueno && !!ctx.tienda && ctx.tienda.visibleEnApp === true; },
     mostrar: function (ctx, sub, v) {
       Promise.all([C.pedir('GET', '/vendedores-externos?storeId=' + encodeURIComponent(ctx.tienda.storeId)), C.cobro ? C.cobro.planDe(ctx) : Promise.resolve(null)]).then(function (rr) {

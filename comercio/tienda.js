@@ -60,7 +60,7 @@
       h('h2', null, 'Comisión de Deliservy'),
       h('div', { class: 'comision-grande' }, h('small', null, 'En la app te cobra'), h('b', null, C.porcentaje(promo ? promo.pct : pct))),
       promo ? h('p', { class: 'bien' }, C.porcentaje(promo.pct), ' hasta el ', C.diaMes(promo.hasta), ', luego ', C.porcentaje(promo.luegoPct)) : h('p', { class: 'nota' }, 'Por cada venta entregada.'),
-      h('p', { class: 'nota' }, 'En la tienda web y con vendedores, cobra por producto: ', h('a', { href: '#plan' }, 'Mi plan'), '.'),
+      h('p', { class: 'nota' }, 'En la tienda web y con promotores, cobra por producto: ', h('a', { href: '#plan' }, 'Mi plan'), '.'),
       h('p', { class: 'nota' }, 'La pone Deliservy. Si tienes dudas, escríbenos.'));
   }
   function tarjetaCuenta(cuenta) {

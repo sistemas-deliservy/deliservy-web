@@ -52,7 +52,7 @@
             C.num(p.stock) > 0 ? C.pill('Stock ' + Math.round(C.num(p.stock)), '') : null,
             p.encargo ? C.pill('Por encargo', 'azul') : null,
             p.tieneOpciones ? C.pill('Con opciones', '') : null,
-            cv && cv.pausadoPorAdmin ? C.pill('Pausado por Deliservy', 'ambar') : cv && cv.activo && C.num(cv.pct) > 0 ? C.pill(C.porcentaje(cv.pct) + ' vendedores', 'verde') : null),
+            cv && cv.pausadoPorAdmin ? C.pill('Pausado por Deliservy', 'ambar') : cv && cv.activo && C.num(cv.pct) > 0 ? C.pill(C.porcentaje(cv.pct) + ' promotores', 'verde') : null),
           plan && precio > 0 ? h('div', { class: 'chips cobro' }, h('span', { class: 'pill azul' }, h('span', null, C.cobro.textoPorVenta(precio, plan, p.cobroDeliservyUsd)),
             C.cobro.textoApp(plan) ? [h('span', { 'aria-hidden': 'true' }, ' · '), h('span', null, C.cobro.textoApp(plan))] : null)) : null)),
       h('div', { class: 'fp-disp' }, sw.caja));
@@ -237,7 +237,7 @@
       var n = C.leerNumero(precio.value);
       avisoCero.hidden = !(n === 0);
       var texto = planEditor && n > 0 ? C.cobro.textoPorVenta(n, planEditor) : null;
-      C.reemplazar(lineaCobro, texto ? [h('span', null, texto), ' (', h('span', null, 'web y vendedores'), ')', C.cobro.textoApp(planEditor) ? [' · ', h('span', null, C.cobro.textoApp(planEditor))] : null] : null);
+      C.reemplazar(lineaCobro, texto ? [h('span', null, texto), ' (', h('span', null, 'web y promotores'), ')', C.cobro.textoApp(planEditor) ? [' · ', h('span', null, C.cobro.textoApp(planEditor))] : null] : null);
       lineaCobro.hidden = !texto;
     };
     if (C.cobro) C.cobro.planDe(ctx).then(function (pl) { planEditor = pl; revisarCero(); });

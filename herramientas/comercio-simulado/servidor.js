@@ -351,7 +351,7 @@ function datosNuevos() {
         calificacion: !cancelado && azar() < 0.4 ? (azar() < 0.75 ? 5 : 4) : null, prueba: false,
       });
       if (canal === 'vendedor' && !cancelado && creado > ahora - 30 * DIA_MS) {
-        d.vendedorVentas.push({ orderId: id, fecha: iso(creado), ventasUsd: productosUsd, comisionUsd: vendedorUsd, cuponUsd: azar() < 0.4 ? 0.5 : 0, vendedor: 'Vendedor #' + (12 + Math.floor(azar() * 3)) });
+        d.vendedorVentas.push({ orderId: id, fecha: iso(creado), ventasUsd: productosUsd, comisionUsd: vendedorUsd, cuponUsd: azar() < 0.4 ? 0.5 : 0, vendedor: 'Promotor #' + (12 + Math.floor(azar() * 3)) });
       }
     }
   }
@@ -477,7 +477,7 @@ function datosNuevos() {
   d.movimientos = [];
   let mid = 1;
   for (const p of d.pedidos.filter((x) => x.estado === 300).sort((a, b) => b.creado - a.creado).slice(0, 140)) {
-    d.movimientos.push({ id: mid++, fecha: iso(p.entregado), tipo: 'ganancia', descripcion: 'Ganancia pedido #' + p.id + (p.vendedorUsd ? ' · vendedor −' + usd(p.vendedorUsd) : ''), montoBs: redondo(p.gananciaUsd * TASA), orderId: p.id });
+    d.movimientos.push({ id: mid++, fecha: iso(p.entregado), tipo: 'ganancia', descripcion: 'Ganancia pedido #' + p.id + (p.vendedorUsd ? ' · promotor −' + usd(p.vendedorUsd) : ''), montoBs: redondo(p.gananciaUsd * TASA), orderId: p.id });
   }
   for (let semanas = 0; semanas < 10; semanas++) {
     d.movimientos.push({ id: mid++, fecha: iso(inicioDelDia(diaCaracas(ahora - (semanas * 7 + 1) * DIA_MS)) + 23 * HORA_MS), tipo: 'retiro', descripcion: 'Pago automático a tu cuenta (BNC)', montoBs: -redondo(12000 + azar() * 9000) });
@@ -577,7 +577,7 @@ function detalle(p) {
   const detalleGanancia = [{ texto: 'Productos', usd: p.productosUsd },
     porProducto ? { texto: 'Deliservy por producto (' + nombrePlan + ')', usd: -cobroUsd } : { texto: 'Comisión de Deliservy (' + Math.round(p.comision * 100) + ' %)', usd: -cobroUsd }];
   if (p.cupon && p.cupon.pagaLaTienda) detalleGanancia.push({ texto: 'Cupón ' + p.cupon.codigo, usd: -p.cupon.pagaLaTienda });
-  if (p.vendedorUsd) detalleGanancia.push({ texto: 'Vendedor externo', usd: -p.vendedorUsd });
+  if (p.vendedorUsd) detalleGanancia.push({ texto: 'Promotor externo', usd: -p.vendedorUsd });
   const ganancia = p.estado === 400 ? 0 : redondo(p.productosUsd - cobroUsd - (p.cupon ? p.cupon.pagaLaTienda : 0) - p.vendedorUsd);
   return {
     id: p.id, storeId: p.storeId, tienda: t ? t.nombre : '', creadoEn: iso(p.creado), entregadoEn: p.entregado ? iso(p.entregado) : null,
@@ -589,7 +589,7 @@ function detalle(p) {
     repartidor: p.repartidor ? { nombre: p.repartidor.nombre, foto: p.repartidor.foto, telefono: enCurso ? telefonoParaVer(p.repartidor.telefono) : null } : null,
     eventos: eventos.reverse(),
     devolucion: dev ? { codigo: dev.pin, estado: dev.estado } : null,
-    canal: p.canal, canalTexto: p.canal === 'vendedor' ? 'Vendedor #' + p.vendedor : p.canal === 'web' ? 'Tienda web' : 'App',
+    canal: p.canal, canalTexto: p.canal === 'vendedor' ? 'Promotor #' + p.vendedor : p.canal === 'web' ? 'Tienda web' : 'App',
     cupon: p.cupon ? { codigo: p.cupon.codigo, descuentoUsd: p.cupon.descuentoUsd, pagaLaTiendaUsd: p.cupon.pagaLaTienda } : null,
     ganancia: { usd: ganancia, bs: p.abonado ? redondo(ganancia * TASA) : null, abonada: !!p.abonado, detalle: detalleGanancia },
     cobro: {
@@ -875,7 +875,7 @@ async function api(req, res, url) {
         visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto,
         flota: t.flota,
       })),
-      avisos: s.rol === 'dueno' ? ['Nuevo: en la tienda web y con vendedores, Deliservy cobra por producto.'] : [],
+      avisos: s.rol === 'dueno' ? ['Nuevo: en la tienda web y con promotores, Deliservy cobra por producto.'] : [],
     };
   }
   if (metodo === 'GET' && ruta === 'hoy') {
@@ -931,7 +931,7 @@ async function api(req, res, url) {
       const filas = [['Pedido', 'Fecha', 'Hora', 'Estado', 'Productos', 'Total ($)', 'Tu ganancia ($)', 'Canal']];
       for (const p of D.pedidos.filter((x) => x.storeId === t.storeId && x.estado >= 200 && x.creado >= rr.ini && x.creado < rr.fin).sort((a, b) => a.creado - b.creado)) {
         const c = new Date(p.creado + CARACAS_MS).toISOString();
-        filas.push([p.id, c.slice(0, 10), c.slice(11, 16), p.estado === 400 ? 'Cancelado' : 'Entregado', comandaDe(p).replace(/\n/g, ' · '), totalDe(p), p.gananciaUsd, p.canal === 'vendedor' ? 'Vendedor #' + p.vendedor : p.canal]);
+        filas.push([p.id, c.slice(0, 10), c.slice(11, 16), p.estado === 400 ? 'Cancelado' : 'Entregado', comandaDe(p).replace(/\n/g, ' · '), totalDe(p), p.gananciaUsd, p.canal === 'vendedor' ? 'Promotor #' + p.vendedor : p.canal]);
       }
       return { __archivo: csv(filas), __nombre: 'pedidos-' + rr.desde + '-a-' + rr.hasta + '.csv' };
     }
@@ -945,7 +945,7 @@ async function api(req, res, url) {
       const pagina = Math.max(1, Number(q.pagina) || 1);
       const ent = lista.filter((p) => p.estado < 400);
       return {
-        pedidos: lista.slice((pagina - 1) * 50, pagina * 50).map((p) => ({ id: p.id, creadoEn: iso(p.creado), entregadoEn: p.entregado ? iso(p.entregado) : null, estado: p.estado, totalUsd: totalDe(p), gananciaUsd: p.gananciaUsd, comanda: comandaDe(p), cliente: p.cliente, canal: p.canal, canalTexto: p.canal === 'vendedor' ? 'Vendedor #' + p.vendedor : null, paraRecoger: p.paraRecoger })),
+        pedidos: lista.slice((pagina - 1) * 50, pagina * 50).map((p) => ({ id: p.id, creadoEn: iso(p.creado), entregadoEn: p.entregado ? iso(p.entregado) : null, estado: p.estado, totalUsd: totalDe(p), gananciaUsd: p.gananciaUsd, comanda: comandaDe(p), cliente: p.cliente, canal: p.canal, canalTexto: p.canal === 'vendedor' ? 'Promotor #' + p.vendedor : null, paraRecoger: p.paraRecoger })),
         totales: { pedidos: ent.length, cancelados: lista.length - ent.length, ventasUsd: redondo(ent.reduce((x, p) => x + p.productosUsd, 0)), gananciaUsd: redondo(ent.reduce((x, p) => x + p.gananciaUsd, 0)) },
         pagina, porPagina: 50, total: lista.length, hayMas: pagina * 50 < lista.length,
       };
