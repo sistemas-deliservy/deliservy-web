@@ -382,8 +382,11 @@
     d = d || {};
     var cuerpo;
     if (paso === 'codigo') {
+      var porCorreo = entrada.medio === 'correo';
       var casillas = casillasDeCodigo('codigo', function (cod) { verificar(cod, null); });
-      var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () { pedirCodigo(entrada.telefono, reenviar); } }, 'Reenviar código');
+      var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () {
+        if (porCorreo) pedirCodigoDeCorreo(entrada.correo, reenviar); else pedirCodigo(entrada.telefono, reenviar);
+      } }, 'Reenviar código');
       cuerpo = h('form', {
         novalidate: true,
         onsubmit: function (ev) {
@@ -393,14 +396,38 @@
           verificar(cod, ev.target.querySelector('button[type="submit"]'));
         },
       },
-      h('p', { class: 'bien' }, d.mensaje || 'Si ese número es de un promotor, te llegó un código por WhatsApp.'),
+      h('p', { class: 'bien' }, d.mensaje || (porCorreo ? 'Si ese correo es de un promotor, te llegó un código.' : 'Si ese número es de un promotor, te llegó un código por WhatsApp.')),
       h('label', { class: 'etq-campo', for: 'codigo' }, 'Código de 6 números'),
       casillas.caja,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Entrar')),
       h('div', { class: 'botones' },
-        h('button', { class: 'btn borde chico', type: 'button', onclick: function () { clearInterval(entrada.espera); entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: entrada.telefono })); } }, 'Cambiar número'),
+        h('button', { class: 'btn borde chico', type: 'button', onclick: function () {
+          clearInterval(entrada.espera);
+          if (porCorreo) { entrada.paso = 'correo'; pintar(entrar('correo', { correo: entrada.correo })); }
+          else { entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: entrada.telefono })); }
+        } }, porCorreo ? 'Cambiar correo' : 'Cambiar número'),
         reenviar));
+    } else if (paso === 'correo') {
+      var correo = h('input', {
+        class: 'campo', id: 'correo-entrar', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email',
+        placeholder: 'tu@correo.com', value: d.correo || entrada.correo || '', required: true, maxlength: '120',
+      });
+      cuerpo = h('form', {
+        novalidate: true,
+        onsubmit: function (ev) {
+          ev.preventDefault();
+          var c = String(correo.value || '').trim();
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) { pintar(entrar('correo', { correo: c, error: 'Escribe un correo válido.' })); return; }
+          pedirCodigoDeCorreo(c, ev.target.querySelector('button[type="submit"]'));
+        },
+      },
+      h('label', { class: 'etq-campo', for: 'correo-entrar' }, 'Tu correo'),
+      correo,
+      d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
+      h('p', { class: 'ayuda' }, 'Te mandamos un código por correo. WhatsApp sigue disponible.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'whatsapp'; entrada.paso = 'telefono'; pintar(entrar('telefono')); } }, 'Entrar con WhatsApp')));
     } else {
       var telefono = h('input', {
         class: 'campo', id: 'telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
@@ -419,7 +446,8 @@
       h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
-      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'));
+      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(entrar('correo')); } }, 'Entrar con correo')));
     }
     return sinSesion('Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.', cuerpo,
       h('p', { class: 'pie-entrar' }, '¿Quieres vender con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: irARegistro }, 'Regístrate')));
@@ -1071,7 +1099,7 @@
     // Sus datos para facturar (`GET /yo`: `datos` y `faltanDatos`) y si «Mis datos» está abierto para cambiarlos.
     datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false,
   };
-  var entrada = { paso: 'telefono', telefono: '', espera: null, verificando: false };
+  var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', correo: '', espera: null, verificando: false };
   /** El registro en curso: su WhatsApp, el código, lo escrito en el formulario y lo que se manda. */
   function registroNuevo() { return { telefono: '', codigo: '', escrito: null, paraEnviar: null, listo: false, enviando: false }; }
   var reg = registroNuevo();
@@ -1324,11 +1352,31 @@
     });
   }
 
+  function pedirCodigoDeCorreo(correo, boton) {
+    if (boton) boton.disabled = true;
+    entrada.medio = 'correo';
+    return pedir('POST', '/acceso/correo', { correo: correo }).then(function (r) {
+      entrada.paso = 'codigo';
+      entrada.correo = correo;
+      pintar(entrar('codigo', { mensaje: r.mensaje }));
+      var c = documento.getElementById('codigo');
+      if (c) c.focus();
+      cuentaAtras();
+    }, function (e) {
+      if (boton) boton.disabled = false;
+      pintar(entrar(entrada.paso === 'codigo' ? 'codigo' : 'correo', { correo: correo, error: e.message }));
+      if (entrada.paso === 'codigo') cuentaAtras();
+    });
+  }
+
   function verificar(codigo, boton) {
     if (entrada.verificando) return;
     entrada.verificando = true;
     if (boton) boton.disabled = true;
-    pedir('POST', '/acceso/verificar', { telefono: entrada.telefono, codigo: codigo }).then(function (r) {
+    var porCorreo = entrada.medio === 'correo';
+    var ruta = porCorreo ? '/acceso/correo/verificar' : '/acceso/verificar';
+    var cuerpo = porCorreo ? { correo: entrada.correo, codigo: codigo } : { telefono: entrada.telefono, codigo: codigo };
+    pedir('POST', ruta, cuerpo).then(function (r) {
       entrada.verificando = false;
       clearInterval(entrada.espera);
       if (r && typeof r.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(r.token)) sesion.guardar(r.token);
@@ -1337,7 +1385,7 @@
     }, function (e) {
       entrada.verificando = false;
       if (boton) boton.disabled = false;
-      pintar(entrar('codigo', { error: e.message, mensaje: 'Escribe el código que te llegó por WhatsApp.' }));
+      pintar(entrar('codigo', { error: e.message, mensaje: entrada.medio === 'correo' ? 'Escribe el código que te llegó por correo.' : 'Escribe el código que te llegó por WhatsApp.' }));
       enfocar('codigo');
       cuentaAtras();
     });

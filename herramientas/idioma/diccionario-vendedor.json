@@ -271,5 +271,12 @@
 "Esa foto no sirve. Elige una imagen de tu cara.": "That photo does not work. Choose a picture of your face.",
 "La foto debe mostrar tu propio rostro registrado.": "The photo must show your own registered face.",
 "No se pudo guardar la foto.": "The photo could not be saved.",
-"No se pudo revisar la foto. Intenta de nuevo.": "The photo could not be checked. Try again."
+"No se pudo revisar la foto. Intenta de nuevo.": "The photo could not be checked. Try again.",
+"Entrar con correo": "Sign in with email",
+"Entrar con WhatsApp": "Sign in with WhatsApp",
+"Tu correo": "Your email",
+"Si ese correo es de un promotor, te llegó un código.": "If that email belongs to a promoter, a code was sent.",
+"Te mandamos un código por correo. WhatsApp sigue disponible.": "We send a code by email. WhatsApp is still available.",
+"Cambiar correo": "Change email",
+"Escribe el código que te llegó por correo.": "Enter the code you got by email."
 }
