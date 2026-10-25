@@ -83,6 +83,9 @@ a { color: var(--rt); }
 .cabecera .titulo b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cabecera .titulo small { display: block; color: var(--m); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .yo { width: 34px; height: 34px; border-radius: 50%; background: var(--rs); color: var(--rt); display: grid; place-items: center; font-weight: 800; flex: 0 0 auto; }
+.yo.foto { display: block; object-fit: cover; background: none; }
+.foto-previa { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; margin: 12px auto; }
+.foto-archivo { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
 .salir, .idioma { border: 1.5px solid var(--b); background: transparent; color: var(--t); border-radius: 12px; min-height: 36px; padding: 0 12px; font-weight: 700; font-size: 13.5px; white-space: nowrap; }
 .idioma { padding: 0 10px; }
 

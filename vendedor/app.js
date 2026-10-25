@@ -270,11 +270,49 @@
     }));
   }
 
+  function caraDe(yo) {
+    var url = fotoSegura(yo && yo.foto);
+    if (url) return h('img', { class: 'yo foto', src: url, alt: '' });
+    return yo ? dato('div', { class: 'yo', 'aria-hidden': 'true' }, inicial(yo.nombre)) : null;
+  }
+
+  /** Cuadrada, como mucho 640 px, en JPG. Así es como la guarda Firebase. */
+  function fotoParaEnviar(archivo) {
+    return new Promise(function (ok, mal) {
+      if (!archivo) { mal(new Error('Elige una foto.')); return; }
+      if (archivo.type && archivo.type.indexOf('image/') !== 0) { mal(new Error('La foto tiene que ser JPG o PNG.')); return; }
+      if (archivo.size > 12 * 1024 * 1024) { mal(new Error('Esa foto es muy grande.')); return; }
+      var lector = new FileReader();
+      lector.onerror = function () { mal(new Error('No se pudo leer esa foto.')); };
+      lector.onload = function () {
+        var img = new Image();
+        img.onerror = function () { mal(new Error('No se pudo leer esa foto.')); };
+        img.onload = function () {
+          var lado = Math.min(img.width, img.height);
+          if (!lado) { mal(new Error('No se pudo leer esa foto.')); return; }
+          var c = documento.createElement('canvas');
+          c.width = 640;
+          c.height = 640;
+          var g = c.getContext('2d');
+          if (!g) { mal(new Error('No se pudo leer esa foto.')); return; }
+          g.drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 640, 640);
+          var data = '';
+          try { data = c.toDataURL('image/jpeg', 0.85); } catch (_) { data = ''; }
+          var coma = data.indexOf(',');
+          if (data.indexOf('data:image/jpeg;base64,') !== 0 || coma < 0) { mal(new Error('La foto tiene que ser JPG o PNG.')); return; }
+          ok(data.slice(coma + 1));
+        };
+        img.src = String(lector.result || '');
+      };
+      lector.readAsDataURL(archivo);
+    });
+  }
+
   function cabecera(yo, conSalir) {
     return h('header', { class: 'cabecera' },
       h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
       h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), dato('small', null, (yo && yo.nombre) || '')),
-      yo ? dato('div', { class: 'yo', 'aria-hidden': 'true' }, inicial(yo.nombre)) : null,
+      caraDe(yo),
       botonIdioma(),
       conSalir ? h('button', { class: 'salir', type: 'button', onclick: salir }, 'Salir') : null);
   }
@@ -1182,6 +1220,51 @@
     null);
   }
 
+  function elegirFoto(error) {
+    var lista = null;
+    var previa = h('img', { class: 'foto-previa', alt: '' });
+    previa.hidden = true;
+    var guardar = h('button', { class: 'btn', type: 'button' }, 'Guardar foto');
+    guardar.disabled = true;
+    var input = h('input', {
+      class: 'foto-archivo', id: 'foto-archivo', type: 'file', accept: 'image/jpeg,image/png,image/heic,image/heif',
+    });
+    input.addEventListener('change', function () {
+      fotoParaEnviar(input.files && input.files[0]).then(function (b64) {
+        lista = b64;
+        previa.src = 'data:image/jpeg;base64,' + b64;
+        previa.hidden = false;
+        guardar.disabled = false;
+      }, function (e) {
+        lista = null;
+        previa.removeAttribute('src');
+        previa.hidden = true;
+        guardar.disabled = true;
+        pintar(elegirFoto(e.message || 'No se pudo leer esa foto.'));
+      });
+    });
+    guardar.addEventListener('click', function () {
+      if (!lista) return;
+      guardar.disabled = true;
+      pedir('POST', '/foto', { imagen: lista }).then(function (r) {
+        if (!estado.yo) estado.yo = {};
+        if (r && typeof r.foto === 'string') estado.yo.foto = r.foto;
+        mostrar();
+      }, function (e) {
+        pintar(elegirFoto(e.message || 'No se pudo guardar. Intenta de nuevo.'));
+      });
+    });
+    return sinSesion('Tu foto de perfil', h('div', null,
+      h('h2', null, 'Tu foto de perfil'),
+      h('p', { class: 'nota' }, 'Así te reconocen en Deliservy promotores.'),
+      error ? h('p', { class: 'error', role: 'alert' }, error) : null,
+      previa,
+      h('label', { class: 'btn borde', for: 'foto-archivo' }, 'Elige una foto'),
+      input,
+      guardar),
+    null);
+  }
+
   function arrancar() {
     if (!sesion.leer()) { if (raiz.location.hash === '#registro') mostrarRegistro(); else pintar(entrar('telefono')); return; }
     pedir('GET', '/yo').then(function (r) {
@@ -1191,6 +1274,7 @@
       estado.datos = r.datos && typeof r.datos === 'object' ? r.datos : null;
       estado.faltan = Array.isArray(r.faltanDatos) ? r.faltanDatos.filter(function (x) { return typeof x === 'string'; }) : [];
       if (r.pedirSexo === true) { pintar(elegirSexo()); return; }
+      if (r.pedirFoto === true) { pintar(elegirFoto()); return; }
       mostrar();
     }, function (e) {
       if (e.status === 401) { sesion.borrar(); pintar(entrar('telefono')); return; }
