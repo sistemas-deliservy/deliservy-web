@@ -325,7 +325,7 @@
     return h('div', { class: 'entrar vista' },
       h('div', { class: 'marca' },
         h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
-        h('small', null, 'Deliservy · Vendedores'),
+        h('small', null, 'Deliservy promotores'),
         h('h1', null, 'Compra-Ventas Redes Sociales'),
         h('p', null, texto)),
       h('div', { class: 'tarjeta' }, cuerpo),
@@ -348,7 +348,7 @@
           verificar(cod, ev.target.querySelector('button[type="submit"]'));
         },
       },
-      h('p', { class: 'bien' }, d.mensaje || 'Si ese número es de un vendedor, te llegó un código por WhatsApp.'),
+      h('p', { class: 'bien' }, d.mensaje || 'Si ese número es de un promotor, te llegó un código por WhatsApp.'),
       h('label', { class: 'etq-campo', for: 'codigo' }, 'Código de 6 números'),
       casillas.caja,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
