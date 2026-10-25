@@ -50,11 +50,29 @@
   function tarjetaComision(t) {
     var pct = C.num(t.comisionPct);
     var promo = t.comisionPromo && typeof t.comisionPromo === 'object' ? t.comisionPromo : null;
+    if (t.cobroPorProducto && t.cobroPorcentaje) {
+      return h('div', { class: 'tarjeta comision' },
+        h('h2', null, 'Lo que te cobra Deliservy'),
+        h('div', { class: 'comision-grande' }, h('small', null, 'En todos tus pedidos'), h('b', { class: 'mediano' }, 'Por producto y el %')),
+        h('p', { class: 'nota' }, 'Mira cuánto y tu membresía en ', h('a', { href: '#plan' }, 'Mi plan'), '.'));
+    }
     if (t.cobroPorProducto) {
       return h('div', { class: 'tarjeta comision' },
         h('h2', null, 'Lo que te cobra Deliservy'),
         h('div', { class: 'comision-grande' }, h('small', null, 'En todos tus pedidos'), h('b', { class: 'mediano' }, 'Por producto')),
         h('p', { class: 'nota' }, 'Mira cuánto y tu membresía en ', h('a', { href: '#plan' }, 'Mi plan'), '.'));
+    }
+    if (t.afiliada && t.cobroPorcentaje) {
+      return h('div', { class: 'tarjeta comision' },
+        h('h2', null, 'Lo que te cobra Deliservy'),
+        h('div', { class: 'comision-grande' }, h('small', null, 'En todos tus pedidos'), h('b', null, C.porcentaje(promo ? promo.pct : pct))),
+        h('p', { class: 'nota' }, 'El porcentaje de tu tienda. El cobro por producto no está seleccionado.'));
+    }
+    if (t.afiliada) {
+      return h('div', { class: 'tarjeta comision' },
+        h('h2', null, 'Lo que te cobra Deliservy'),
+        h('div', { class: 'comision-grande' }, h('small', null, 'En todos tus pedidos'), h('b', { class: 'mediano' }, 'Nada')),
+        h('p', { class: 'nota' }, 'El cobro por producto no está aplicado en tu tienda.'));
     }
     return h('div', { class: 'tarjeta comision' },
       h('h2', null, 'Comisión de Deliservy'),

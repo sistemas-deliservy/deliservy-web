@@ -237,7 +237,7 @@
       var n = C.leerNumero(precio.value);
       avisoCero.hidden = !(n === 0);
       var texto = planEditor && n > 0 ? C.cobro.textoPorVenta(n, planEditor) : null;
-      C.reemplazar(lineaCobro, texto ? [h('span', null, texto), ' (', h('span', null, 'web y promotores'), ')', C.cobro.textoApp(planEditor) ? [' · ', h('span', null, C.cobro.textoApp(planEditor))] : null] : null);
+      C.reemplazar(lineaCobro, texto ? h('span', null, texto) : null);
       lineaCobro.hidden = !texto;
     };
     if (C.cobro) C.cobro.planDe(ctx).then(function (pl) { planEditor = pl; revisarCero(); });

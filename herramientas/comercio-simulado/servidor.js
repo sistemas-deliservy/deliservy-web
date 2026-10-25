@@ -100,7 +100,7 @@ function proximoJueves(ahora) {
 
 // ── El cobro de Deliservy por producto (§7 del contrato) ─────────────────────
 
-const AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 25.99 };
+const AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 24.99 };
 /** Por UNIDAD: 5 % del precio, mínimo 0,20 y máximo 0,99 (la mitad hacia arriba); Premium la mitad (0,10–0,50); Deluxe 0. */
 function cobroPorUnidad(precio, plan, promoViva, ajustes) {
   const a = ajustes || AJUSTES;
@@ -202,7 +202,7 @@ function datosNuevos() {
         direccion: 'Av. Bolívar Norte, C.C. Camoruco, local 12, Valencia', telefono: '584145550123',
         correo: 'elbudare@gmail.com', rif: 'J501234560', lat: 10.2187, lng: -68.0071,
         categoria: { id: 12, nombre: 'Comida venezolana' },
-        comisionPct: 10, comisionPromo: null, flota: null, cobroPorProducto: false,
+        comisionPct: 10, comisionPromo: null, flota: null, cobroPorProducto: true,
         horarios: [
           { dia: 0, abre: '09:00', cierra: '15:00', cerrado: false }, { dia: 1, abre: '07:00', cierra: '22:00', cerrado: false },
           { dia: 2, abre: '07:00', cierra: '22:00', cerrado: false }, { dia: 3, abre: '07:00', cierra: '22:00', cerrado: false },
@@ -217,7 +217,7 @@ function datosNuevos() {
         direccion: 'Calle 137, C.C. Paseo La Granja, local 4, Naguanagua', telefono: '584125550160',
         correo: 'boutiquevalentina@gmail.com', rif: 'J412345670', lat: 10.2372, lng: -68.0151,
         categoria: { id: 30, nombre: 'Ropa y calzado' },
-        comisionPct: 0, comisionPromo: { pct: 0, hasta: '2026-11-29T03:59:59.000Z', luegoPct: 10 }, cobroPorProducto: false,
+        comisionPct: 0, comisionPromo: { pct: 0, hasta: '2026-11-29T03:59:59.000Z', luegoPct: 10 }, cobroPorProducto: true,
         flota: { comercioId: 22, activo: true, bloqueado: false },
         horarios: [
           { dia: 0, abre: '00:00', cierra: '00:00', cerrado: true }, { dia: 1, abre: '09:00', cierra: '18:00', cerrado: false },
@@ -872,7 +872,8 @@ async function api(req, res, url) {
       cuenta: { nombre: w ? w.nombre : D.cuentas[s.userId].nombre, telefonoParaVer: telefonoParaVer(s.telefono), rol: s.rol, permisos: s.permisos },
       tiendas: tiendasDeLaSesion(s).map((t) => ({
         storeId: t.storeId, companyId: t.companyId, nombre: t.nombre, logo: t.logo, tipo: t.tipo,
-        visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto,
+        visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, afiliada: t.authorized === 0 || t.authorized === 1 || t.authorized === 3,
+        comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto,
         flota: t.flota,
       })),
       avisos: s.rol === 'dueno' ? ['Nuevo: en la tienda web y con promotores, Deliservy cobra por producto.'] : [],
@@ -1423,6 +1424,17 @@ async function api(req, res, url) {
       return { ok: true, mensaje: 'Listo: le avisamos a Deliservy. Te escribimos pronto.', solicitud: pl.solicitud };
     }
     if (metodo === 'POST' && ruta === 'plan/pagar/cotizar') {
+      if (body.plan === 'basica') throw new Fallo(400, 'La Básica es gratis: no se paga.');
+      if (body.plan === 'premium' || body.plan === 'deluxe') {
+        const precio = body.plan === 'premium' ? AJUSTES.premiumUsd : AJUSTES.deluxeUsd;
+        const viva = pl.membresia;
+        if (viva && viva.estado === 'activa' && viva.plan !== body.plan && Date.parse(viva.activaHasta) > ahora) {
+          throw new Fallo(409, 'Tienes un plan activo. Ese es el que se renueva.');
+        }
+        if (!viva || viva.estado === 'quitada' || viva.plan !== body.plan) {
+          pl.membresia = Object.assign({}, viva, { plan: body.plan, estado: viva && viva.estado === 'activa' ? 'activa' : 'asignada', precioUsd: precio });
+        }
+      }
       const m = pl.membresia;
       if (!m || m.estado === 'quitada') throw new Fallo(409, 'Primero pide un plan: Deliservy te lo asigna.');
       const desde = m.estado === 'activa' && Date.parse(m.activaHasta) > ahora ? Date.parse(m.activaHasta) : ahora;
@@ -1464,7 +1476,7 @@ async function api(req, res, url) {
       pl.pagos.unshift({ id: pago.pagoId, fecha: iso(ahora), metodo: m, montoUsd: pago.montoUsd, montoBs: pago.montoBs, referencia: String(100000 + Math.floor(Math.random() * 899999)), estado: 'aprobado', periodoDesde: iso(pago.desde), periodoHasta: iso(pago.hasta) });
       anotar(s, 'plan_pagar', 'membresia', t.companyId, null, { metodo: m, montoUsd: pago.montoUsd });
       const hasta = new Date(pago.hasta).toLocaleDateString('es-VE', { timeZone: 'America/Caracas', day: 'numeric', month: 'short' }).replace(/\.$/, '');
-      return { ok: true, pagado: true, mensaje: 'Listo: tu plan ' + (mem.plan === 'deluxe' ? 'Deluxe' : 'Premium') + ' va hasta el ' + hasta + '.', membresia: Object.assign({}, mem) };
+      return { ok: true, pagado: true, mensaje: 'Listo: tu plan ' + (mem.plan === 'deluxe' ? 'Deluxe' : 'Premium') + ' va hasta el ' + hasta + '. Dura un mes. Si no lo pagas al vencer, vuelves a la Básica. Deliservy te factura este pago con los datos de tu tienda.', membresia: Object.assign({}, mem) };
     }
     throw noEncontrado();
   }
@@ -1681,7 +1693,8 @@ function vistaTienda(t) {
     ubicacion: { lat: t.lat, lng: t.lng }, categoria: t.categoria, categorias: D.categorias,
     logo: t.logo, banner: t.banner, marcador: t.marcador,
     horarios: t.horarios.map((h) => Object.assign({}, h)),
-    comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto, cuentaBancaria: D.cuentaBancaria,
+    comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto,
+    afiliada: t.authorized === 0 || t.authorized === 1 || t.authorized === 3, tipo: t.tipo, cuentaBancaria: D.cuentaBancaria,
     visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, tieneFlota: !!t.flota, requisitos: requisitos(t).r,
   };
 }

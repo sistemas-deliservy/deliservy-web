@@ -284,7 +284,7 @@ async function telefonoClaro(browser) {
   // Productos
   await ir(page, '#productos', 700);
   check('productos por grupo', (await page.$$('.grupo-productos')).length >= 3);
-  check('productos: «Deliservy: … por venta» y «En la app: 10 %»', /Deliservy: 0,12\u00a0\$ por venta/.test(await textoDe(page, '.fila-producto')) && /En la app: 10/.test(await textoDe(page, '.fila-producto')));
+  check('productos: «Deliservy: … por venta», ya sin el 10 % de la app', /Deliservy: 0,12\u00a0\$ por venta/.test(await textoDe(page, '.fila-producto')) && !/En la app:/.test(await textoDe(page, '.fila-producto')));
   await foto(page, '14-productos', true);
   await page.fill('#buscar-producto', 'pepiada reina');
   await esperar(900);
@@ -381,7 +381,7 @@ async function telefonoClaro(browser) {
 
   // Mi tienda
   await ir(page, '#tienda', 2500);
-  check('mi tienda: la comisión de la app y el enlace a «Mi plan»', /10/.test(await textoDe(page, '.comision')) && /Mi plan/.test(await textoDe(page, '.comision')));
+  check('mi tienda: cobra por producto y enlaza «Mi plan»', /Por producto/.test(await textoDe(page, '.comision')) && /Mi plan/.test(await textoDe(page, '.comision')));
   await foto(page, '27-mi-tienda-datos', true);
   await ir(page, '#tienda/horario', 700);
   await page.fill('.fila-horario:nth-child(1) input[type=time] >> nth=1', '07:00');

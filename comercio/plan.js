@@ -4,8 +4,10 @@
  *
  * Gilberth: «no cobra una comisión, sino un pago por producto». Por UNIDAD vendida: el 5 % del precio, mínimo 0,20 $
  * y máximo 0,99 $ (redondeado al céntimo, la mitad hacia arriba). Premium (14,99 $ al mes) paga la mitad (0,10 a
- * 0,50); Deluxe (25,99 $ al mes), nada. Con una promoción de 0 % viva, nada hasta que venza. Se aplica en la tienda
- * web y con vendedores externos (y en TODO si la tienda va por producto); en lo demás de la app sigue el % de siempre.
+ * 0,50); Deluxe (24,99 $ al mes), nada. Con una promoción de 0 % viva, nada hasta que venza. Desde el 25-oct-2026
+ * vale para las ventas del comercio afiliado (app, tienda web y promotores) según las dos casillas de Comisiones:
+ * «Producto» (Básica entera, Premium la mitad, Deluxe nada) y «10%» (el porcentaje de la tienda). Las dos, se suman.
+ * Sin ninguna, no se cobra nada. Un 0 % permanente apaga solo el porcentaje. La promo de 0 % apaga las dos.
  * La membresía se paga APARTE, nunca de las ventas: con las formas de pago de la plataforma, como la tienda web
  * (tarjeta de débito y de crédito, pago móvil verificado con el teléfono y transferencia con la cédula o el RIF).
  * Nada de efectivo. Los datos de la tarjeta no se guardan en ningún sitio.
@@ -21,7 +23,7 @@
   var h = C.h, dato = C.dato, ico = C.ico;
   var NOMBRES = { basica: 'Básica', premium: 'Premium', deluxe: 'Deluxe' };
   var METODOS = { pago_movil: 'Pago móvil', transferencia: 'Transferencia', debito: 'Tarjeta de débito', credito: 'Tarjeta de crédito' };
-  var AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 25.99 };
+  var AJUSTES = { pct: 5, minimoUsd: 0.2, maximoUsd: 0.99, premiumUsd: 14.99, deluxeUsd: 24.99 };
 
   // ── La regla (la misma de la API: una sola cuenta) ─────────────────────────
 
@@ -31,6 +33,7 @@
   function porUnidad(precio, info) {
     var a = ajustesDe(info);
     var plan = (info && info.plan) || 'basica';
+    if (info && info.cobroPorProducto === false) return 0;
     if (promoViva(info) || plan === 'deluxe') return 0;
     var cents = Math.round(C.num(precio) * 100);
     var c = Math.floor((cents * C.num(a.pct) + 50) / 100);
@@ -38,16 +41,21 @@
     if (plan === 'premium') c = Math.min(50, Math.max(10, Math.floor((c + 1) / 2)));
     return c / 100;
   }
-  /** «Deliservy: 0,23 $ por venta» (null si no hay plan o el precio es 0). */
+  /** «Deliservy: 0,23 $ por venta» (null si no hay plan o el precio es 0). Sin «Aplicar», no se cobra. */
+  function textoDelPorcentaje(info) {
+    if (!info || !info.cobroPorcentaje || promoViva(info) || sinComision(info)) return '';
+    return 'el ' + C.porcentaje(info.comisionPct);
+  }
   function textoPorVenta(precio, info, deLaApi) {
     if (!info || !(C.num(precio) > 0)) return null;
+    var parte = textoDelPorcentaje(info);
+    if (info.cobroPorProducto === false) return parte ? 'Deliservy: ' + parte : 'Sin cobro de Deliservy';
     var cobro = deLaApi != null ? C.num(deLaApi) : porUnidad(precio, info);
-    return 'Deliservy: ' + C.dolares(cobro) + ' por venta';
+    return 'Deliservy: ' + C.dolares(cobro) + (parte ? ' + ' + parte : '') + ' por venta';
   }
-  /** «En la app: 10 %» si la tienda no va por producto en todo (null si va). */
-  function textoApp(info) {
-    if (!info || info.cobroPorProducto) return null;
-    return 'En la app: ' + C.porcentaje(promoViva(info) ? info.promo.pct : info.comisionPct);
+  /** Ya no se enseña el 10 % de la app: o se cobra por producto, o no se cobra. */
+  function textoApp() {
+    return null;
   }
   /** La regla del plan en una frase. */
   function regla(plan, info) {
@@ -91,12 +99,67 @@
       puedePagar ? h('div', { class: 'botones' }, C.boton('Pagar membresía', { class: 'btn', onclick: alPagar }, 'banco')) : null,
       puedePagar && estado === 'activa' ? h('p', { class: 'nota' }, 'Si pagas antes, se suma un mes al final.') : null,
       h('p', { class: 'nota' }, ico('info'), ' Se paga aparte: nunca de tus ventas.'),
+      queHace(textoDelPlan(plan).hace, textoDelPlan(plan).noHace),
       plan === 'basica' && !m ? h('p', { class: 'nota' }, '¿Quieres pagar menos por producto? Pide Premium o Deluxe.') : null);
+  }
+
+  function sinComision(info) { return !!(info && C.num(info.comisionPct) === 0 && !info.promo && !promoViva(info)); }
+
+  /** Lo que paga el comercio en este panel (la membresía) y lo que ese pago no cubre. */
+  function textoDelPlan(plan) {
+    if (plan === 'deluxe') return {
+      hace: 'Mientras la pagues, Deliservy no te cobra por producto.',
+      noHace: 'No sale de tus ventas: la pagas aquí y dura un mes. Si Deliservy también te marcó el porcentaje de la tienda, ese porcentaje sí se descuenta. No incluye el envío.',
+    };
+    if (plan === 'premium') return {
+      hace: 'Mientras la pagues, el cobro por producto queda a la mitad: de 0,10 $ a 0,50 $ por unidad.',
+      noHace: 'No lo deja en cero. No sale de tus ventas: la pagas aquí y dura un mes. Si Deliservy también te marcó el porcentaje, ese porcentaje se cobra entero. No incluye el envío.',
+    };
+    return {
+      hace: 'Vendes con el cobro por producto entero: de 0,20 $ a 0,99 $ por cada unidad.',
+      noHace: 'No baja ese cobro y no se paga. Si dejas de pagar Premium o Deluxe, vuelves a este plan.',
+    };
+  }
+  /** Lo que se descuenta en la venta (no es la membresía). */
+  function textoDelCobro(info) {
+    var pct = !!(info && info.cobroPorcentaje) && !promoViva(info) && !sinComision(info);
+    var producto = !(info && info.cobroPorProducto === false);
+    if (!producto && !pct) return {
+      hace: 'En tus ventas no se descuenta ni el cobro por producto ni el porcentaje.',
+      noHace: 'No es un plan que pagues aquí. Si Deliservy marca Producto o el porcentaje, las ventas nuevas sí lo descuentan.',
+    };
+    if (!producto) return {
+      hace: 'Deliservy descuenta el ' + C.porcentaje(info.comisionPct) + ' de lo vendido. Queda fijo al hacer el pedido y lo ves al retirar.',
+      noHace: 'No es el cobro por unidad. No incluye el envío. No se paga desde aquí: sale de la venta.',
+    };
+    var hace = promoViva(info) ? 'Hasta que termine la promoción no se te descuenta nada.'
+      : (info.plan === 'deluxe' ? 'Con Deluxe no se descuenta el cobro por producto.'
+        : 'Deliservy descuenta un monto por cada unidad vendida. Queda fijo al hacer el pedido y lo ves al retirar.');
+    if (pct) hace += ' También el ' + C.porcentaje(info.comisionPct) + ' de lo vendido.';
+    return {
+      hace: hace,
+      noHace: 'No incluye el envío. No se paga desde aquí: sale de la venta. La membresía se paga aparte, en este panel.',
+    };
+  }
+  function queHace(hace, noHace) {
+    return [
+      h('p', { class: 'hace' }, h('b', null, 'Qué hace'), hace),
+      h('p', { class: 'no-hace' }, h('b', null, 'Qué no hace'), noHace),
+    ];
   }
 
   function tarjetaCobro(info) {
     var plan = info.plan || 'basica';
     var promo = promoViva(info);
+    if (info.cobroPorProducto === false) {
+      var soloPct = textoDelPorcentaje(info);
+      var c = textoDelCobro(info);
+      return h('div', { class: 'tarjeta' },
+        h('h2', null, 'Lo que te cobra Deliservy'),
+        h('p', { class: 'regla' }, soloPct ? 'El ' + C.porcentaje(info.comisionPct) + ' de cada venta.' : 'Nada: el cobro por producto no está aplicado en tu tienda.'),
+        queHace(c.hace, c.noHace),
+        h('p', { class: 'nota' }, 'En todos tus pedidos.'));
+    }
     var ejemplos = [4, 10, 25].map(function (precio) {
       return h('div', { class: 'ejemplo' }, h('span', null, 'Producto de ', C.dolares(precio)), h('b', null, C.dolares(porUnidad(precio, info))));
     });
@@ -104,12 +167,13 @@
       h('h2', null, 'Lo que te cobra Deliservy'),
       promo ? h('p', { class: 'bien' }, ico('check'), ' Hasta el ', C.diaMes(info.promo.hasta), ' no te cobramos nada.') : null,
       h('p', { class: 'regla' }, promo ? 'Luego: ' : null, regla(plan, info)),
-      h('p', { class: 'nota' }, info.cobroPorProducto ? 'En todos tus pedidos: app, tienda web y promotores externos.' : 'En la tienda web y con promotores externos.'),
-      !info.cobroPorProducto ? h('p', { class: 'nota' }, 'En la app: ', C.porcentaje(promo ? info.promo.pct : info.comisionPct), ' de cada venta.') : null,
+      queHace(textoDelCobro(info).hace, textoDelCobro(info).noHace),
+      textoDelPorcentaje(info) ? h('p', { class: 'nota' }, 'También ', textoDelPorcentaje(info), ' de cada venta.') : null,
+      h('p', { class: 'nota' }, 'En todos tus pedidos: app, tienda web y promotores externos.'),
       h('div', { class: 'ejemplos' }, h('span', { class: 'etq-mini' }, 'Por cada unidad vendida'), ejemplos));
   }
 
-  function tarjetasPlanes(ctx, info, alPedir) {
+  function tarjetasPlanes(ctx, info, alPedir, alPagarPlan) {
     var a = ajustesDe(info);
     var actual = info.plan || 'basica';
     var pedido = info.solicitud && info.solicitud.plan;
@@ -121,16 +185,19 @@
     return h('div', { class: 'planes' }, datos.map(function (d) {
       var es = d[0] === actual;
       var boton = null;
-      if (es) boton = C.pill('Tu plan', 'verde');
+      if (es) boton = h('div', { class: 'botones' }, C.pill('Tu plan', 'verde'));
       else if (d[0] !== 'basica') {
-        boton = pedido === d[0] ? C.boton('Ya lo pediste', { class: 'btn chico borde', disabled: true })
-          : C.boton(d[0] === 'premium' ? 'Quiero Premium' : 'Quiero Deluxe', { class: 'btn chico' + (d[0] === 'premium' ? ' suave' : ''), onclick: function (ev) { alPedir(d[0], ev.currentTarget); } });
+        boton = h('div', { class: 'botones' },
+          pedido === d[0] ? C.boton('Ya lo pediste', { class: 'btn chico borde', disabled: true })
+            : C.boton(d[0] === 'premium' ? 'Quiero Premium' : 'Quiero Deluxe', { class: 'btn chico borde', onclick: function (ev) { alPedir(d[0], ev.currentTarget); } }),
+          C.boton(d[0] === 'premium' ? 'Pagar Premium' : 'Pagar Deluxe', { class: 'btn chico' + (d[0] === 'premium' ? ' suave' : ''), onclick: function () { alPagarPlan(d[0]); } }));
       }
       return h('div', { class: 'tarjeta plan plan-' + d[0] + (es ? ' es-el-tuyo' : '') },
         h('div', { class: 'plan-cab' }, h('b', null, NOMBRES[d[0]]), h('span', { class: 'precio' }, d[1])),
         h('p', { class: 'nota' }, d[2]),
+        queHace(textoDelPlan(d[0]).hace, textoDelPlan(d[0]).noHace),
         d[0] === 'basica' && !es ? h('p', { class: 'nota' }, 'Vuelves a ella si no pagas tu plan.') : null,
-        boton ? h('div', { class: 'botones' }, boton) : null);
+        boton);
     }));
   }
 
@@ -152,7 +219,8 @@
   function pintar(ctx, v, info) {
     var recargar = function () { planDe(ctx, true); C.mostrar(); };
     var pedir = function (plan, boton) {
-      C.confirmar({ titulo: plan === 'premium' ? '¿Quieres Premium?' : '¿Quieres Deluxe?', texto: 'Le avisamos a Deliservy para que te lo asigne. Después lo pagas aquí.', si: 'Sí, avísales' }).then(function (si) {
+      var q = textoDelPlan(plan);
+      C.confirmar({ titulo: plan === 'premium' ? '¿Quieres Premium?' : '¿Quieres Deluxe?', texto: 'Qué hace: ' + q.hace + ' Qué no hace: ' + q.noHace + ' Le avisamos a Deliservy para que te lo asigne. Después lo pagas aquí.', si: 'Sí, avísales' }).then(function (si) {
         if (!si) return;
         C.trabajando(boton, C.pedir('POST', '/plan/solicitar', { companyId: ctx.tienda.companyId, plan: plan })).then(function (r) {
           C.avisar((r && r.mensaje) || 'Listo: le avisamos a Deliservy');
@@ -166,7 +234,7 @@
       pedido ? h('div', { class: 'banda info', role: 'status' }, ico('info'), h('span', null, 'Pediste ', dato('b', null, NOMBRES[pedido] || pedido), ' el ', C.diaMes(info.solicitud.fecha).replace(/\.$/, ''), '. Te escribimos pronto.')) : null,
       h('div', { class: 'rejilla dos' }, tarjetaPlanActual(ctx, info, function () { pagarMembresia(ctx, recargar); }), tarjetaCobro(info)),
       h('span', { class: 'etq' }, 'Los planes'),
-      tarjetasPlanes(ctx, info, pedir),
+      tarjetasPlanes(ctx, info, pedir, function (plan) { pagarMembresia(ctx, recargar, plan); }),
       h('span', { class: 'etq' }, 'Tus pagos de membresía'),
       listaDePagos(info),
     ]);
@@ -174,8 +242,10 @@
 
   // ── Pagar la membresía (como la tienda web) ────────────────────────────────
 
-  function pagarMembresia(ctx, alTerminar) {
-    C.pedir('POST', '/plan/pagar/cotizar', { companyId: ctx.tienda.companyId }).then(function (c) {
+  function pagarMembresia(ctx, alTerminar, plan) {
+    var cuerpo = { companyId: ctx.tienda.companyId };
+    if (plan) cuerpo.plan = plan;
+    C.pedir('POST', '/plan/pagar/cotizar', cuerpo).then(function (c) {
       c = c || {};
       c.idem = String(c.pagoId) + '-' + Math.random().toString(36).slice(2, 10);
       var metodos = [['debito', 'Tarjeta de débito', 'billetera'], ['credito', 'Tarjeta de crédito', 'billetera'], ['pago_movil', 'Pago móvil', 'telefono'], ['transferencia', 'Transferencia', 'banco']];
@@ -184,6 +254,8 @@
         cuerpo: [
           h('div', { class: 'monto-retiro' }, h('small', null, 'Plan ', dato('span', null, NOMBRES[c.plan] || c.plan || '')), h('b', null, C.dolares(c.montoUsd)), h('span', null, C.bolivares(c.montoBs))),
           c.periodo ? h('p', { class: 'nota centro' }, 'Del ', C.diaMes(c.periodo.desde), ' al ', C.diaMes(c.periodo.hasta)) : null,
+          queHace(textoDelPlan(c.plan || 'basica').hace, textoDelPlan(c.plan || 'basica').noHace),
+          h('p', { class: 'nota' }, 'Al pagarlo empieza a correr por un mes. Si no lo renuevas, vuelves a la Básica. Deliservy te factura este pago con los datos de tu tienda.'),
           h('span', { class: 'etq-campo' }, '¿Cómo vas a pagar?'),
           h('div', { class: 'metodos' }, metodos.map(function (m) {
             return h('button', { type: 'button', class: 'metodo', onclick: function () { d.cerrar(); if (m[0] === 'debito' || m[0] === 'credito') conTarjeta(ctx, c, m[0], alTerminar); else conBanco(ctx, c, m[0], alTerminar); } },
