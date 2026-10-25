@@ -548,8 +548,9 @@
       C.reemplazar(resultado, [
         h('div', { class: 'cot-cifras' },
           h('div', { class: 'cot-precio' }, h('small', null, 'Precio'), h('b', null, gratis ? 'Sin cargo' : C.dolares(r.precioUsd))),
-          h('div', null, h('small', null, 'Llega en'), h('b', null, '~' + Math.round(C.num(r.minutos)) + ' min')),
-          h('div', null, h('small', null, 'Distancia'), h('b', null, String(C.redondo(r.distanciaKm)).replace('.', ',') + ' km'))),
+          // Sin ruta (el mapa de rutas no contestó) la API da «minutos: null»: no se inventa «~0 min».
+          r.minutos != null ? h('div', null, h('small', null, 'Llega en'), h('b', null, '~' + Math.round(C.num(r.minutos)) + ' min')) : null,
+          r.distanciaKm != null ? h('div', null, h('small', null, 'Distancia'), h('b', null, String(C.redondo(r.distanciaKm)).replace('.', ',') + ' km')) : null),
         r.sinCargosHasta ? h('p', { class: 'bien' }, 'Sin cargos hasta el ', C.fechaCorta(r.sinCargosHasta)) : null,
         r.venceEn ? h('p', { class: 'nota' }, 'Este precio vale hasta las ', C.hora(r.venceEn)) : null,
         h('div', { class: 'botones' }, cambiar, pedirBtn)]);
