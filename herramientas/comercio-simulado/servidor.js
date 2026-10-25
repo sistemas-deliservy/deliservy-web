@@ -439,7 +439,7 @@ function datosNuevos() {
     comercioId: 22, debeUsd: deuda || 12.23, comprometidoUsd: 1.75, venceEn: iso(proximoJueves(ahora)), pausado: false, bloqueado: false,
     contraEfectivo: true, exclusivo: false, modoCobro: 'semanal',
     plan: { texto: 'Pagas por envío: 1,50 $ hasta 3 km y 0,40 $ por km extra.', sinCargosHasta: null },
-    diaPago: { texto: 'Pagas los jueves hasta las 11:59 p. m. lo entregado hasta ese momento.' },
+    diaPago: { texto: 'los jueves' }, // como la API de verdad (el pedazo de la frase de Alisa)
   };
   d.flotaCortes = [
     { id: 61, desde: diaCaracas(ahora - 14 * DIA_MS), hasta: diaCaracas(ahora - 8 * DIA_MS), totalUsd: redondo(pagado * 0.6), estado: 'pagado', venceEn: iso(corteHace), pagadoEn: iso(corteHace - 2 * HORA_MS) },

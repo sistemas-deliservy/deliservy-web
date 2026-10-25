@@ -83,11 +83,14 @@
   function tarjetaPlan(f) {
     var plan = f.plan || {};
     var dia = f.diaPago || {};
+    // La API da el pedazo de la frase de Alisa («los viernes», «los días 17 de cada mes»): aquí va la frase entera.
+    var diaTexto = typeof dia.texto === 'string' ? dia.texto.trim() : '';
+    if (/^[a-záéíóúñ]/.test(diaTexto)) diaTexto = 'Pagas ' + diaTexto.replace(/\.$/, '') + '.';
     return h('div', { class: 'tarjeta' },
       h('h2', null, 'Tu plan'),
       plan.texto ? dato('p', { class: 'texto-plan' }, plan.texto) : null,
       plan.sinCargosHasta ? h('p', { class: 'bien' }, ico('check'), ' Sin cargos hasta el ', C.fechaCorta(plan.sinCargosHasta)) : null,
-      dia.texto ? dato('p', { class: 'nota' }, dia.texto) : null,
+      diaTexto ? dato('p', { class: 'nota' }, diaTexto) : null,
       h('div', { class: 'chips' },
         C.pill('Envío', ''), C.pill('Contra viaje', 'azul'),
         f.contraEfectivo ? C.pill('Contra efectivo', 'ambar') : null,
