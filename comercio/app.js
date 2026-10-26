@@ -52,9 +52,8 @@
   function idiomaActual() {
     var elegido = null;
     try { elegido = raiz.localStorage.getItem(C.CLAVE_IDIOMA); } catch (_) { elegido = null; }
-    if (elegido === 'en' || elegido === 'es') return elegido;
-    var nav = raiz.navigator || {};
-    return /^en\b/i.test((nav.languages && nav.languages[0]) || nav.language || '') ? 'en' : 'es';
+    // Sin elección en este panel: español, aunque el navegador esté en inglés.
+    return elegido === 'en' ? 'en' : 'es';
   }
   C.idioma = idiomaActual;
   /** Un texto que la capa de idioma no alcanza (la pista de un <textarea>, el título de la pestaña, un aviso del sistema). */
@@ -491,6 +490,8 @@
     var numero = h('input', { class: 'campo', id: 'firma-numero', maxlength: '20', value: c.numero || '', autocomplete: 'off' });
     var correo = h('input', { class: 'campo', id: 'firma-correo', type: 'email', maxlength: '120', value: c.correo || '', autocomplete: 'email' });
     var boton = h('button', { class: 'btn', type: 'submit' }, 'Firmar y enviar el contrato');
+    var espera = h('p', { class: 'nota', role: 'status', hidden: true });
+    var enviando = false;
     function cuerpo() {
       return {
         companyId: c.companyId, nombre: nombre.value, razonSocial: razon.value, tipoDocumento: tipo.value,
@@ -498,15 +499,24 @@
       };
     }
     function mostrarError(t) { error.hidden = !t; error.textContent = t || ''; }
+    function ponerEspera(si) {
+      espera.hidden = !si;
+      espera.textContent = si ? 'Por favor espera, está procesando.' : '';
+    }
     function enviar(ev) {
       if (ev) ev.preventDefault();
+      if (enviando) return;
       if (pad.vacia()) { mostrarError('Firma en el recuadro.'); return; }
+      enviando = true;
       boton.disabled = true;
       mostrarError('');
+      ponerEspera(true);
       C.pedir('POST', '/contrato', cuerpo()).then(function (r) {
         pintar(firmaEnviada(c, cuerpo(), !!(r && r.correo)));
       }, function (e) {
+        enviando = false;
         boton.disabled = false;
+        ponerEspera(false);
         mostrarError((e && e.message) || 'No se pudo enviar. Intenta de nuevo.');
       });
     }
@@ -536,6 +546,7 @@
               h('div', { class: 'dato' }, 'Deliservyapp, C.A. · RIF J-504754129')),
             h('span', { class: 'pill verde' }, 'Firmado')),
           error,
+          espera,
           h('div', { class: 'botones' }, boton))));
   }
 
@@ -544,9 +555,23 @@
       ? 'El PDF con las dos firmas salió a tu correo y a deliservyapp@gmail.com.'
       : 'Firmaste. El correo no salió. Puedes enviarlo otra vez.';
     var otra = h('button', { class: 'btn borde', type: 'button' }, 'Enviar otra vez');
+    var errorOtra = h('p', { class: 'error', role: 'alert', hidden: true });
+    var esperaOtra = h('p', { class: 'nota', role: 'status', hidden: true });
     otra.addEventListener('click', function () {
+      if (otra.disabled) return;
       otra.disabled = true;
-      C.pedir('POST', '/contrato', cuerpo).then(function (r) { pintar(firmaEnviada(c, cuerpo, !!(r && r.correo))); }, function () { otra.disabled = false; });
+      errorOtra.hidden = true;
+      esperaOtra.hidden = false;
+      esperaOtra.textContent = 'Por favor espera, está procesando.';
+      C.pedir('POST', '/contrato', cuerpo).then(function (r) {
+        pintar(firmaEnviada(c, cuerpo, !!(r && r.correo)));
+      }, function (e) {
+        esperaOtra.hidden = true;
+        esperaOtra.textContent = '';
+        otra.disabled = false;
+        errorOtra.hidden = false;
+        errorOtra.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
+      });
     });
     return h('div', { class: 'entrar firma-pagina' },
       h('div', { class: 'tarjeta listo-firma' },
@@ -558,6 +583,8 @@
           h('div', { class: 'cuerpo' },
             h('p', { class: 'fila' }, h('span', null, 'Para'), dato('b', null, cuerpo.correo || '')),
             h('p', { class: 'fila' }, h('span', null, 'Copia'), dato('b', null, 'deliservyapp@gmail.com')))),
+        salio ? null : errorOtra,
+        salio ? null : esperaOtra,
         h('div', { class: 'botones' },
           salio ? null : otra,
           h('button', { class: 'btn', type: 'button', onclick: arrancar }, 'Entrar al panel'))));

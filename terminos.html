@@ -231,9 +231,12 @@ footer a{color:#e41616;}
 <script id="capa-idioma">
 /* Capa de idioma de deliservy.com (Gilberth, 13-oct-2026).
  *
- * La web se abre en inglés si el navegador (la computadora o el teléfono) está en
- * inglés, y en español en cualquier otro caso. Arriba hay un botón «English» /
- * «Español»; lo que la persona elija ahí manda desde entonces en ese navegador.
+ * La portada, privacidad y términos se abren en inglés si el navegador está en
+ * inglés, y en español en cualquier otro caso. El panel del comercio y la página
+ * del promotor se abren en español (26-oct-2026), aunque el navegador esté en
+ * inglés. Una preferencia guardada antes, en la clave vieja, no les cambia ese
+ * defecto. El botón «English» / «Español» sigue: lo que la persona elija ahí
+ * manda desde entonces en ese navegador.
  *
  * No cambia el HTML de la página: en español esta capa solo pinta el botón. En
  * inglés traduce lo que se VE a partir del diccionario. Lo que la persona le
@@ -241,13 +244,17 @@ footer a{color:#e41616;}
  */
 (function () {
   'use strict';
-  var CLAVE = 'deliservy_idioma';
+  var propio = document.currentScript;
+  // Solo estos dos guiones: el panel y promotores. La portada lleva el motor escrito en la página.
+  var esPanel = /\/(comercio|vendedor)\/idioma\.js(?:\?|$)/.test((propio && propio.src) || '');
+  var CLAVE = esPanel ? 'deliservy_idioma_panel' : 'deliservy_idioma';
   var idioma = 'es';
   var elegido = null;
   try { elegido = localStorage.getItem(CLAVE); } catch (_) {}
   if (elegido === 'en' || elegido === 'es') idioma = elegido;
-  // Sin elección guardada: el idioma del navegador. Solo el inglés cambia algo.
-  else if (/^en\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '')) idioma = 'en';
+  // Sin elección guardada: en la portada, el idioma del navegador. En el panel y
+  // en promotores el defecto es español (la clave vieja no cuenta).
+  else if (!esPanel && /^en\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '')) idioma = 'en';
 
   function cambiarIdioma() {
     try { localStorage.setItem(CLAVE, idioma === 'en' ? 'es' : 'en'); } catch (_) {}

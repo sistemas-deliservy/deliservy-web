@@ -90,7 +90,12 @@ async function abrir(browser, o) {
     timezoneId: 'America/Caracas', colorScheme: o.oscuro ? 'dark' : 'light', acceptDownloads: true,
   });
   await ctx.addInitScript((ingles) => {
-    try { localStorage.setItem('deliservy_idioma', ingles ? 'en' : 'es'); } catch (_) { /* nada */ }
+    try {
+      // La clave vieja de la portada no decide el panel. El inglés solo si se eligió aquí.
+      localStorage.setItem('deliservy_idioma', 'en');
+      if (ingles) localStorage.setItem('deliservy_idioma_panel', 'en');
+      else localStorage.removeItem('deliservy_idioma_panel');
+    } catch (_) { /* nada */ }
     window.__csp = [];
     document.addEventListener('securitypolicyviolation', (e) => { window.__csp.push(e.violatedDirective + ' ' + e.blockedURI); console.error('CSP ' + e.violatedDirective + ' ' + e.blockedURI); });
     // El sonido y el aviso del navegador, contados (la página no cambia: solo se mira).

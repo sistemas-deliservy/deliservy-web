@@ -31,7 +31,8 @@
   C.baseDeLaApi = baseDeLaApi;
   C.CLAVE_SESION = 'deliservy_comercio_sesion';
   C.CLAVE_TIENDA = 'deliservy_comercio_tienda';
-  C.CLAVE_IDIOMA = 'deliservy_idioma';
+  // Propia del panel (26-oct-2026): el defecto es español y no hereda la clave vieja de la portada.
+  C.CLAVE_IDIOMA = 'deliservy_idioma_panel';
   C.WHATSAPP = 'https://wa.me/584144957006';
   var NBSP = ' ';
 

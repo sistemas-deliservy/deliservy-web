@@ -24,7 +24,8 @@
   }
   var API = baseDeLaApi(raiz.location && raiz.location.hostname) + '/api/vendedor';
   var CLAVE_SESION = 'deliservy_vendedor_sesion';
-  var CLAVE_IDIOMA = 'deliservy_idioma';
+  // Propia de esta página (26-oct-2026): el defecto es español y no hereda la clave vieja de la portada.
+  var CLAVE_IDIOMA = 'deliservy_idioma_panel';
   var NOTA_PAGO = 'Se te paga solo cada noche a las 11:00 p. m. si tienes cuenta bancaria y saldo disponible.';
   var EN_REVISION = 'Tu cuenta está en revisión. Te avisaremos por WhatsApp cuando esté lista.';
   /** El WhatsApp de Deliservy (0414-495-7006): para cambiar la cédula o el RIF de una cuenta ya aprobada. */
@@ -260,14 +261,13 @@
     return svg;
   }
 
-  // ── El idioma (el mismo botón y la misma elección que el resto de deliservy.com) ──
+  // ── El idioma (defecto español; el botón pasa a inglés y lo recuerda) ──
 
   function idiomaActual() {
     var elegido = null;
     try { elegido = raiz.localStorage.getItem(CLAVE_IDIOMA); } catch (_) { elegido = null; }
-    if (elegido === 'en' || elegido === 'es') return elegido;
-    var nav = raiz.navigator || {};
-    return /^en\b/i.test((nav.languages && nav.languages[0]) || nav.language || '') ? 'en' : 'es';
+    // Sin elección en esta página: español, aunque el navegador esté en inglés.
+    return elegido === 'en' ? 'en' : 'es';
   }
   /**
    * Un texto que la capa de idioma no alcanza: la pista de un <textarea> (la capa no toca lo que se escribe en un
@@ -1498,18 +1498,27 @@
     var numero = h('input', { class: 'campo', id: 'firma-numero', maxlength: '20', value: doc.numero, autocomplete: 'off' });
     var correo = h('input', { class: 'campo', id: 'firma-correo', type: 'email', maxlength: '120', value: d.correo || '', autocomplete: 'email' });
     var boton = h('button', { class: 'btn', type: 'submit' }, 'Firmar y enviar');
+    var espera = h('p', { class: 'nota', role: 'status', hidden: true });
+    var enviando = false;
     function cuerpo() {
       return { nombre: nombre.value, razonSocial: razon.value, tipoDocumento: tipo.value, numero: numero.value, correo: correo.value, firma: pad.png() };
     }
     function enviar(ev) {
       ev.preventDefault();
+      if (enviando) return;
       if (pad.vacia()) { error.hidden = false; error.textContent = 'Firma en el recuadro.'; return; }
+      enviando = true;
       boton.disabled = true;
       error.hidden = true;
+      espera.hidden = false;
+      espera.textContent = 'Por favor espera, está procesando.';
       pedir('POST', '/contrato', cuerpo()).then(function (r) {
         pintar(firmaEnviada(cuerpo(), !!(r && r.correo)));
       }, function (e) {
+        enviando = false;
         boton.disabled = false;
+        espera.hidden = true;
+        espera.textContent = '';
         error.hidden = false;
         error.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
       });
@@ -1539,15 +1548,30 @@
                 h('div', { class: 'dato' }, 'Deliservyapp, C.A. · RIF J-504754129')),
               h('span', { class: 'pill verde' }, 'Firmado')),
             error,
+            espera,
             h('div', { class: 'botones' }, boton),
             h('p', { class: 'ayuda' }, 'Al firmar, el PDF sale a tu correo y a deliservyapp@gmail.com.')))));
   }
 
   function firmaEnviada(cuerpo, salio) {
     var otra = h('button', { class: 'btn borde', type: 'button' }, 'Enviar otra vez');
+    var errorOtra = h('p', { class: 'error', role: 'alert', hidden: true });
+    var esperaOtra = h('p', { class: 'nota', role: 'status', hidden: true });
     otra.addEventListener('click', function () {
+      if (otra.disabled) return;
       otra.disabled = true;
-      pedir('POST', '/contrato', cuerpo).then(function (r) { pintar(firmaEnviada(cuerpo, !!(r && r.correo))); }, function () { otra.disabled = false; });
+      errorOtra.hidden = true;
+      esperaOtra.hidden = false;
+      esperaOtra.textContent = 'Por favor espera, está procesando.';
+      pedir('POST', '/contrato', cuerpo).then(function (r) {
+        pintar(firmaEnviada(cuerpo, !!(r && r.correo)));
+      }, function (e) {
+        esperaOtra.hidden = true;
+        esperaOtra.textContent = '';
+        otra.disabled = false;
+        errorOtra.hidden = false;
+        errorOtra.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
+      });
     });
     return h('div', null,
       cabecera(estado.yo, true),
@@ -1563,6 +1587,8 @@
             h('div', { class: 'cuerpo' },
               h('p', { class: 'fila' }, h('span', null, 'Para'), dato('b', null, cuerpo.correo || '')),
               h('p', { class: 'fila' }, h('span', null, 'Copia'), dato('b', null, 'deliservyapp@gmail.com')))),
+          salio ? null : errorOtra,
+          salio ? null : esperaOtra,
           h('div', { class: 'botones' },
             salio ? null : otra,
             h('button', { class: 'btn', type: 'button', onclick: arrancar }, 'Ver el catálogo')))));
