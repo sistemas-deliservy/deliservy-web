@@ -452,6 +452,27 @@
     };
   }
 
+  function textoDelContrato(c) {
+    var deLaApi = c && typeof c.texto === 'string' ? c.texto : '';
+    if (deLaApi.indexOf('Contrato de afiliación') >= 0) return deLaApi;
+    return typeof raiz.TEXTO_DEL_CONTRATO === 'string' ? raiz.TEXTO_DEL_CONTRATO : deLaApi;
+  }
+
+  /** El mismo texto del PDF: títulos y párrafos, sin reescribirlo. */
+  function recuadroDelContrato(texto) {
+    var caja = h('div', {
+      class: 'contrato-leer', tabindex: '0', role: 'region', 'aria-label': 'Contrato de afiliación', 'data-idioma': 'no',
+    });
+    String(texto || '').split(/\n\n+/).forEach(function (bloque) {
+      var linea = bloque.trim();
+      if (!linea) return;
+      if (linea.indexOf('# ') === 0) caja.appendChild(dato('h2', null, linea.slice(2)));
+      else if (linea.indexOf('## ') === 0) caja.appendChild(dato('h3', null, linea.slice(3)));
+      else caja.appendChild(dato('p', null, linea));
+    });
+    return caja;
+  }
+
   function pantallaFirma(c) {
     if (!c.puedeFirmar) {
       return h('div', { class: 'entrar' },
@@ -500,10 +521,11 @@
         h('div', { class: 'tarjeta' },
           h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-nombre' }, 'Nombre y apellido'), nombre),
           h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-razon' }, 'Razón social'), razon),
-          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-tipo' }, 'Documento'), tipo),
-          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-numero' }, 'Número'), numero),
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-tipo' }, 'Empresa'), tipo),
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-numero' }, 'Número del RIF'), numero),
           h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-correo' }, 'Correo'), correo),
-          h('label', { class: 'etq-campo' }, 'Tu firma'),
+          recuadroDelContrato(textoDelContrato(c)),
+          h('label', { class: 'etq-campo firma-aqui' }, 'Firma aquí'),
           pad.canvas,
           h('p', { class: 'ayuda' }, 'El recuadro nace vacío. Dibuja la firma con el dedo o el ratón.'),
           h('div', { class: 'botones' }, h('button', { class: 'btn borde chico', type: 'button', onclick: function () { pad.borrar(); } }, 'Borrar firma')),

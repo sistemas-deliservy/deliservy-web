@@ -919,8 +919,8 @@
         (p.tamanos || []).length ? h('p', { class: 'tamanos-lista' }, p.tamanos.map(function (t, i) {
           return [i ? ' · ' : '', dato('span', null, t.titulo), ' ' + dolares(t.venta)];
         })) : null,
-        h('small', null, 'Paga el ' + porcentaje(p.pct)),
-        h('span', { class: 'gana' }, (p.desde ? 'Ganas desde ' : 'Ganas ') + dolares(p.ganas) + ' por unidad'),
+        p.enPrograma === false ? null : h('small', null, 'Paga el ' + porcentaje(p.pct)),
+        p.enPrograma === false ? null : h('span', { class: 'gana' }, (p.desde ? 'Ganas desde ' : 'Ganas ') + dolares(p.ganas) + ' por unidad'),
         p.disponible === false ? h('span', null, h('span', { class: 'pill' }, 'Agotado por ahora')) : null,
         !estado.soloVer && p.codigo ? h('span', { class: 'ya-tiene' }, '✓ Ya tienes tu enlace') : null),
       h('div', { class: 'pie-prod' }, accion));
@@ -928,7 +928,13 @@
 
   function resultadosDelCatalogo(d) {
     var productos = d.productos || [];
-    if (!productos.length) return [h('span', { class: 'etq' }, 'Productos'), vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita los filtros.')];
+    if (!productos.length) {
+      var f = estado.filtros || {};
+      var filtrado = !!(f.q || f.tienda || f.categoria);
+      return [h('span', { class: 'etq' }, 'Productos'), filtrado
+        ? vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita los filtros.')
+        : vacio('Todavía no hay productos publicados', 'Cuando una tienda afiliada tenga productos con precio, aparecen aquí.')];
+    }
     var grupos = [];
     var porId = {};
     productos.forEach(function (p) {

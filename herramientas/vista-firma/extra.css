@@ -1,0 +1,31 @@
+/* Solo la vista previa de la firma. No se sube a Ferozo. */
+.vista-firma { max-width: 760px; }
+.vista-firma h1, .pagina-promotor h1 { font-size: 26px; line-height: 1.2; margin: 8px 0 6px; font-weight: 800; }
+.paso { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--m); margin: 0 0 8px; }
+.contrato-caja { background: var(--c2); border: 1px solid var(--b); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; color: var(--m); margin-top: 10px; }
+.contrato-caja b { color: var(--t); }
+.dos-campos { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+@media (min-width: 720px) { .dos-campos { grid-template-columns: 1fr 1fr; } }
+.lienzo {
+  position: relative; height: 148px; border: 1.5px dashed var(--b); border-radius: 12px; background: var(--c);
+  margin-top: 6px;
+}
+.lienzo .linea { position: absolute; left: 16px; right: 16px; bottom: 28px; height: 1px; background: var(--b); }
+.lienzo .pista { position: absolute; left: 16px; bottom: 34px; color: var(--m); font-size: 13px; font-weight: 600; }
+.firma-deliservy { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--b); border-radius: 12px; padding: 12px 14px; margin-top: 14px; background: var(--c2); }
+.firma-deliservy small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--m); }
+.firma-deliservy .nombre { font-family: 'Segoe Script', 'Snell Roundhand', 'Apple Chancery', cursive; font-size: 34px; line-height: 1; color: var(--rt); margin: 2px 0; }
+.firma-deliservy .dato { font-size: 12.5px; color: var(--m); font-weight: 600; }
+.aviso-envio { background: var(--oks); color: var(--ok); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; font-weight: 700; margin-top: 12px; }
+.listo { text-align: center; padding: 8px 4px 4px; }
+.listo .circulo { width: 64px; height: 64px; border-radius: 50%; background: var(--oks); color: var(--ok); display: grid; place-items: center; margin: 0 auto 12px; font-size: 32px; font-weight: 800; }
+.listo h1 { font-size: 26px; margin: 0 0 6px; }
+.correo { border: 1px solid var(--b); border-radius: 14px; overflow: hidden; background: var(--c); margin-top: 14px; text-align: left; }
+.correo .barra { background: var(--r); color: #fff; padding: 12px 14px; font-weight: 800; white-space: nowrap; }
+.correo .cuerpo { padding: 14px; font-size: 14px; }
+.correo .fila { display: flex; gap: 8px; margin: 0 0 6px; }
+.correo .fila span { color: var(--m); width: 54px; flex: 0 0 auto; font-weight: 700; font-size: 13px; }
+.nav-apagada a { pointer-events: none; opacity: .45; }
+.leyenda { max-width: 760px; margin: 0 auto 18px; color: var(--m); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+body.pagina { background: var(--s); }
+.pagina-promotor { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--s); }

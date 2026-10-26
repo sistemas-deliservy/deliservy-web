@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firma del contrato · Promotor</title>
+  <link rel="stylesheet" href="/vendedor/app.css">
+  <link rel="stylesheet" href="/herramientas/vista-firma/extra.css">
+</head>
+<body>
+  <div class="pagina-promotor">
+    <header class="cabecera">
+      <div class="logo-d" aria-hidden="true">D</div>
+      <div class="titulo"><b>Compra-Ventas</b><small>Ana Rojas</small></div>
+    </header>
+    <main class="contenido">
+      <p class="leyenda">Después de que tú lo apruebas · al volver a abrir</p>
+      <div id="firma">
+        <p class="paso">Ya aprobado</p>
+        <span class="pill verde">Aprobado · falta la firma</span>
+        <h1>Firma del contrato</h1>
+        <p class="nota">Ya puedes promover. Firma para activar tus enlaces. Al firmar, te enviamos el PDF a tu correo y a deliservyapp@gmail.com.</p>
+        <div class="tarjeta" style="margin-top:12px">
+          <div class="grupo-campo">
+            <label class="etq-campo" for="nombre">Nombre y apellido</label>
+            <input class="campo" id="nombre" value="Ana Rojas">
+          </div>
+          <div class="grupo-campo">
+            <label class="etq-campo" for="razon">Razón social</label>
+            <input class="campo" id="razon" placeholder="Solo si eres empresa">
+          </div>
+          <div class="grupo-campo">
+            <label class="etq-campo" for="tipo">Documento</label>
+            <select class="campo" id="tipo"><option>Cédula</option><option>RIF</option><option>Pasaporte</option></select>
+          </div>
+          <div class="grupo-campo">
+            <label class="etq-campo" for="numero">Número</label>
+            <input class="campo" id="numero" value="V-18.234.567">
+          </div>
+          <label class="etq-campo">Tu firma</label>
+          <div class="lienzo" role="img" aria-label="Recuadro vacío para firmar">
+            <span class="pista">Firma aquí</span>
+            <span class="linea"></span>
+          </div>
+          <p class="ayuda">Dibujas la firma con el dedo. El recuadro nace vacío.</p>
+          <div class="firma-deliservy">
+            <div>
+              <small>Firma de Deliservy · ya puesta</small>
+              <div class="nombre">Deliservy</div>
+              <div class="dato">Deliservyapp, C.A. · RIF J-504754129</div>
+            </div>
+            <span class="pill verde">Firmado</span>
+          </div>
+          <div class="botones">
+            <button class="btn" id="enviar" type="button">Firmar y enviar</button>
+          </div>
+          <div class="aviso-envio">Al firmar, el PDF sale a tu correo y a deliservyapp@gmail.com.</div>
+        </div>
+      </div>
+      <div class="tarjeta listo" id="enviado" hidden>
+        <div class="circulo">✓</div>
+        <h1>Contrato enviado</h1>
+        <p class="nota">Tus enlaces ya están activos. El PDF salió a:</p>
+        <div class="correo">
+          <div class="barra">Contrato firmado</div>
+          <div class="cuerpo">
+            <p class="fila"><span>Para</span><b>ana@correo.com</b></p>
+            <p class="fila"><span>Copia</span><b>deliservyapp@gmail.com</b></p>
+            <p>Contrato de promotor firmado por Ana Rojas y por Deliservyapp, C.A.</p>
+          </div>
+        </div>
+        <div class="botones centro"><a class="btn" href="#catalogo">Ver el catálogo</a></div>
+      </div>
+    </main>
+  </div>
+  <script>
+    if (location.search.indexOf('enviado') >= 0) {
+      document.getElementById('firma').hidden = true;
+      document.getElementById('enviado').hidden = false;
+    }
+    document.getElementById('enviar').addEventListener('click', function () { location.search = 'enviado'; });
+  </script>
+</body>
+</html>

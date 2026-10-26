@@ -3,7 +3,7 @@
  *
  * Gente que vende los productos del comercio en sus redes con su enlace o su cupón. El comercio decide cuánto les
  * paga: un % para toda la tienda (cada producto nuevo nace con él; «Aplicar a todos» lo pone ya en todos) y el % de
- * cada producto, con su precio especial de redes (mayor que 0 y no mayor que el de la app). Tope: 50 %. Si Deliservy
+ * cada producto, con su precio especial de redes (mayor que 0 y no mayor que el de la app). Entre el 1 % y el 50 %. Si Deliservy
  * pausó un producto en el programa, se ve y no se puede cambiar. Las ventas salen sin datos para contactar al
  * vendedor («Vendedor #N»). ⚠️ El comercio nunca ve el nombre del programa por dentro: aquí es «Vendedores externos».
  * Solo el dueño y solo tiendas que se ven en la app.
@@ -19,7 +19,7 @@
     return n;
   }
 
-  function filaProducto(ctx, p, tope, plan) {
+  function filaProducto(ctx, p, piso, tope, plan) {
     var precioApp = C.num(p.precioApp);
     var pausado = !!p.pausadoPorAdmin;
     var pct = C.entrada({ value: String(C.num(p.pct)).replace('.', ','), inputmode: 'decimal', maxlength: '5', 'aria-label': '% para el promotor', disabled: pausado });
@@ -39,7 +39,7 @@
     guardar.addEventListener('click', function () {
       var n = leerPct(pct);
       var mal = '';
-      if (isNaN(n) || n < 0 || n > tope) mal = 'El % va de 0 a ' + tope + '.';
+      if (isNaN(n) || n < piso || n > tope) mal = 'El % va de 1 a ' + tope + '.';
       var r = redes.value.trim() ? C.leerNumero(redes.value) : null;
       if (!mal && r != null && (isNaN(r) || r <= 0)) mal = 'El precio de redes va mayor que 0.';
       if (!mal && r != null && r > precioApp) mal = 'El precio de redes no puede ser mayor que el de la app.';
@@ -79,6 +79,7 @@
   }
 
   function pintar(ctx, v, d) {
+    var piso = C.num(d.piso) || 1;
     var tope = C.num(d.tope) || 50;
     var u = (d.ventas && d.ventas.ultimos30) || {};
     var ventas = (d.ventas && Array.isArray(d.ventas.lista)) ? d.ventas.lista : [];
@@ -89,7 +90,7 @@
     var guardarT = C.boton('Guardar', { class: 'btn chico' }, 'check');
     guardarT.addEventListener('click', function () {
       var n = leerPct(pctTienda);
-      if (isNaN(n) || n < 0 || n > tope) { errorT.textContent = 'El % va de 0 a ' + tope + '.'; errorT.hidden = false; return; }
+      if (isNaN(n) || n < piso || n > tope) { errorT.textContent = 'El % va de 1 a ' + tope + '.'; errorT.hidden = false; return; }
       errorT.hidden = true;
       var cuerpo = { companyId: ctx.tienda.companyId, pct: C.redondo(n) };
       if (aTodos.checked) cuerpo.aplicarATodos = true;
@@ -103,7 +104,7 @@
       h('div', { class: 'rejilla dos' },
         h('div', { class: 'tarjeta' },
           h('h2', null, '% de tu tienda'),
-          h('p', { class: 'nota' }, 'Cada producto nuevo nace con este %. Máximo ' + tope + ' %.'),
+          h('p', { class: 'nota' }, 'Cada producto nuevo nace con este %. Entre el 1 % y el ' + tope + ' %.'),
           h('div', { class: 'fila-pct' }, h('div', { class: 'con-sufijo grande' }, pctTienda, h('span', null, '%')), guardarT),
           h('label', { class: 'casilla', for: 'cv-todos' }, aTodos, h('span', null, 'Aplicar también a todos mis productos con precio')),
           errorT),
@@ -116,7 +117,7 @@
             C.cifra('Cupones', C.dolares(u.cuponesUsd))),
           h('p', { class: 'nota' }, 'Lo del promotor sale de tu ganancia, como la comisión.'))),
       h('div', { class: 'etq-fila' }, h('span', { class: 'etq' }, 'Tus productos'), h('span', { class: 'cuenta' }, C.plural(productos.length, 'producto', 'productos'))),
-      productos.length ? h('div', { class: 'lista' }, productos.map(function (p) { return filaProducto(ctx, p, tope, d.__plan); }))
+      productos.length ? h('div', { class: 'lista' }, productos.map(function (p) { return filaProducto(ctx, p, piso, tope, d.__plan); }))
         : C.vacio('Aún no tienes productos', 'Agrega productos para venderlos con promotores externos.', null, 'productos'),
       h('span', { class: 'etq' }, 'Ventas de promotores'),
       ventas.length ? h('div', { class: 'lista' }, ventas.map(function (x) {

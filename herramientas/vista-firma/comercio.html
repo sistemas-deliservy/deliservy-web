@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firma del contrato · Comercio</title>
+  <link rel="stylesheet" href="/comercio/app.css">
+  <link rel="stylesheet" href="/herramientas/vista-firma/extra.css">
+</head>
+<body>
+  <div class="marco">
+    <aside class="lateral" aria-label="Secciones">
+      <div class="lateral-marca">
+        <img class="logo-marca" src="/assets/logo-icon.png" alt="" width="38" height="38">
+        <div><b>Deliservy</b><small>Panel del comercio</small></div>
+      </div>
+      <div class="lateral-tienda"><div class="tienda-unica">Pizzería El Centro</div></div>
+      <nav class="lateral-nav nav-apagada">
+        <a href="#hoy">Hoy</a>
+        <a href="#pedidos">Pedidos</a>
+        <a href="#productos">Productos</a>
+        <a href="#vendedores">Promotores</a>
+        <a href="#billetera">Billetera</a>
+      </nav>
+      <div class="lateral-pie">
+        <div class="yo-fila"><b>María Pérez</b><small>Dueña</small></div>
+      </div>
+    </aside>
+    <div class="columna">
+      <main class="contenido">
+        <p class="leyenda">Después de que tú lo apruebas · al volver a abrir el panel</p>
+        <div class="vista vista-firma" id="firma">
+          <p class="paso">Paso 2 de 2 · ya aprobado</p>
+          <span class="pill verde">Aprobado · falta la firma</span>
+          <h1>Firma del contrato</h1>
+          <p class="nota">Tu comercio ya está aprobado. Firma para poder usar el panel. Al firmar, te enviamos el PDF a tu correo y a deliservyapp@gmail.com.</p>
+          <div class="contrato-caja"><b>Contrato de afiliación comercial.</b> Deliservyapp, C.A. · RIF J-504754129. Deliservy no cobra un porcentaje sobre la venta. Cobra por cada unidad: de 0,20 $ a 0,99 $. Premium paga la mitad. Deluxe no paga por producto. El porcentaje del promotor lo decides tú, entre el 1 % y el 50 % del valor del producto.</div>
+          <p class="ayuda"><a href="#">Bajar el contrato completo</a> antes de firmar.</p>
+          <div class="tarjeta" style="margin-top:14px">
+            <div class="dos-campos">
+              <div class="grupo-campo">
+                <label class="etq-campo" for="nombre">Nombre y apellido</label>
+                <input class="campo" id="nombre" value="María Pérez">
+              </div>
+              <div class="grupo-campo">
+                <label class="etq-campo" for="razon">Razón social</label>
+                <input class="campo" id="razon" value="Pizzería El Centro, C.A.">
+              </div>
+              <div class="grupo-campo">
+                <label class="etq-campo" for="tipo">Documento</label>
+                <select class="campo" id="tipo"><option>RIF</option><option>Cédula</option><option>Pasaporte</option></select>
+              </div>
+              <div class="grupo-campo">
+                <label class="etq-campo" for="numero">Número</label>
+                <input class="campo" id="numero" value="J-501112223">
+              </div>
+            </div>
+            <label class="etq-campo" for="pad">Tu firma</label>
+            <div class="lienzo" id="pad" role="img" aria-label="Recuadro vacío para firmar">
+              <span class="pista">Firma aquí con el dedo o el ratón</span>
+              <span class="linea"></span>
+            </div>
+            <p class="ayuda">El recuadro nace vacío. Dibujas la firma. No se escribe el nombre en letra de firma.</p>
+            <div class="firma-deliservy">
+              <div>
+                <small>Firma de Deliservy · ya puesta</small>
+                <div class="nombre">Deliservy</div>
+                <div class="dato">Deliservyapp, C.A. · RIF J-504754129 · 25 de octubre de 2026</div>
+              </div>
+              <span class="pill verde">Firmado</span>
+            </div>
+            <div class="botones">
+              <button class="btn" id="enviar" type="button">Firmar y enviar el contrato</button>
+            </div>
+          </div>
+        </div>
+        <div class="vista vista-firma" id="enviado" hidden>
+          <div class="tarjeta listo">
+            <div class="circulo">✓</div>
+            <h1>Contrato enviado</h1>
+            <p class="nota">Ya puedes usar el panel. El PDF con las dos firmas salió a estos correos:</p>
+            <div class="correo">
+              <div class="barra">Contrato firmado</div>
+              <div class="cuerpo">
+                <p class="fila"><span>Para</span><b>maria@pizzeria.com</b></p>
+                <p class="fila"><span>Copia</span><b>deliservyapp@gmail.com</b></p>
+                <p>Contrato de afiliación de Pizzería El Centro, C.A., firmado por María Pérez y por Deliservyapp, C.A.</p>
+              </div>
+            </div>
+            <div class="botones centro"><a class="btn" href="#hoy">Entrar al panel</a></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script>
+    if (location.search.indexOf('enviado') >= 0) {
+      document.getElementById('firma').hidden = true;
+      document.getElementById('enviado').hidden = false;
+    }
+    document.getElementById('enviar').addEventListener('click', function () {
+      location.search = 'enviado';
+    });
+  </script>
+</body>
+</html>

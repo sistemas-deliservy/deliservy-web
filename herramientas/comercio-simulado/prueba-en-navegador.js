@@ -334,7 +334,7 @@ async function telefonoClaro(browser) {
   await page.fill('#cv-pct-tienda', '60');
   await page.click('.fila-pct .btn');
   await esperar(300);
-  check('% de la tienda: tope 50', /0 a 50/.test(await textoDe(page, '.fila-pct ~ .error-campo')));
+  check('% de la tienda: entre 1 y 50', /1 a 50/.test(await textoDe(page, '.fila-pct ~ .error-campo')));
   await foto(page, '20-vendedores-externos-error');
   await page.fill('#cv-pct-tienda', '12');
   await page.check('#cv-todos');

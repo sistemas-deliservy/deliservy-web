@@ -822,16 +822,39 @@ function leerCuerpo(req) {
 }
 function json(cuerpo) { try { return cuerpo.length ? JSON.parse(cuerpo.toString('utf8')) : {}; } catch (_) { throw new Fallo(400, 'El cuerpo no es JSON.'); } }
 
+function textoDelContrato() {
+  if (textoDelContrato.cache != null) return textoDelContrato.cache;
+  try {
+    const src = fs.readFileSync(path.join(RAIZ_WEB, 'comercio', 'texto-contrato.js'), 'utf8');
+    const marca = 'var TEXTO_DEL_CONTRATO = ';
+    const i = src.indexOf(marca);
+    textoDelContrato.cache = i < 0 ? '' : JSON.parse(src.slice(i + marca.length).replace(/;\s*$/, ''));
+  } catch (_) {
+    textoDelContrato.cache = '';
+  }
+  return textoDelContrato.cache;
+}
+
+/** Letra y número, como los guarda la tienda: J-504754129. Lo escrito pisa al anterior. */
+function rifDeLaFirma(tipo, numero) {
+  const letra = String(tipo || '').trim().toUpperCase().slice(0, 1);
+  let cuerpo = String(numero || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (cuerpo.charAt(0) === letra) cuerpo = cuerpo.slice(1);
+  if (!/^[VEJGP]$/.test(letra) || !cuerpo) return '';
+  return (letra + '-' + cuerpo).slice(0, 20);
+}
+
 function contratoDe(s) {
   if (!PEDIR_FIRMA) return null;
   const t = tiendasDeLaSesion(s).find((x) => (x.authorized === 1 || x.authorized === 3) && !D.firmadas[x.companyId]);
   if (!t) return null;
-  const rif = String(t.rif || '');
+  const limpio = String(t.rif || '').toUpperCase().replace(/[\s.\-_/]/g, '');
+  const m = /^([VEJGP])([A-Z0-9]{1,19})$/.exec(limpio);
   const w = s.trabajadorId ? D.trabajadores.find((x) => x.id === s.trabajadorId) : null;
   return {
     falta: true, puedeFirmar: s.rol === 'dueno', companyId: t.companyId, tienda: t.nombre,
     nombre: w ? w.nombre : D.cuentas[s.userId].nombre, razonSocial: t.nombre, correo: t.correo || '',
-    tipoDocumento: /^[VEJGP]/.test(rif) ? rif[0] : 'J', numero: rif.slice(1),
+    tipoDocumento: m ? m[1] : 'J', numero: m ? m[2] : '', texto: textoDelContrato(),
   };
 }
 
@@ -902,6 +925,11 @@ async function api(req, res, url) {
     if (!t) throw new Fallo(400, 'Este comercio no está aprobado para firmar.');
     if (!body.nombre || String(body.nombre).trim().length < 2) throw new Fallo(400, 'Escribe tu nombre y apellido.');
     if (!String(body.firma || '').startsWith('data:image/png;base64,')) throw new Fallo(400, 'Firma en el recuadro.');
+    if (!(t.authorized === 1 || t.authorized === 3)) throw new Fallo(400, 'Este comercio no está aprobado para firmar.');
+    const rifNuevo = rifDeLaFirma(body.tipoDocumento, body.numero);
+    if (rifNuevo) {
+      for (const x of tiendasDeLaSesion(s)) if (x.companyId === t.companyId) x.rif = rifNuevo;
+    }
     D.firmadas[t.companyId] = true;
     D.bitacora.unshift({ accion: 'firmar-contrato', companyId: t.companyId, correo: body.correo, copia: 'deliservyapp@gmail.com' });
     return { ok: true, correo: true };
@@ -1227,7 +1255,7 @@ async function api(req, res, url) {
       if (!t || t.authorized !== 1) throw noEncontrado();
       const ventas = D.vendedorVentas.slice().sort((a, b) => Date.parse(b.fecha) - Date.parse(a.fecha));
       return {
-        pctTienda: t.pctTienda, tope: 50,
+        pctTienda: t.pctTienda, piso: 1, tope: 50,
         productos: D.productos.filter((p) => p.companyId === t.companyId && !p.borrado).map((p) => ({
           productId: p.id, nombre: p.nombre, foto: p.images[0] || '', precioApp: p.precio,
           precioRedes: p.cv ? p.cv.precioRedes : null, preciosTalla: p.cv && p.cv.preciosTalla ? p.cv.preciosTalla : null,
@@ -1243,7 +1271,7 @@ async function api(req, res, url) {
       const t = laEmpresa(s, body.companyId);
       if (!t || t.authorized !== 1) throw noEncontrado();
       const pct = Number(body.pct);
-      if (!isFinite(pct) || pct < 0 || pct > 50) throw new Fallo(400, 'El % va de 0 a 50.');
+      if (!isFinite(pct) || pct < 1 || pct > 50) throw new Fallo(400, 'El % va de 1 a 50.');
       const antes = t.pctTienda;
       t.pctTienda = redondo(pct);
       let actualizados = 0;
@@ -1266,7 +1294,7 @@ async function api(req, res, url) {
       if (!t || t.authorized !== 1) throw noEncontrado();
       if (p.cv && p.cv.pausadoPorAdmin) throw new Fallo(409, 'Deliservy pausó este producto en el programa');
       const pct = Number(body.pct);
-      if (!isFinite(pct) || pct < 0 || pct > 50) throw new Fallo(400, 'El % va de 0 a 50.');
+      if (!isFinite(pct) || pct < 1 || pct > 50) throw new Fallo(400, 'El % va de 1 a 50.');
       let precioRedes = null;
       if (body.precioRedes != null && body.precioRedes !== '') {
         precioRedes = Number(body.precioRedes);
