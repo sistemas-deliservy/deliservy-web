@@ -418,7 +418,7 @@
       h('a', { class: 'volver', href: '#productos' }, ico('atras'), 'Productos'),
       C.cabeceraDeSeccion(nuevo ? 'Nuevo producto' : 'Editar producto', nuevo ? 'Se ve en la app cuando lo guardes.' : [dato('span', null, p.nombre)]),
       errores,
-      h('div', { class: 'rejilla-editor' },
+      h('div', { class: 'rejilla-editor editor-producto' },
         h('div', { class: 'col' },
           h('div', { class: 'tarjeta' },
             h('h2', null, 'Fotos'),

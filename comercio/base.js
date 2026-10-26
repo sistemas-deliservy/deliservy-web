@@ -33,8 +33,32 @@
   C.CLAVE_TIENDA = 'deliservy_comercio_tienda';
   // Propia del panel (26-oct-2026): el defecto es español y no hereda la clave vieja de la portada.
   C.CLAVE_IDIOMA = 'deliservy_idioma_panel';
+  C.CLAVE_TEMA = 'deliservy_tema_panel';
   C.WHATSAPP = 'https://wa.me/584144957006';
   var NBSP = ' ';
+
+  /** Oscuro si nunca eligió. Claro solo con la elección guardada. */
+  function aplicarTema() {
+    var elegido = '';
+    try { elegido = raiz.localStorage.getItem(C.CLAVE_TEMA) || ''; } catch (_) { elegido = ''; }
+    var claro = elegido === 'claro';
+    documento.documentElement.classList.toggle('claro', claro);
+    var color = claro ? '#F3F3F6' : '#09090b';
+    var metas = documento.querySelectorAll('meta[name="theme-color"]');
+    for (var i = metas.length - 1; i >= 1; i--) metas[i].parentNode.removeChild(metas[i]);
+    var meta = metas[0];
+    if (!meta) {
+      meta = documento.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      if (documento.head) documento.head.appendChild(meta);
+    }
+    if (meta) {
+      meta.removeAttribute('media');
+      meta.setAttribute('content', color);
+    }
+  }
+  aplicarTema();
+  C.temaClaro = function () { return documento.documentElement.classList.contains('claro'); };
 
   // ── Números, dinero y fechas ───────────────────────────────────────────────
 

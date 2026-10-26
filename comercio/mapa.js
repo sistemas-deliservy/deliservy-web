@@ -38,7 +38,7 @@
     promesa.catch(function () { promesa = null; });
     return promesa;
   }
-  function oscuro() { return !!(raiz.matchMedia && raiz.matchMedia('(prefers-color-scheme: dark)').matches); }
+  function oscuro() { return !documento.documentElement.classList.contains('claro'); }
   function valido(p) { return p && isFinite(Number(p.lat)) && isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180; }
 
   /** El pin (A verde, B rojo) o el motorizado: figuras fijas, sin datos dentro. */

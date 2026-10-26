@@ -69,6 +69,19 @@
       },
     }, en ? '🌐 Español' : '🌐 English');
   }
+  function botonTema(clase) {
+    var claro = C.temaClaro();
+    var en = idiomaActual() === 'en';
+    return h('button', {
+      class: clase || 'tema', type: 'button', 'data-idioma': 'no',
+      title: claro ? (en ? 'Switch to dark' : 'Cambiar a oscuro') : (en ? 'Switch to light' : 'Cambiar a claro'),
+      onclick: function () {
+        try { raiz.localStorage.setItem(C.CLAVE_TEMA, claro ? 'oscuro' : 'claro'); } catch (_) { /* sin almacén: no se recuerda */ }
+        if (C.temaClaro) documento.documentElement.classList.toggle('claro', !claro);
+        raiz.location.reload();
+      },
+    }, claro ? (en ? 'Dark' : 'Oscuro') : (en ? 'Light' : 'Claro'));
+  }
 
   function pintar(nodo) { C.cerrarDialogos(); C.vaciar(app); C.poner(app, nodo); }
   function logo(clase) { return h('img', { class: clase || 'logo-marca', src: '/assets/logo-icon.png', alt: '', width: '40', height: '40' }); }
@@ -155,7 +168,7 @@
         h('p', null, 'Entra con tu WhatsApp. Aquí ves tus pedidos, tus productos y tu dinero.')),
       h('div', { class: 'tarjeta' }, cuerpo),
       h('p', { class: 'pie-entrar' }, '¿Aún no vendes con Deliservy? ', h('a', { href: C.WHATSAPP, target: '_blank', rel: 'noopener noreferrer' }, 'Escríbenos')),
-      h('div', { class: 'pie-idioma' }, botonIdioma()));
+      h('div', { class: 'pie-idioma' }, botonIdioma(), botonTema()));
   }
 
   function enfocar(id) {
@@ -300,7 +313,7 @@
       h('div', { class: 'lateral-pie' },
         h('div', { class: 'yo-fila' }, dato('span', { class: 'yo', 'aria-hidden': 'true' }, C.inicial(nombre)),
           h('div', { class: 'txt' }, dato('b', null, nombre), h('small', null, rolTexto()))),
-        h('div', { class: 'botones-pie' }, botonIdioma('idioma'), h('button', { class: 'salir', type: 'button', onclick: salir }, ico('salir'), h('span', null, 'Salir')))));
+        h('div', { class: 'botones-pie' }, botonTema('tema'), botonIdioma('idioma'), h('button', { class: 'salir', type: 'button', onclick: salir }, ico('salir'), h('span', null, 'Salir')))));
     // En el teléfono: la barra de arriba y la de abajo (con «Más» si no caben).
     var cabTel = h('header', { class: 'cabecera-tel' },
       logo('logo-cab'),
@@ -333,7 +346,7 @@
           a.addEventListener('click', function () { d.cerrar(); });
           return a;
         })),
-        h('div', { class: 'botones' }, botonIdioma('btn borde chico'), h('button', { class: 'btn borde chico', type: 'button', onclick: function () { d.cerrar(); salir(); } }, ico('salir'), 'Salir')),
+        h('div', { class: 'botones' }, botonTema('btn borde chico'), botonIdioma('btn borde chico'), h('button', { class: 'btn borde chico', type: 'button', onclick: function () { d.cerrar(); salir(); } }, ico('salir'), 'Salir')),
       ],
     });
   }

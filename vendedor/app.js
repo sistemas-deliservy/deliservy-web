@@ -26,6 +26,7 @@
   var CLAVE_SESION = 'deliservy_vendedor_sesion';
   // Propia de esta página (26-oct-2026): el defecto es español y no hereda la clave vieja de la portada.
   var CLAVE_IDIOMA = 'deliservy_idioma_panel';
+  var CLAVE_TEMA = 'deliservy_tema_panel';
   var NOTA_PAGO = 'Se te paga solo cada noche a las 11:00 p. m. si tienes cuenta bancaria y saldo disponible.';
   var EN_REVISION = 'Tu cuenta está en revisión. Te avisaremos por WhatsApp cuando esté lista.';
   /** El WhatsApp de Deliservy (0414-495-7006): para cambiar la cédula o el RIF de una cuenta ya aprobada. */
@@ -34,6 +35,29 @@
   var TIPOS_DE_DOCUMENTO = [['V', 'V · Venezolano'], ['E', 'E · Extranjero'], ['J', 'J · Empresa'], ['G', 'G · Gobierno'], ['P', 'Pasaporte']];
   var REDES_DEL_REGISTRO = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['facebook', 'Facebook']];
   var NBSP = ' ';
+
+  /** Oscuro si nunca eligió. Claro solo con la elección guardada. La misma clave que el panel del comercio. */
+  function aplicarTema() {
+    var elegido = '';
+    try { elegido = raiz.localStorage.getItem(CLAVE_TEMA) || ''; } catch (_) { elegido = ''; }
+    var claro = elegido === 'claro';
+    documento.documentElement.classList.toggle('claro', claro);
+    var color = claro ? '#F3F3F6' : '#09090b';
+    var metas = documento.querySelectorAll('meta[name="theme-color"]');
+    for (var i = metas.length - 1; i >= 1; i--) metas[i].parentNode.removeChild(metas[i]);
+    var meta = metas[0];
+    if (!meta) {
+      meta = documento.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      if (documento.head) documento.head.appendChild(meta);
+    }
+    if (meta) {
+      meta.removeAttribute('media');
+      meta.setAttribute('content', color);
+    }
+  }
+  aplicarTema();
+  function temaClaro() { return documento.documentElement.classList.contains('claro'); }
 
   // ── Utilidades (puras) ─────────────────────────────────────────────────────
 
@@ -319,6 +343,18 @@
       },
     }, en ? '🌐 Español' : '🌐 English');
   }
+  function botonTema() {
+    var claro = temaClaro();
+    var en = idiomaActual() === 'en';
+    return h('button', {
+      class: 'tema', type: 'button', 'data-idioma': 'no',
+      title: claro ? (en ? 'Switch to dark' : 'Cambiar a oscuro') : (en ? 'Switch to light' : 'Cambiar a claro'),
+      onclick: function () {
+        try { raiz.localStorage.setItem(CLAVE_TEMA, claro ? 'oscuro' : 'claro'); } catch (_) { /* sin almacén: no se recuerda */ }
+        raiz.location.reload();
+      },
+    }, claro ? (en ? 'Dark' : 'Oscuro') : (en ? 'Light' : 'Claro'));
+  }
 
   // ── Las pantallas ──────────────────────────────────────────────────────────
 
@@ -372,6 +408,7 @@
       h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
       h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), dato('small', null, (yo && yo.nombre) || '')),
       caraDe(yo),
+      botonTema(),
       botonIdioma(),
       conSalir ? h('button', { class: 'salir', type: 'button', onclick: salir }, 'Salir') : null);
   }
@@ -434,7 +471,7 @@
         h('p', null, texto)),
       h('div', { class: 'tarjeta' }, cuerpo),
       pie,
-      h('div', { class: 'pie-idioma' }, botonIdioma()));
+      h('div', { class: 'pie-idioma' }, botonTema(), botonIdioma()));
   }
 
   function entrar(paso, d) {
@@ -1439,6 +1476,7 @@
         h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), h('small', null, 'Catálogo')),
         h('a', { class: 'btn chico borde', href: '#entrar' }, 'Entrar'),
         h('a', { class: 'btn chico', href: '#registro' }, 'Regístrate'),
+        botonTema(),
         botonIdioma());
     var aviso = pendiente
       ? h('div', { class: 'aviso-datos', role: 'status' },
