@@ -400,6 +400,147 @@
   }
   C.mostrar = mostrar;
 
+  // ── La firma del contrato, después de que Deliservy aprueba (25-oct-2026) ──
+
+  var TIPOS_FIRMA = [['V', 'V · Venezolano'], ['E', 'E · Extranjero'], ['J', 'J · Empresa'], ['G', 'G · Gobierno'], ['P', 'Pasaporte']];
+
+  function lienzoDeFirma() {
+    var cv = documento.createElement('canvas');
+    cv.className = 'lienzo-firma';
+    cv.width = 640;
+    cv.height = 220;
+    var g = cv.getContext('2d');
+    var dibujando = false;
+    var hubo = false;
+    function blanco() { g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height); }
+    blanco();
+    function pos(ev) {
+      var r = cv.getBoundingClientRect();
+      return { x: (ev.clientX - r.left) * (cv.width / (r.width || 1)), y: (ev.clientY - r.top) * (cv.height / (r.height || 1)) };
+    }
+    function empezar(ev) {
+      if (ev.button != null && ev.button !== 0) return;
+      dibujando = true;
+      hubo = true;
+      try { cv.setPointerCapture(ev.pointerId); } catch (_) { /* el ratón igual dibuja */ }
+      var p = pos(ev);
+      g.beginPath();
+      g.moveTo(p.x, p.y);
+      ev.preventDefault();
+    }
+    function mover(ev) {
+      if (!dibujando) return;
+      var p = pos(ev);
+      g.strokeStyle = '#16161A';
+      g.lineWidth = 2.6;
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+      g.lineTo(p.x, p.y);
+      g.stroke();
+      ev.preventDefault();
+    }
+    function soltar() { dibujando = false; }
+    cv.addEventListener('pointerdown', empezar);
+    cv.addEventListener('pointermove', mover);
+    cv.addEventListener('pointerup', soltar);
+    cv.addEventListener('pointercancel', soltar);
+    return {
+      canvas: cv,
+      vacia: function () { return !hubo; },
+      png: function () { return cv.toDataURL('image/png'); },
+      borrar: function () { blanco(); hubo = false; },
+    };
+  }
+
+  function pantallaFirma(c) {
+    if (!c.puedeFirmar) {
+      return h('div', { class: 'entrar' },
+        h('div', { class: 'marca' }, logo('logo-entrar'), h('small', null, 'Deliservy · Comercios'), h('h1', null, 'Firma del contrato')),
+        h('div', { class: 'tarjeta' },
+          h('p', null, 'Tu comercio ya está aprobado. El dueño tiene que firmar el contrato para que el panel quede activo.'),
+          h('div', { class: 'botones' }, h('button', { class: 'btn borde', type: 'button', onclick: salir }, 'Salir'))));
+    }
+    var error = h('p', { class: 'error', role: 'alert', hidden: true });
+    var pad = lienzoDeFirma();
+    var nombre = h('input', { class: 'campo', id: 'firma-nombre', autocomplete: 'name', maxlength: '120', value: c.nombre || '' });
+    var razon = h('input', { class: 'campo', id: 'firma-razon', autocomplete: 'organization', maxlength: '150', value: c.razonSocial || '' });
+    var tipo = h('select', { class: 'campo', id: 'firma-tipo' }, TIPOS_FIRMA.map(function (t) {
+      return h('option', { value: t[0], selected: t[0] === (c.tipoDocumento || 'J') }, t[1]);
+    }));
+    var numero = h('input', { class: 'campo', id: 'firma-numero', maxlength: '20', value: c.numero || '', autocomplete: 'off' });
+    var correo = h('input', { class: 'campo', id: 'firma-correo', type: 'email', maxlength: '120', value: c.correo || '', autocomplete: 'email' });
+    var boton = h('button', { class: 'btn', type: 'submit' }, 'Firmar y enviar el contrato');
+    function cuerpo() {
+      return {
+        companyId: c.companyId, nombre: nombre.value, razonSocial: razon.value, tipoDocumento: tipo.value,
+        numero: numero.value, correo: correo.value, firma: pad.png(),
+      };
+    }
+    function mostrarError(t) { error.hidden = !t; error.textContent = t || ''; }
+    function enviar(ev) {
+      if (ev) ev.preventDefault();
+      if (pad.vacia()) { mostrarError('Firma en el recuadro.'); return; }
+      boton.disabled = true;
+      mostrarError('');
+      C.pedir('POST', '/contrato', cuerpo()).then(function (r) {
+        pintar(firmaEnviada(c, cuerpo(), !!(r && r.correo)));
+      }, function (e) {
+        boton.disabled = false;
+        mostrarError((e && e.message) || 'No se pudo enviar. Intenta de nuevo.');
+      });
+    }
+    return h('div', { class: 'entrar firma-pagina' },
+      h('div', { class: 'marca' }, logo('logo-entrar'), h('small', null, 'Deliservy · Comercios')),
+      h('p', { class: 'paso' }, 'Paso 2 de 2 · ya aprobado'),
+      h('span', { class: 'pill verde' }, 'Aprobado · falta la firma'),
+      h('h1', null, 'Firma del contrato'),
+      h('p', { class: 'nota' }, 'Tu comercio ya está aprobado. Firma para poder usar el panel. Al firmar, te enviamos el PDF a tu correo y a deliservyapp@gmail.com.'),
+      dato('p', { class: 'nota' }, c.tienda || ''),
+      h('form', { novalidate: true, onsubmit: enviar },
+        h('div', { class: 'tarjeta' },
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-nombre' }, 'Nombre y apellido'), nombre),
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-razon' }, 'Razón social'), razon),
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-tipo' }, 'Documento'), tipo),
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-numero' }, 'Número'), numero),
+          h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-correo' }, 'Correo'), correo),
+          h('label', { class: 'etq-campo' }, 'Tu firma'),
+          pad.canvas,
+          h('p', { class: 'ayuda' }, 'El recuadro nace vacío. Dibuja la firma con el dedo o el ratón.'),
+          h('div', { class: 'botones' }, h('button', { class: 'btn borde chico', type: 'button', onclick: function () { pad.borrar(); } }, 'Borrar firma')),
+          h('div', { class: 'firma-ya' },
+            h('div', null,
+              h('small', null, 'Firma de Deliservy · ya puesta'),
+              h('div', { class: 'nombre' }, 'Deliservy'),
+              h('div', { class: 'dato' }, 'Deliservyapp, C.A. · RIF J-504754129')),
+            h('span', { class: 'pill verde' }, 'Firmado')),
+          error,
+          h('div', { class: 'botones' }, boton))));
+  }
+
+  function firmaEnviada(c, cuerpo, salio) {
+    var nota = salio
+      ? 'El PDF con las dos firmas salió a tu correo y a deliservyapp@gmail.com.'
+      : 'Firmaste. El correo no salió. Puedes enviarlo otra vez.';
+    var otra = h('button', { class: 'btn borde', type: 'button' }, 'Enviar otra vez');
+    otra.addEventListener('click', function () {
+      otra.disabled = true;
+      C.pedir('POST', '/contrato', cuerpo).then(function (r) { pintar(firmaEnviada(c, cuerpo, !!(r && r.correo))); }, function () { otra.disabled = false; });
+    });
+    return h('div', { class: 'entrar firma-pagina' },
+      h('div', { class: 'tarjeta listo-firma' },
+        h('div', { class: 'circulo' }, '✓'),
+        h('h1', null, salio ? 'Contrato enviado' : 'Contrato firmado'),
+        h('p', { class: 'nota' }, nota),
+        h('div', { class: 'correo-enviado' },
+          h('div', { class: 'franja' }, 'Contrato firmado'),
+          h('div', { class: 'cuerpo' },
+            h('p', { class: 'fila' }, h('span', null, 'Para'), dato('b', null, cuerpo.correo || '')),
+            h('p', { class: 'fila' }, h('span', null, 'Copia'), dato('b', null, 'deliservyapp@gmail.com')))),
+        h('div', { class: 'botones' },
+          salio ? null : otra,
+          h('button', { class: 'btn', type: 'button', onclick: arrancar }, 'Entrar al panel'))));
+  }
+
   function arrancar() {
     if (!C.sesion.leer()) { pintar(pantallaEntrar('telefono')); return; }
     pintar(C.cargando());
@@ -408,6 +549,7 @@
       ctx.esDueno = ctx.cuenta.rol !== 'cajero';
       ctx.tiendas = (r && Array.isArray(r.tiendas) ? r.tiendas : []).filter(function (t) { return t && t.storeId != null; });
       ctx.avisos = r && Array.isArray(r.avisos) ? r.avisos : [];
+      if (r && r.contrato && r.contrato.falta) { pintar(pantallaFirma(r.contrato)); return; }
       if (!ctx.tiendas.length) {
         pintar(h('div', { class: 'entrar' }, h('div', { class: 'tarjeta vacio' }, ico('tienda'), h('b', null, 'No tienes tiendas activas'),
           h('p', { class: 'nota' }, 'Escríbenos por WhatsApp y te ayudamos.'),

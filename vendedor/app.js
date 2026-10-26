@@ -2,7 +2,7 @@
  * LA PÁGINA DEL VENDEDOR (www.deliservy.com/vendedor/, 24-oct-2026): Compra-Ventas Redes Sociales.
  *
  * Gilberth: «para el lado de los influencers, youtubers… todo completo en www.deliservy.com». El vendedor entra con su
- * WhatsApp (código por WhatsApp) y ve su saldo, el catálogo del programa con lo que gana por unidad, sus enlaces
+ * WhatsApp (código por WhatsApp) o con su contraseña, y ve su saldo, el catálogo del programa con lo que gana por unidad, sus enlaces
  * (`https://www.deliservy.com/v/<codigo>`, uno por producto o tienda, sin vencimiento) con las visitas por red, sus
  * ventas y sus cobros. Habla con la API de Deliservy (`https://api.deliservy.site/api/vendedor/*`): al entrar, la API
  * le da un token que se guarda en este navegador y viaja en la cabecera `Authorization`; «Salir» lo borra.
@@ -128,6 +128,19 @@
     var c = String(t == null ? '' : t).trim().toLowerCase();
     return c.length <= 120 && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(c) ? c : null;
   }
+  /** Años cumplidos de `YYYY-MM-DD`, con el día de hoy en Caracas. `null` si la fecha no existe. */
+  function edadDe(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    if (!m) return null;
+    var y = +m[1], mes = +m[2], dia = +m[3];
+    var fecha = new Date(Date.UTC(y, mes - 1, dia));
+    if (fecha.getUTCFullYear() !== y || fecha.getUTCMonth() !== mes - 1 || fecha.getUTCDate() !== dia) return null;
+    var s = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    var h = s.split('-').map(function (x) { return +x; });
+    var edad = h[0] - y;
+    if (h[1] * 100 + h[2] < mes * 100 + dia) edad--;
+    return edad;
+  }
   /**
    * Lo escrito en un formulario de datos, revisado: `{ datos, errores }` (errores por campo, con la frase). `c`:
    * { nombre?, razonSocial, tipoDocumento, numero, correo, direccion, redes? }. Con `conDocumento: false` el
@@ -165,6 +178,19 @@
       var sx = String(c.sexo || '').toUpperCase();
       if (sx === 'M' || sx === 'F') datos.sexo = sx;
       else errores.sexo = 'Elige si eres promotor o promotora.';
+    }
+    if (!empresa && o.conDocumento) {
+      var nac = String(c.nacimiento || '').trim();
+      var edad = edadDe(nac);
+      if (edad == null) errores.nacimiento = 'Escribe tu fecha de nacimiento.';
+      else if (edad < 18 || edad > 100) errores.nacimiento = 'Para registrarte tienes que tener 18 años o más.';
+      else { datos.nacimiento = nac; datos.edad = edad; }
+    }
+    if (o.conClave) {
+      var clave = String(c.clave || '');
+      if (clave.length < 8 || clave.length > 72 || clave !== clave.trim()) errores.clave = 'La contraseña va de 8 a 72 caracteres.';
+      else if (clave !== String(c.clave2 || '')) errores.clave2 = 'Las dos contraseñas tienen que ser iguales.';
+      else datos.clave = clave;
     }
     if (c.redes) {
       var redes = {};
@@ -428,6 +454,41 @@
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por correo. WhatsApp sigue disponible.'),
       h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'whatsapp'; entrada.paso = 'telefono'; pintar(entrar('telefono')); } }, 'Entrar con WhatsApp')));
+    } else if (paso === 'clave') {
+      var telClave = h('input', {
+        class: 'campo', id: 'telefono-clave', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
+        placeholder: '412 555 0198', value: d.telefono || entrada.telefono || '', required: true,
+      });
+      var claveEntrar = h('input', {
+        class: 'campo', id: 'clave-entrar', name: 'clave', type: 'password', autocomplete: 'current-password', maxlength: '72', required: true,
+      });
+      cuerpo = h('form', {
+        novalidate: true,
+        onsubmit: function (ev) {
+          ev.preventDefault();
+          var tel = String(telClave.value || '').trim();
+          var clave = String(claveEntrar.value || '');
+          if (tel.replace(/\D/g, '').length < 10) { pintar(entrar('clave', { telefono: tel, error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' })); return; }
+          if (clave.length < 8) { pintar(entrar('clave', { telefono: tel, error: 'La contraseña va de 8 a 72 caracteres.' })); return; }
+          var boton = ev.target.querySelector('button[type="submit"]');
+          boton.disabled = true;
+          pedir('POST', '/acceso/clave', { telefono: tel, clave: clave }).then(function (r) {
+            boton.disabled = false;
+            if (!r || typeof r.token !== 'string') { pintar(entrar('clave', { telefono: tel, error: 'Ese dato o esa contraseña no coinciden.' })); return; }
+            entrada.telefono = tel;
+            sesion.guardar(r.token);
+            arrancar();
+          }, function (e) {
+            boton.disabled = false;
+            pintar(entrar('clave', { telefono: tel, error: e.message || 'Ese dato o esa contraseña no coinciden.' }));
+          });
+        },
+      },
+      h('label', { class: 'etq-campo', for: 'telefono-clave' }, 'Tu número de WhatsApp'),
+      h('div', { class: 'prefijo' }, h('span', null, '+58'), telClave),
+      grupoDeCampo('clave-entrar', 'Contraseña', claveEntrar, d.error),
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Entrar')),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: telClave.value })); } }, 'Entrar con WhatsApp')));
     } else {
       var telefono = h('input', {
         class: 'campo', id: 'telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
@@ -446,11 +507,14 @@
       h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
-      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'),
+      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'clave'; pintar(entrar('clave', { telefono: telefono.value })); } }, 'Entrar con contraseña')),
       h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(entrar('correo')); } }, 'Entrar con correo')));
     }
     return sinSesion('Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.', cuerpo,
-      h('p', { class: 'pie-entrar' }, '¿Quieres vender con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: irARegistro }, 'Regístrate')));
+      h('div', null,
+        h('p', { class: 'pie-entrar' }, '¿Quieres vender con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: irARegistro }, 'Regístrate')),
+        h('p', { class: 'pie-entrar' }, h('button', { class: 'enlace', type: 'button', onclick: function () { try { raiz.history.pushState(null, '', raiz.location.pathname + '#catalogo'); } catch (_) { raiz.location.hash = '#catalogo'; } mostrarVitrina(); } }, 'Ver el catálogo sin registrarte'))));
   }
 
   // ── El registro propio (24-oct-2026): WhatsApp → código → datos para facturar → «en revisión» ──
@@ -565,6 +629,7 @@
     var etqRazon = h('span', null, rotuloDeRazon(v.tipoDocumento || 'V'));
     var razon = h('input', { class: 'campo', id: 'r-razon', name: 'razonSocial', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si es una empresa', value: v.razonSocial || '' });
     var grupoSexo;
+    var grupoNacimiento;
     var cajaSexo = campoDeSexo('r', v.sexo);
     var doc = campoDeDocumento('r', v.tipoDocumento || 'V', v.numero || '', function (t) {
       etqRazon.textContent = rotuloDeRazon(t);
@@ -573,6 +638,14 @@
     var correo = h('input', { class: 'campo', id: 'r-correo', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '120', placeholder: 'tucorreo@gmail.com', value: v.correo || '' });
     var direccion = h('textarea', { class: 'campo', id: 'r-direccion', name: 'direccion', rows: '2', maxlength: '300', autocomplete: 'street-address', placeholder: segunIdioma('Calle, sector y ciudad', 'Street, area and city') });
     direccion.value = v.direccion || '';
+    var nacimiento = h('input', { class: 'campo', id: 'r-nacimiento', name: 'nacimiento', type: 'date', autocomplete: 'bday', value: v.nacimiento || '', max: '9999-12-31' });
+    var edadTexto = h('span', { id: 'r-edad-texto' }, v.nacimiento && edadDe(v.nacimiento) != null ? String(edadDe(v.nacimiento)) + ' años' : '');
+    nacimiento.addEventListener('input', function () {
+      var edad = edadDe(nacimiento.value);
+      edadTexto.textContent = edad == null ? '' : edad + ' años';
+    });
+    var clave = h('input', { class: 'campo', id: 'r-clave', name: 'clave', type: 'password', autocomplete: 'new-password', maxlength: '72', value: v.clave || '' });
+    var clave2 = h('input', { class: 'campo', id: 'r-clave2', name: 'clave2', type: 'password', autocomplete: 'new-password', maxlength: '72', value: v.clave2 || '' });
     // Cada red con su nombre delante (como el +58 del WhatsApp): escrito, se sigue sabiendo cuál es cuál.
     var campoRed = function (r) {
       return h('div', { class: 'prefijo red' }, h('span', { 'aria-hidden': 'true' }, r[1]),
@@ -588,10 +661,12 @@
           nombre: f.elements.nombre.value, razonSocial: f.elements.razonSocial.value, tipoDocumento: f.elements.tipoDocumento.value,
           numero: f.elements.documento.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value, redes: {},
           sexo: grupoSexo.hidden ? '' : ((f.querySelector('input[name="sexo"]:checked') || {}).value || ''),
+          nacimiento: grupoNacimiento.hidden ? '' : f.elements.nacimiento.value,
+          clave: f.elements.clave.value, clave2: f.elements.clave2.value,
         };
         REDES_DEL_REGISTRO.forEach(function (r) { escrito.redes[r[0]] = f.elements['red-' + r[0]].value; });
         reg.escrito = escrito;
-        var r = revisarDatos(escrito, { conNombre: true, conDocumento: true });
+        var r = revisarDatos(escrito, { conNombre: true, conDocumento: true, conClave: true });
         if (r.hayErrores) { pintar(registro('datos', { errores: r.errores })); enfocarError(r.errores, 'r'); return; }
         reg.listo = true;
         reg.paraEnviar = r.datos;
@@ -605,8 +680,11 @@
     grupoDeCampo('r-razon', etqRazon, razon, e.razonSocial),
     grupoDeCampo('r-documento', 'Cédula, RIF o pasaporte', doc.fila, e.documento, null, doc.input),
     grupoSexo = grupoDeCampo('r-sexo', 'Promotor o promotora', cajaSexo, e.sexo, 'Una empresa no elige esto.'),
+    grupoNacimiento = grupoDeCampo('r-nacimiento', 'Fecha de nacimiento', nacimiento, e.nacimiento, edadTexto),
     grupoDeCampo('r-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
     grupoDeCampo('r-direccion', 'Dirección', direccion, e.direccion),
+    grupoDeCampo('r-clave', 'Contraseña', clave, e.clave, 'De 8 a 72 caracteres. Con ella también puedes entrar.'),
+    grupoDeCampo('r-clave2', 'Repite la contraseña', clave2, e.clave2),
     h('div', { class: 'grupo-campo' },
       h('span', { class: 'etq-campo' }, 'Tus redes (opcional)'),
       h('div', { class: 'redes-campos' }, REDES_DEL_REGISTRO.map(campoRed))),
@@ -614,6 +692,8 @@
     h('div', { class: 'botones' }, boton),
     h('p', { class: 'ayuda' }, 'Al enviar, tu cuenta queda en revisión. Te avisamos por WhatsApp.'));
     grupoSexo.hidden = doc.select.value === 'J' || doc.select.value === 'G';
+    grupoNacimiento.hidden = grupoSexo.hidden;
+    doc.select.addEventListener('change', function () { grupoNacimiento.hidden = doc.select.value === 'J' || doc.select.value === 'G'; });
     return form;
   }
 
@@ -621,7 +701,8 @@
     var f = documento.createDocumentFragment();
     poner(f, [cabecera(yo, true), h('main', { class: 'contenido' }, h('div', { class: 'vista revision' },
       h('div', { class: 'tarjeta vacio' }, ico('reloj'), h('b', null, 'Tu cuenta está en revisión'),
-        h('p', { class: 'nota' }, 'Te avisaremos por WhatsApp cuando esté lista. Después podrás entrar aquí con tu número.')),
+        h('p', { class: 'nota' }, 'Te avisaremos por WhatsApp cuando esté lista. Mientras, puedes ver el catálogo.'),
+        h('div', { class: 'botones' }, h('a', { class: 'btn chico', href: '#catalogo' }, 'Ver el catálogo'))),
       estado.datos ? tarjetaMisDatos() : null))]);
     return f;
   }
@@ -821,11 +902,15 @@
 
   function producto(p) {
     var f = fotoSegura(p.foto);
-    var boton = h('button', { class: 'btn' + (p.codigo ? ' suave' : ''), type: 'button' }, ico('enlaces'), 'Mi enlace');
-    boton.addEventListener('click', function () {
-      if (p.url) abrirHoja({ url: p.url, titulo: p.nombre });
-      else miEnlace({ tipo: 'p', productId: p.id }, p.nombre, boton, function (e) { p.codigo = e.codigo; p.url = e.url; boton.classList.add('suave'); });
-    });
+    var accion = null;
+    if (!estado.soloVer) {
+      var boton = h('button', { class: 'btn' + (p.codigo ? ' suave' : ''), type: 'button' }, ico('enlaces'), 'Mi enlace');
+      boton.addEventListener('click', function () {
+        if (p.url) abrirHoja({ url: p.url, titulo: p.nombre });
+        else miEnlace({ tipo: 'p', productId: p.id }, p.nombre, boton, function (e) { p.codigo = e.codigo; p.url = e.url; boton.classList.add('suave'); });
+      });
+      accion = boton;
+    }
     return h('article', { class: 'producto' + (p.disponible === false ? ' agotado' : '') },
       f ? h('img', { class: 'foto', src: f, alt: '', loading: 'lazy' }) : dato('div', { class: 'sin-foto', 'aria-hidden': 'true' }, inicial(p.nombre)),
       h('div', { class: 'datos' },
@@ -837,8 +922,8 @@
         h('small', null, 'Paga el ' + porcentaje(p.pct)),
         h('span', { class: 'gana' }, (p.desde ? 'Ganas desde ' : 'Ganas ') + dolares(p.ganas) + ' por unidad'),
         p.disponible === false ? h('span', null, h('span', { class: 'pill' }, 'Agotado por ahora')) : null,
-        p.codigo ? h('span', { class: 'ya-tiene' }, '✓ Ya tienes tu enlace') : null),
-      h('div', { class: 'pie-prod' }, boton));
+        !estado.soloVer && p.codigo ? h('span', { class: 'ya-tiene' }, '✓ Ya tienes tu enlace') : null),
+      h('div', { class: 'pie-prod' }, accion));
   }
 
   function resultadosDelCatalogo(d) {
@@ -855,13 +940,16 @@
     (d.tiendas || []).forEach(function (t) { tiendas[String(t.id)] = t; });
     return grupos.map(function (g) {
       var t = tiendas[String(g.id)] || { id: g.id, nombre: g.nombre };
-      var rotulo = h('span', null, t.codigo ? 'Ver enlace de la tienda' : 'Enlace de la tienda');
-      var boton = h('button', { class: 'btn chico suave', type: 'button' }, ico('enlaces'), rotulo);
-      boton.addEventListener('click', function () {
-        var titulo = 'Tienda ' + (t.nombre || g.nombre || '');
-        if (t.url) abrirHoja({ url: t.url, titulo: titulo });
-        else miEnlace({ tipo: 't', companyId: g.id }, titulo, boton, function (e) { t.codigo = e.codigo; t.url = e.url; rotulo.textContent = 'Ver enlace de la tienda'; });
-      });
+      var boton = null;
+      if (!estado.soloVer) {
+        var rotulo = h('span', null, t.codigo ? 'Ver enlace de la tienda' : 'Enlace de la tienda');
+        boton = h('button', { class: 'btn chico suave', type: 'button' }, ico('enlaces'), rotulo);
+        boton.addEventListener('click', function () {
+          var titulo = 'Tienda ' + (t.nombre || g.nombre || '');
+          if (t.url) abrirHoja({ url: t.url, titulo: titulo });
+          else miEnlace({ tipo: 't', companyId: g.id }, titulo, boton, function (e) { t.codigo = e.codigo; t.url = e.url; rotulo.textContent = 'Ver enlace de la tienda'; });
+        });
+      }
       return [
         h('div', { class: 'tienda-cab' }, logo(g.logo, g.nombre),
           h('div', { class: 'txt' }, dato('b', null, g.nombre), h('small', null, plural(g.productos.length, 'producto', 'productos'))), boton),
@@ -1097,7 +1185,7 @@
   var estado = {
     yo: null, seccion: 'inicio', filtros: { q: '', tienda: '', categoria: '' }, catalogo: null, ventas: null, cobros: null,
     // Sus datos para facturar (`GET /yo`: `datos` y `faltanDatos`) y si «Mis datos» está abierto para cambiarlos.
-    datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false,
+    datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false, soloVer: false,
   };
   var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', correo: '', espera: null, verificando: false };
   /** El registro en curso: su WhatsApp, el código, lo escrito en el formulario y lo que se manda. */
@@ -1184,6 +1272,8 @@
   function mostrar() {
     if (!estado.yo) return;
     cerrarHoja();
+    if (estado.yo.estado === 'pendiente' && raiz.location.hash !== '#datos') { mostrarVitrina(); return; }
+    estado.soloVer = false;
     if (estado.yo.estado === 'pendiente') { pintar(revision(estado.yo)); return; }
     var s = estado.seccion = seccionDelHash();
     pintar(marco(s, estado.yo, cargando()));
@@ -1202,7 +1292,8 @@
   }
   /** Al buscar o filtrar: solo cambian los resultados (el buscador sigue con su foco). */
   function recargarCatalogo() {
-    pedir('GET', '/catalogo' + consultaDelCatalogo()).then(function (d) {
+    var ruta = estado.soloVer ? '/vitrina' : '/catalogo';
+    pedir('GET', ruta + consultaDelCatalogo()).then(function (d) {
       estado.catalogo = d;
       var r = documento.getElementById('resultados');
       if (!r) return;
@@ -1293,19 +1384,198 @@
     null);
   }
 
+  function pantallaSinSesion() {
+    var hsh = raiz.location.hash;
+    if (hsh === '#registro') mostrarRegistro();
+    else if (hsh === '#entrar') pintar(entrar(entrada.paso === 'correo' || entrada.paso === 'codigo' || entrada.paso === 'clave' ? entrada.paso : 'telefono', { telefono: entrada.telefono, correo: entrada.correo }));
+    else mostrarVitrina();
+  }
+
+  /** Catálogo abierto: tiendas afiliadas y lo que se gana, sin cuenta y sin enlace para vender. */
+  function mostrarVitrina() {
+    estado.soloVer = true;
+    var pendiente = !!(estado.yo && estado.yo.estado === 'pendiente');
+    var barra = pendiente
+      ? cabecera(estado.yo, true)
+      : h('header', { class: 'cabecera' },
+        h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
+        h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), h('small', null, 'Catálogo')),
+        h('a', { class: 'btn chico borde', href: '#entrar' }, 'Entrar'),
+        h('a', { class: 'btn chico', href: '#registro' }, 'Regístrate'),
+        botonIdioma());
+    var aviso = pendiente
+      ? h('div', { class: 'aviso-datos', role: 'status' },
+        h('p', null, 'Tu cuenta está en revisión. Puedes ver las tiendas y lo que pagarían. El enlace para vender se activa cuando te aprueben.'),
+        h('a', { class: 'btn chico borde', href: '#datos' }, 'Tus datos'))
+      : h('p', { class: 'sub' }, 'Mira las tiendas afiliadas y lo que gana un promotor por unidad. Para vender, regístrate. El enlace se activa cuando te aprueben.');
+    pintar(h('div', null, barra, h('main', { class: 'contenido' }, aviso, h('div', { id: 'vitrina-cuerpo' }, cargando()))));
+    pedir('GET', '/vitrina' + consultaDelCatalogo()).then(function (d) {
+      estado.catalogo = d;
+      var caja = documento.getElementById('vitrina-cuerpo');
+      if (!caja) return;
+      vaciar(caja);
+      poner(caja, [filtrosDelCatalogo(d, estado.filtros), h('div', { id: 'resultados' }, resultadosDelCatalogo(d))]);
+    }, function (e) {
+      var caja = documento.getElementById('vitrina-cuerpo');
+      if (!caja) return;
+      vaciar(caja);
+      poner(caja, h('p', { class: 'nota' }, (e && e.message) || 'No se pudo cargar el catálogo.'));
+    });
+  }
+
+  function lienzoDeFirma() {
+    var cv = documento.createElement('canvas');
+    cv.className = 'lienzo-firma';
+    cv.width = 640;
+    cv.height = 220;
+    var g = cv.getContext('2d');
+    var dibujando = false;
+    var hubo = false;
+    function blanco() { g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height); }
+    blanco();
+    function pos(ev) {
+      var r = cv.getBoundingClientRect();
+      return { x: (ev.clientX - r.left) * (cv.width / (r.width || 1)), y: (ev.clientY - r.top) * (cv.height / (r.height || 1)) };
+    }
+    function empezar(ev) {
+      if (ev.button != null && ev.button !== 0) return;
+      dibujando = true;
+      hubo = true;
+      try { cv.setPointerCapture(ev.pointerId); } catch (_) { /* el dedo igual dibuja */ }
+      var p = pos(ev);
+      g.beginPath();
+      g.moveTo(p.x, p.y);
+      ev.preventDefault();
+    }
+    function mover(ev) {
+      if (!dibujando) return;
+      var p = pos(ev);
+      g.strokeStyle = '#16161A';
+      g.lineWidth = 2.6;
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+      g.lineTo(p.x, p.y);
+      g.stroke();
+      ev.preventDefault();
+    }
+    cv.addEventListener('pointerdown', empezar);
+    cv.addEventListener('pointermove', mover);
+    cv.addEventListener('pointerup', function () { dibujando = false; });
+    cv.addEventListener('pointercancel', function () { dibujando = false; });
+    return {
+      canvas: cv,
+      vacia: function () { return !hubo; },
+      png: function () { return cv.toDataURL('image/png'); },
+      borrar: function () { blanco(); hubo = false; },
+    };
+  }
+
+  function partesDelDocumento(datos) {
+    var tipo = (datos && datos.tipoDocumento) || 'V';
+    var ver = (datos && datos.documentoParaVer) || '';
+    var numero = '';
+    if (/^Pasaporte /.test(ver)) { tipo = 'P'; numero = ver.slice(10); }
+    else if (ver.indexOf('-') > 0) numero = ver.slice(ver.indexOf('-') + 1);
+    return { tipo: tipo, numero: numero };
+  }
+
+  function pantallaFirma() {
+    var d = estado.datos || {};
+    var doc = partesDelDocumento(d);
+    var error = h('p', { class: 'error', role: 'alert', hidden: true });
+    var pad = lienzoDeFirma();
+    var nombre = h('input', { class: 'campo', id: 'firma-nombre', autocomplete: 'name', maxlength: '120', value: d.nombre || (estado.yo && estado.yo.nombre) || '' });
+    var razon = h('input', { class: 'campo', id: 'firma-razon', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si eres empresa', value: d.razonSocial || '' });
+    var tipo = h('select', { class: 'campo', id: 'firma-tipo' }, TIPOS_DE_DOCUMENTO.map(function (t) {
+      return h('option', { value: t[0], selected: t[0] === doc.tipo }, t[1]);
+    }));
+    var numero = h('input', { class: 'campo', id: 'firma-numero', maxlength: '20', value: doc.numero, autocomplete: 'off' });
+    var correo = h('input', { class: 'campo', id: 'firma-correo', type: 'email', maxlength: '120', value: d.correo || '', autocomplete: 'email' });
+    var boton = h('button', { class: 'btn', type: 'submit' }, 'Firmar y enviar');
+    function cuerpo() {
+      return { nombre: nombre.value, razonSocial: razon.value, tipoDocumento: tipo.value, numero: numero.value, correo: correo.value, firma: pad.png() };
+    }
+    function enviar(ev) {
+      ev.preventDefault();
+      if (pad.vacia()) { error.hidden = false; error.textContent = 'Firma en el recuadro.'; return; }
+      boton.disabled = true;
+      error.hidden = true;
+      pedir('POST', '/contrato', cuerpo()).then(function (r) {
+        pintar(firmaEnviada(cuerpo(), !!(r && r.correo)));
+      }, function (e) {
+        boton.disabled = false;
+        error.hidden = false;
+        error.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
+      });
+    }
+    return h('div', null,
+      cabecera(estado.yo, true),
+      h('main', { class: 'contenido' },
+        h('p', { class: 'paso' }, 'Ya aprobado'),
+        h('span', { class: 'pill verde' }, 'Aprobado · falta la firma'),
+        h('h1', null, 'Firma del contrato'),
+        h('p', { class: 'nota' }, 'Ya puedes promover. Firma para activar tus enlaces. Al firmar, te enviamos el PDF a tu correo y a deliservyapp@gmail.com.'),
+        h('form', { novalidate: true, onsubmit: enviar },
+          h('div', { class: 'tarjeta' },
+            h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-nombre' }, 'Nombre y apellido'), nombre),
+            h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-razon' }, 'Razón social'), razon),
+            h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-tipo' }, 'Documento'), tipo),
+            h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-numero' }, 'Número'), numero),
+            h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-correo' }, 'Correo'), correo),
+            h('label', { class: 'etq-campo' }, 'Tu firma'),
+            pad.canvas,
+            h('p', { class: 'ayuda' }, 'Dibuja la firma con el dedo. El recuadro nace vacío.'),
+            h('div', { class: 'botones' }, h('button', { class: 'btn borde chico', type: 'button', onclick: function () { pad.borrar(); } }, 'Borrar firma')),
+            h('div', { class: 'firma-ya' },
+              h('div', null,
+                h('small', null, 'Firma de Deliservy · ya puesta'),
+                h('div', { class: 'nombre' }, 'Deliservy'),
+                h('div', { class: 'dato' }, 'Deliservyapp, C.A. · RIF J-504754129')),
+              h('span', { class: 'pill verde' }, 'Firmado')),
+            error,
+            h('div', { class: 'botones' }, boton),
+            h('p', { class: 'ayuda' }, 'Al firmar, el PDF sale a tu correo y a deliservyapp@gmail.com.')))));
+  }
+
+  function firmaEnviada(cuerpo, salio) {
+    var otra = h('button', { class: 'btn borde', type: 'button' }, 'Enviar otra vez');
+    otra.addEventListener('click', function () {
+      otra.disabled = true;
+      pedir('POST', '/contrato', cuerpo).then(function (r) { pintar(firmaEnviada(cuerpo, !!(r && r.correo))); }, function () { otra.disabled = false; });
+    });
+    return h('div', null,
+      cabecera(estado.yo, true),
+      h('main', { class: 'contenido' },
+        h('div', { class: 'tarjeta listo-firma' },
+          h('div', { class: 'circulo' }, '✓'),
+          h('h1', null, salio ? 'Contrato enviado' : 'Contrato firmado'),
+          h('p', { class: 'nota' }, salio
+            ? 'Tus enlaces ya pueden activarse. El PDF salió a tu correo y a deliservyapp@gmail.com.'
+            : 'Firmaste. El correo no salió. Puedes enviarlo otra vez.'),
+          h('div', { class: 'correo-enviado' },
+            h('div', { class: 'franja' }, 'Contrato firmado'),
+            h('div', { class: 'cuerpo' },
+              h('p', { class: 'fila' }, h('span', null, 'Para'), dato('b', null, cuerpo.correo || '')),
+              h('p', { class: 'fila' }, h('span', null, 'Copia'), dato('b', null, 'deliservyapp@gmail.com')))),
+          h('div', { class: 'botones' },
+            salio ? null : otra,
+            h('button', { class: 'btn', type: 'button', onclick: arrancar }, 'Ver el catálogo')))));
+  }
+
   function arrancar() {
-    if (!sesion.leer()) { if (raiz.location.hash === '#registro') mostrarRegistro(); else pintar(entrar('telefono')); return; }
+    if (!sesion.leer()) { pantallaSinSesion(); return; }
     pedir('GET', '/yo').then(function (r) {
       estado.yo = r.vendedor || {};
       estado.yo.cupon = r.cupon;
       // Sus datos para facturar (24-oct-2026). Sin ellos (una API de antes), la página sigue como estaba.
       estado.datos = r.datos && typeof r.datos === 'object' ? r.datos : null;
       estado.faltan = Array.isArray(r.faltanDatos) ? r.faltanDatos.filter(function (x) { return typeof x === 'string'; }) : [];
+      if (r.faltaFirma === true && estado.yo.estado === 'activo') { pintar(pantallaFirma()); return; }
       if (r.pedirSexo === true) { pintar(elegirSexo()); return; }
       if (r.pedirFoto === true) { pintar(elegirFoto()); return; }
       mostrar();
     }, function (e) {
-      if (e.status === 401) { sesion.borrar(); pintar(entrar('telefono')); return; }
+      if (e.status === 401) { sesion.borrar(); estado.yo = null; pantallaSinSesion(); return; }
       fallo(e);
     });
   }
@@ -1317,7 +1587,7 @@
       estado.datos = null; estado.faltan = []; estado.editarDatos = false; estado.datosEscritos = null;
       reg = registroNuevo();
       try { raiz.history.replaceState(null, '', raiz.location.pathname); } catch (_) { raiz.location.hash = ''; }
-      pintar(entrar('telefono'));
+      mostrarVitrina();
     });
   }
 
@@ -1572,8 +1842,7 @@
   raiz.addEventListener('hashchange', function () {
     if (estado.yo) { mostrar(); return; }
     if (sesion.leer()) return; // entrando: lo pinta `arrancar`
-    if (raiz.location.hash === '#registro') mostrarRegistro();
-    else pintar(entrar('telefono', { telefono: entrada.telefono }));
+    pantallaSinSesion();
   });
   arrancar();
 })(typeof window !== 'undefined' ? window : globalThis);

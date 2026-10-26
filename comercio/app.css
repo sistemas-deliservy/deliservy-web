@@ -1034,6 +1034,23 @@ input[type="date"].campo, input[type="time"].campo { min-height: 44px; }
 .procesando .caja { background: var(--c); border: 1px solid var(--b); border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; box-shadow: var(--sombra); }
 .procesando .rueda { width: 30px; height: 30px; border-width: 3px; }
 .procesando small { color: var(--m); font-weight: 600; }
+
+/* La firma del contrato, después de la aprobación (25-oct-2026). */
+.firma-pagina { max-width: 720px; }
+.firma-pagina h1 { font-size: 26px; line-height: 1.2; margin: 8px 0 6px; font-weight: 800; }
+.firma-pagina .paso { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--m); margin: 0 0 8px; }
+.lienzo-firma { width: 100%; height: 148px; border: 1.5px dashed var(--b); border-radius: 12px; background: #fff; touch-action: none; cursor: crosshair; display: block; }
+.firma-ya { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--b); border-radius: 12px; padding: 12px 14px; margin-top: 14px; background: var(--c2); }
+.firma-ya small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--m); }
+.firma-ya .nombre { font-family: 'Segoe Script', 'Snell Roundhand', 'Apple Chancery', cursive; font-size: 34px; line-height: 1; color: var(--rt); margin: 2px 0; }
+.firma-ya .dato { font-size: 12.5px; color: var(--m); font-weight: 600; }
+.correo-enviado { border: 1px solid var(--b); border-radius: 14px; overflow: hidden; background: var(--c); margin-top: 14px; text-align: left; }
+.correo-enviado .franja { background: var(--r); color: #fff; padding: 12px 14px; font-weight: 800; white-space: nowrap; }
+.correo-enviado .cuerpo { padding: 14px; }
+.correo-enviado .fila { display: flex; gap: 8px; margin: 0 0 6px; }
+.correo-enviado .fila span { color: var(--m); width: 54px; flex: 0 0 auto; font-weight: 700; }
+.listo-firma { text-align: center; }
+.listo-firma .circulo { width: 64px; height: 64px; border-radius: 50%; background: var(--oks); color: var(--ok); display: grid; place-items: center; margin: 0 auto 12px; font-size: 32px; font-weight: 800; }
 @media (min-width: 768px) {
   .planes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

@@ -178,6 +178,8 @@ let D; // todo el estado
 const SUBIDAS = new Map(); // id → Buffer (las fotos que subió la página)
 let ULTIMA_FOTO = null;
 let FALLAR_FOTOS = 0;
+let PEDIR_FIRMA = false;
+const promotorSimulado = { token: '', firmado: false };
 
 function datosNuevos() {
   const azar = aleatorioCon(24102026);
@@ -187,6 +189,7 @@ function datosNuevos() {
     frenos: new Map(), // teléfono → [instantes]
     codigos: new Map(), // teléfono → código pedido
     bitacora: [],
+    firmadas: {},
     siguienteId: 5000,
     cuentas: {
       501: { userId: 501, nombre: 'Ana Rodríguez', telefono: '584125550101' },
@@ -819,6 +822,19 @@ function leerCuerpo(req) {
 }
 function json(cuerpo) { try { return cuerpo.length ? JSON.parse(cuerpo.toString('utf8')) : {}; } catch (_) { throw new Fallo(400, 'El cuerpo no es JSON.'); } }
 
+function contratoDe(s) {
+  if (!PEDIR_FIRMA) return null;
+  const t = tiendasDeLaSesion(s).find((x) => (x.authorized === 1 || x.authorized === 3) && !D.firmadas[x.companyId]);
+  if (!t) return null;
+  const rif = String(t.rif || '');
+  const w = s.trabajadorId ? D.trabajadores.find((x) => x.id === s.trabajadorId) : null;
+  return {
+    falta: true, puedeFirmar: s.rol === 'dueno', companyId: t.companyId, tienda: t.nombre,
+    nombre: w ? w.nombre : D.cuentas[s.userId].nombre, razonSocial: t.nombre, correo: t.correo || '',
+    tipoDocumento: /^[VEJGP]/.test(rif) ? rif[0] : 'J', numero: rif.slice(1),
+  };
+}
+
 async function api(req, res, url) {
   const ruta = url.pathname.replace(/^\/api\/comercio\/?/, '');
   const q = Object.fromEntries(url.searchParams.entries());
@@ -877,8 +893,20 @@ async function api(req, res, url) {
         flota: t.flota,
       })),
       avisos: s.rol === 'dueno' ? ['Nuevo: en la tienda web y con promotores, Deliservy cobra por producto.'] : [],
+      contrato: contratoDe(s),
     };
   }
+  if (metodo === 'POST' && ruta === 'contrato') {
+    if (s.rol !== 'dueno') throw new Fallo(403, 'Solo el dueño de la tienda puede firmar el contrato.');
+    const t = tiendasDeLaSesion(s).find((x) => x.companyId === Number(body.companyId));
+    if (!t) throw new Fallo(400, 'Este comercio no está aprobado para firmar.');
+    if (!body.nombre || String(body.nombre).trim().length < 2) throw new Fallo(400, 'Escribe tu nombre y apellido.');
+    if (!String(body.firma || '').startsWith('data:image/png;base64,')) throw new Fallo(400, 'Firma en el recuadro.');
+    D.firmadas[t.companyId] = true;
+    D.bitacora.unshift({ accion: 'firmar-contrato', companyId: t.companyId, correo: body.correo, copia: 'deliservyapp@gmail.com' });
+    return { ok: true, correo: true };
+  }
+
   if (metodo === 'GET' && ruta === 'hoy') {
     const t = laTienda(s, q.storeId);
     if (!t) throw noEncontrado();
@@ -1750,7 +1778,7 @@ const servidor = http.createServer(async (req, res) => {
       return;
     }
     if (p.startsWith('/__simulado/')) {
-      if (req.method === 'POST' && p === '/__simulado/reiniciar') { D = datosNuevos(); FALLAR_FOTOS = 0; responder(res, 200, { ok: true }); return; }
+      if (req.method === 'POST' && p === '/__simulado/reiniciar') { D = datosNuevos(); FALLAR_FOTOS = 0; PEDIR_FIRMA = false; responder(res, 200, { ok: true }); return; }
       if (req.method === 'POST' && p === '/__simulado/pedido-nuevo') {
         const id = Math.max(...D.pedidos.map((x) => x.id)) + 1;
         const pr = D.productos.find((x) => x.id === 9002), pr2 = D.productos.find((x) => x.id === 9009);
@@ -1761,7 +1789,7 @@ const servidor = http.createServer(async (req, res) => {
         responder(res, 200, { ok: true, id }); return;
       }
       if (req.method === 'POST' && p === '/__simulado/vencer-sesiones') { for (const s of D.sesiones.values()) s.venceEn = Date.now() - 1000; responder(res, 200, { ok: true }); return; }
-      if (req.method === 'POST' && p === '/__simulado/fallar-fotos') { FALLAR_FOTOS = 1; responder(res, 200, { ok: true }); return; }
+      if (req.method === 'POST' && p === '/__simulado/pedir-firma') { PEDIR_FIRMA = true; responder(res, 200, { ok: true }); return; }
       if (p === '/__simulado/ultima-foto') { responder(res, 200, ULTIMA_FOTO || {}); return; }
       if (p === '/__simulado/bitacora') { responder(res, 200, D.bitacora.slice(0, 50)); return; }
       responder(res, 404, { message: 'No encontrado.' }); return;
@@ -1779,7 +1807,40 @@ const servidor = http.createServer(async (req, res) => {
       return;
     }
     if (p === '/' || p === '/comercio') { res.writeHead(302, { Location: '/comercio/' }); res.end(); return; }
-    if (p.startsWith('/comercio/') || p.startsWith('/assets/')) {
+    if (p.startsWith('/api/vendedor')) {
+      const crudo = await leerCuerpo(req);
+      let body = {};
+      try { body = crudo.length ? JSON.parse(crudo.toString('utf8')) : {}; } catch (_) { body = {}; }
+      const ruta = p.replace(/^\/api\/vendedor\/?/, '');
+      const tokenOk = String(req.headers.authorization || '') === 'Bearer ' + promotorSimulado.token && promotorSimulado.token;
+      if (req.method === 'POST' && ruta === 'acceso/codigo') { responder(res, 200, { ok: true, mensaje: 'Te enviamos un código por WhatsApp.' }); return; }
+      if (req.method === 'POST' && ruta === 'acceso/verificar') {
+        if (String(body.codigo) !== CODIGO) { responder(res, 400, { statusCode: 400, message: 'Ese código no es correcto o ya venció.' }); return; }
+        promotorSimulado.token = crypto.randomBytes(32).toString('base64url');
+        promotorSimulado.firmado = false;
+        responder(res, 200, { ok: true, token: promotorSimulado.token, estado: 'activo' });
+        return;
+      }
+      if (!tokenOk) { responder(res, 401, { statusCode: 401, message: 'Tu sesión terminó. Entra otra vez con tu WhatsApp.' }); return; }
+      if (req.method === 'GET' && ruta === 'yo') {
+        responder(res, 200, {
+          vendedor: { nombre: 'Ana Rojas', estado: 'activo', telefono: '0412-555-0198' },
+          datos: { nombre: 'Ana Rojas', razonSocial: null, tipoDocumento: 'V', documento: 'V18234567', documentoParaVer: 'V-18234567', correo: 'ana@correo.com' },
+          faltanDatos: [], pedirSexo: false, pedirFoto: false, faltaFirma: !promotorSimulado.firmado,
+        });
+        return;
+      }
+      if (req.method === 'POST' && ruta === 'contrato') {
+        if (!String(body.firma || '').startsWith('data:image/png;base64,')) { responder(res, 400, { statusCode: 400, message: 'Firma en el recuadro.' }); return; }
+        promotorSimulado.firmado = true;
+        responder(res, 200, { ok: true, correo: true });
+        return;
+      }
+      if (req.method === 'POST' && ruta === 'acceso/salir') { promotorSimulado.token = ''; responder(res, 200, { ok: true }); return; }
+      responder(res, 200, {});
+      return;
+    }
+    if (p.startsWith('/comercio/') || p.startsWith('/vendedor/') || p.startsWith('/assets/')) {
       let rel = p.endsWith('/') ? p + 'index.html' : p;
       const archivo = path.normalize(path.join(RAIZ_WEB, rel));
       if (!archivo.startsWith(RAIZ_WEB + path.sep) || /\/\.[^/]/.test(rel)) { res.writeHead(404, CABECERAS); res.end('No está'); return; }
