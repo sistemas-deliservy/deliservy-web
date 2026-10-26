@@ -139,10 +139,47 @@
 
   // ── Lo que entra en un atributo, revisado ──────────────────────────────────
 
-  /** Solo fotos https (el almacén de la app) o de esta misma web. */
+  /**
+   * Un marcador que no es foto. El de Bunny (`/assets/no-image.png`) responde 404 en HTML: el navegador pinta el
+   * icono roto y, con `object-fit: cover`, se ve cuarteado. Eso no se disfraza de imagen.
+   */
+  function esMarcadorVacio(s) {
+    return /\/(?:no[-_]?image|placeholder|default[-_]?image)\.(?:png|jpe?g|gif|webp|svg)(?:$|[?#])/i.test(s);
+  }
+  /** Solo fotos https (el almacén de la app) o de esta misma web. Un marcador vacío cuenta como «sin foto». */
   function fotoSegura(u) {
     var s = String(u == null ? '' : u).trim();
+    if (!s || esMarcadorVacio(s)) return '';
     return /^https:\/\/[^\s"'<>\\]+$/.test(s) || /^\/(?!\/)[^\s"'<>\\]*$/.test(s) ? s : '';
+  }
+  /**
+   * Cuadro fijo. Si la dirección es una imagen, la cubre (`object-fit` en el CSS). Si no hay foto, es un marcador o
+   * el archivo no decodifica (HTML, JSON, 404), se ve la inicial: nunca el icono roto estirado.
+   */
+  function cuadroFoto(url, o) {
+    o = o || {};
+    var clase = o.clase || 'miniatura';
+    var foto = fotoSegura(url);
+    function vacio() {
+      var cls = o.claseVacia != null ? o.claseVacia : (clase + ' sin-foto');
+      return dato('span', { class: cls, 'aria-hidden': 'true' }, inicial(o.nombre || ''));
+    }
+    if (!foto) return vacio();
+    var marco = h('span', { class: 'marco-foto ' + clase });
+    var img = documento.createElement('img');
+    var fallo = false;
+    img.alt = '';
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    img.addEventListener('error', function () {
+      fallo = true;
+      var n = vacio();
+      if (marco.parentNode) marco.parentNode.replaceChild(n, marco);
+    });
+    img.src = foto;
+    if (fallo) return vacio();
+    marco.appendChild(img);
+    return marco;
   }
   /** Un enlace: https, de esta web, un ancla, o un teléfono. */
   function hrefSeguro(v) {
@@ -634,7 +671,7 @@
     sumarMeses: sumarMeses, diaCorto: diaCorto, nombreDelMes: nombreDelMes, rangoDe: rangoDe, textoDelRango: textoDelRango,
     MESES: MESES, MESES_CORTOS: MESES_CORTOS, DIAS: DIAS, CARACAS_MS: CARACAS_MS,
     telefonoParaVer: telefonoParaVer, telefonoValido: telefonoValido, inicial: inicial, sinTildes: sinTildes,
-    fotoSegura: fotoSegura, hrefSeguro: hrefSeguro,
+    fotoSegura: fotoSegura, cuadroFoto: cuadroFoto, hrefSeguro: hrefSeguro,
     h: h, poner: poner, dato: dato, vaciar: vaciar, reemplazar: reemplazar, unidos: unidos, ico: ico, svg: svg, NS: NS,
     almacen: almacen, sesion: sesion, pedir: pedir, mensajeDe: mensajeDe, guardarArchivo: guardarArchivo,
     csvDe: csvDe, descargarCsv: descargarCsv, fechaParaCsv: fechaParaCsv,

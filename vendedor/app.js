@@ -47,8 +47,42 @@
   function porcentaje(n) { return String(Math.round(num(n) * 100) / 100).replace('.', ',') + NBSP + '%'; }
   /** Los montos que vienen ya escritos del servidor («Comisión 0,50 $ − 16 % …»): sin cortes antes de $, % o Bs. */
   function sinCortes(t) { return String(t == null ? '' : t).replace(/(\d) (\$|%|Bs)/g, '$1' + NBSP + '$2'); }
-  /** Solo fotos https (las del almacén de la app). */
-  function fotoSegura(u) { var s = String(u == null ? '' : u); return /^https:\/\/[^\s"'<>]+$/.test(s) ? s : ''; }
+  /** Un marcador que no es foto (el PNG de Bunny responde HTML 404 y se ve cuarteado). */
+  function esMarcadorVacio(s) {
+    return /\/(?:no[-_]?image|placeholder|default[-_]?image)\.(?:png|jpe?g|gif|webp|svg)(?:$|[?#])/i.test(s);
+  }
+  /** Solo fotos https (las del almacén de la app). Un marcador vacío cuenta como «sin foto». */
+  function fotoSegura(u) {
+    var s = String(u == null ? '' : u).trim();
+    if (!s || esMarcadorVacio(s)) return '';
+    return /^https:\/\/[^\s"'<>]+$/.test(s) ? s : '';
+  }
+  /** Cuadro fijo: la foto cubre el cuadro; si el archivo no es una imagen, la inicial. */
+  function cuadroFoto(url, o) {
+    o = o || {};
+    var clase = o.clase || 'miniatura';
+    var foto = fotoSegura(url);
+    function vacio() {
+      var cls = o.claseVacia != null ? o.claseVacia : (clase + ' sin-foto');
+      return dato('span', { class: cls, 'aria-hidden': 'true' }, inicial(o.nombre || ''));
+    }
+    if (!foto) return vacio();
+    var marco = h('span', { class: 'marco-foto ' + clase });
+    var img = documento.createElement('img');
+    var fallo = false;
+    img.alt = '';
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    img.addEventListener('error', function () {
+      fallo = true;
+      var n = vacio();
+      if (marco.parentNode) marco.parentNode.replaceChild(n, marco);
+    });
+    img.src = foto;
+    if (fallo) return vacio();
+    marco.appendChild(img);
+    return marco;
+  }
   /** El enlace del vendedor: https y nada raro dentro. */
   function urlSegura(u) { var s = String(u == null ? '' : u); return /^https:\/\/[^\s"'<>]+$/.test(s) ? s : ''; }
   function inicial(t) { var s = String(t == null ? '' : t).trim(); return s ? s.charAt(0).toUpperCase() : 'D'; }
@@ -297,9 +331,8 @@
   }
 
   function caraDe(yo) {
-    var url = fotoSegura(yo && yo.foto);
-    if (url) return h('img', { class: 'yo foto', src: url, alt: '' });
-    return yo ? dato('div', { class: 'yo', 'aria-hidden': 'true' }, inicial(yo.nombre)) : null;
+    if (!yo) return null;
+    return cuadroFoto(yo.foto, { clase: 'yo foto', claseVacia: 'yo', nombre: yo.nombre || '' });
   }
 
   /** Cuadrada, como mucho 640 px, en JPG. Así es como la guarda Firebase. */
@@ -896,12 +929,10 @@
   }
 
   function logo(foto, nombre) {
-    var f = fotoSegura(foto);
-    return f ? h('img', { class: 'logo', src: f, alt: '', loading: 'lazy' }) : dato('span', { class: 'inicial', 'aria-hidden': 'true' }, inicial(nombre));
+    return cuadroFoto(foto, { clase: 'logo', claseVacia: 'inicial', nombre: nombre || '' });
   }
 
   function producto(p) {
-    var f = fotoSegura(p.foto);
     var accion = null;
     if (!estado.soloVer) {
       var boton = h('button', { class: 'btn' + (p.codigo ? ' suave' : ''), type: 'button' }, ico('enlaces'), 'Mi enlace');
@@ -912,7 +943,7 @@
       accion = boton;
     }
     return h('article', { class: 'producto' + (p.disponible === false ? ' agotado' : '') },
-      f ? h('img', { class: 'foto', src: f, alt: '', loading: 'lazy' }) : dato('div', { class: 'sin-foto', 'aria-hidden': 'true' }, inicial(p.nombre)),
+      cuadroFoto(p.foto, { clase: 'foto', claseVacia: 'sin-foto', nombre: p.nombre || '' }),
       h('div', { class: 'datos' },
         dato('b', null, p.nombre), dato('small', null, p.tienda),
         h('span', { class: 'precio' }, (p.desde ? 'Desde ' : '') + dolares(p.venta)),
@@ -1003,11 +1034,11 @@
       var url = urlSegura(e.url);
       var esProducto = e.tipo === 'p';
       var titulo = esProducto ? (e.producto || 'Producto') : 'Tienda ' + (e.tienda || '');
-      var foto = fotoSegura(esProducto ? e.foto : e.logo);
+      var tituloFoto = esProducto ? (e.producto || 'Producto') : (e.tienda || '');
       var redes = (e.redes || []).map(function (r) { return h('span', { class: 'pill' }, h('span', null, r.nombre || r.red), ' · ' + Math.round(num(r.visitas))); });
       return h('div', { class: 'tarjeta' },
         h('div', { class: 'enlace-cab' },
-          foto ? h('img', { class: 'miniatura', src: foto, alt: '', loading: 'lazy' }) : dato('span', { class: 'inicial', 'aria-hidden': 'true' }, inicial(titulo)),
+          cuadroFoto(esProducto ? e.foto : e.logo, { clase: 'miniatura', claseVacia: 'inicial', nombre: tituloFoto }),
           h('div', { class: 'txt' },
             esProducto ? dato('b', null, titulo) : h('b', null, 'Tienda ', dato('span', null, e.tienda || '')),
             h('small', null, esProducto ? dato('span', null, e.tienda || '') : 'Todo su catálogo del programa', e.activo === false ? ' · apagado' : ''))),

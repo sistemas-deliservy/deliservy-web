@@ -27,7 +27,7 @@
   // ── La lista ───────────────────────────────────────────────────────────────
 
   function filaDeProducto(ctx, p, plan) {
-    var foto = C.fotoSegura(p.imagen || p.image || (Array.isArray(p.images) ? p.images[0] : ''));
+    var foto = p.imagen || p.image || (Array.isArray(p.images) ? p.images[0] : '');
     var disponible = p.disponible !== false && p.availability !== false;
     var precio = C.num(p.precio != null ? p.precio : p.price);
     var sw = C.interruptor('disp-' + p.id, disponible, null, function (on, input) {
@@ -42,7 +42,7 @@
     var cv = p.cv && typeof p.cv === 'object' ? p.cv : null;
     var fila = h('div', { class: 'fila-producto' + (disponible ? '' : ' agotado') },
       h('a', { class: 'fp-enlace', href: '#productos/' + p.id },
-        foto ? h('img', { class: 'miniatura', src: foto, alt: '', loading: 'lazy' }) : dato('span', { class: 'miniatura sin-foto' }, C.inicial(p.nombre || p.name)),
+        C.cuadroFoto(foto, { clase: 'miniatura', nombre: p.nombre || p.name || '' }),
         h('div', { class: 'txt' },
           dato('b', null, p.nombre || p.name || ''),
           h('div', { class: 'chips' },

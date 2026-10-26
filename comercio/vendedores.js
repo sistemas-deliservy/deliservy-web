@@ -35,7 +35,6 @@
       C.reemplazar(estado, pausado ? C.pill('Pausado por Deliservy', 'ambar') : pctActual > 0 && p.activo !== false ? C.pill('Activo', 'verde') : C.pill('Apagado', 'gris'));
     };
     pintarEstado(C.num(p.pct));
-    var foto = C.fotoSegura(p.foto);
     guardar.addEventListener('click', function () {
       var n = leerPct(pct);
       var mal = '';
@@ -63,7 +62,7 @@
     });
     return h('div', { class: 'fila-cv' + (pausado ? ' pausado' : '') },
       h('div', { class: 'cv-producto' },
-        foto ? h('img', { class: 'miniatura', src: foto, alt: '', loading: 'lazy' }) : dato('span', { class: 'miniatura sin-foto' }, C.inicial(p.nombre)),
+        C.cuadroFoto(p.foto, { clase: 'miniatura', nombre: p.nombre || '' }),
         h('div', { class: 'txt' }, dato('b', null, p.nombre || ''), h('small', null, 'En la app: ', C.dolares(precioApp)), estado,
           plan && C.cobro && precioApp > 0 ? h('small', { class: 'cobro-cv' }, C.cobro.textoPorVenta(C.num(p.precioRedes) > 0 ? p.precioRedes : precioApp, plan)) : null,
           p.subio ? h('small', { class: 'ambar' }, 'Subiste el precio: revisa el de redes.') : null)),

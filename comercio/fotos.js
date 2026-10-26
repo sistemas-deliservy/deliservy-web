@@ -109,7 +109,19 @@
       caja.classList.toggle('subiendo', estado === 'subiendo');
       var img = null;
       if (previa) { img = h('img', { alt: '' }); img.src = previa; } // un blob: nuestro (la vista previa local)
-      else if (url) img = h('img', { src: url, alt: '', loading: 'lazy' });
+      else if (url) {
+        img = h('img', { alt: '', loading: 'lazy' });
+        var rota = false;
+        img.addEventListener('error', function () {
+          rota = true;
+          if (!img.parentNode) return;
+          C.vaciar(vista);
+          caja.classList.remove('con-foto');
+          vista.appendChild(h('div', { class: 'zona-vacia' }, C.ico('foto'), h('span', null, o.pequena ? 'Foto' : 'Arrastra o toca para elegir')));
+        });
+        img.src = url;
+        if (rota && !img.parentNode) img = null;
+      }
       if (img) vista.appendChild(img);
       if (estado === 'subiendo') vista.appendChild(h('div', { class: 'zona-estado' }, h('span', { class: 'rueda', 'aria-hidden': 'true' }), h('span', null, 'Subiendo…')));
       else if (!img) vista.appendChild(h('div', { class: 'zona-vacia' }, C.ico('foto'), h('span', null, o.pequena ? 'Foto' : 'Arrastra o toca para elegir')));

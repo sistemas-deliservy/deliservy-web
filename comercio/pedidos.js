@@ -324,9 +324,8 @@
     var tel = r.telefono || r.phone;
     var digitos = String(tel || '').replace(/\D/g, '');
     if (digitos.length === 11 && digitos.charAt(0) === '0') digitos = '58' + digitos.slice(1);
-    var foto = C.fotoSegura(r.foto || r.image);
     return h('div', { class: 'repartidor' },
-      foto ? h('img', { class: 'foto-redonda', src: foto, alt: '', loading: 'lazy' }) : dato('span', { class: 'inicial' }, C.inicial(nombre)),
+      C.cuadroFoto(r.foto || r.image, { clase: 'foto-redonda', claseVacia: 'inicial', nombre: nombre }),
       h('div', { class: 'txt' }, h('small', null, 'Repartidor'), dato('b', null, nombre), enCurso && tel ? dato('span', { class: 'sin-cortes' }, C.telefonoParaVer(tel)) : null),
       enCurso && /^58\d{10}$/.test(digitos) ? h('div', { class: 'botones-repartidor' },
         h('a', { class: 'boton-icono', href: 'tel:+' + digitos, 'aria-label': 'Llamar' }, ico('telefono')),
