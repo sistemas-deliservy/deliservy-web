@@ -405,7 +405,7 @@
 
   function cabecera(yo, conSalir) {
     return h('header', { class: 'cabecera' },
-      h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
+      marcaDeliservy(),
       h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), dato('small', null, (yo && yo.nombre) || '')),
       caraDe(yo),
       botonTema(),
@@ -465,7 +465,7 @@
   function sinSesion(texto, cuerpo, pie) {
     return h('div', { class: 'entrar vista' },
       h('div', { class: 'marca' },
-        h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
+        marcaDeliservy(),
         h('small', null, 'Deliservy promotores'),
         h('h1', null, 'Compra-Ventas Redes Sociales'),
         h('p', null, texto)),
@@ -969,6 +969,25 @@
     return cuadroFoto(foto, { clase: 'logo', claseVacia: 'inicial', nombre: nombre || '' });
   }
 
+  /** El logo de Deliservy (el archivo de la marca). La ruta es fija: no pasa por el filtro de fotos del catálogo. */
+  function marcaDeliservy() {
+    var img = documento.createElement('img');
+    img.className = 'logo-marca';
+    img.alt = '';
+    img.width = 34;
+    img.height = 34;
+    img.decoding = 'async';
+    img.setAttribute('src', '/assets/logo-icon.png');
+    return img;
+  }
+
+  /** El % máximo que el comercio puso. Si la API dice que no hay, null: no se inventa uno. */
+  function maxDelComercio(t) {
+    if (!t || !Object.prototype.hasOwnProperty.call(t, 'pctMax') || t.pctMax == null || t.pctMax === '') return null;
+    var n = num(t.pctMax);
+    return n > 0 ? n : null;
+  }
+
   function producto(p) {
     var accion = null;
     if (!estado.soloVer) {
@@ -994,7 +1013,78 @@
       h('div', { class: 'pie-prod' }, accion));
   }
 
+  function productoCompacto(p) {
+    var tiene = p.enPrograma !== false && num(p.pct) > 0;
+    return h('div', { class: 'producto-compacto' },
+      dato('b', null, p.nombre || ''),
+      tiene ? dato('span', { class: 'pct' }, porcentaje(p.pct)) : null);
+  }
+
+  function alternarComercio(boton, panel, t) {
+    var abierto = boton.getAttribute('aria-expanded') === 'true';
+    if (abierto) {
+      boton.setAttribute('aria-expanded', 'false');
+      panel.hidden = true;
+      return;
+    }
+    boton.setAttribute('aria-expanded', 'true');
+    panel.hidden = false;
+    if (panel.getAttribute('data-listo') === '1' || panel.getAttribute('data-cargando') === '1') return;
+    panel.setAttribute('data-cargando', '1');
+    vaciar(panel);
+    poner(panel, h('p', { class: 'nota' }, 'Cargando…'));
+    var id = String(Math.round(num(t.id)));
+    var f = estado.filtros || {};
+    pedir('GET', '/vitrina?q=' + encodeURIComponent(f.q || '') + '&tienda=' + encodeURIComponent(id) + '&categoria=' + encodeURIComponent(f.categoria || '')).then(function (d) {
+      panel.removeAttribute('data-cargando');
+      panel.setAttribute('data-listo', '1');
+      var lista = (d.productos || []).filter(function (p) { return String(p.companyId) === String(t.id); });
+      vaciar(panel);
+      poner(panel, lista.length ? lista.map(productoCompacto) : h('p', { class: 'nota' }, 'Todavía no hay productos publicados'));
+    }, function (e) {
+      panel.removeAttribute('data-cargando');
+      vaciar(panel);
+      poner(panel, h('p', { class: 'nota' }, (e && e.message) || 'No se pudo cargar el catálogo.'));
+    });
+  }
+
+  /** La vitrina de quien no ha entrado: una fila cerrada por comercio, con su % máximo. */
+  function vitrinaCerrada(d) {
+    var tiendas = d.tiendas || [];
+    var f = estado.filtros || {};
+    var q = String(f.q || '').trim().toLowerCase();
+    var categoria = String(f.categoria || '');
+    var tiendaElegida = String(f.tienda || '');
+    var filtrado = !!(q || categoria || tiendaElegida);
+    var conProducto = {};
+    (d.productos || []).forEach(function (p) { conProducto[String(p.companyId)] = true; });
+    var lista = tiendas.filter(function (t) {
+      if (tiendaElegida && String(t.id) !== tiendaElegida) return false;
+      if (!q && !categoria) return true;
+      if (q && String(t.nombre || '').toLowerCase().indexOf(q) >= 0) return true;
+      return !!conProducto[String(t.id)];
+    });
+    if (!lista.length) {
+      return [h('span', { class: 'etq' }, 'Productos'), filtrado
+        ? vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita los filtros.')
+        : vacio('Todavía no hay productos publicados', 'Cuando una tienda afiliada tenga productos con precio, aparecen aquí.')];
+    }
+    return lista.map(function (t) {
+      var max = maxDelComercio(t);
+      var cuenta = typeof t.productos === 'number' ? h('small', null, plural(t.productos, 'producto', 'productos')) : null;
+      var panel = h('div', { class: 'productos-compactos', hidden: true });
+      var boton = h('button', { class: 'tienda-fila', type: 'button', 'aria-expanded': 'false' },
+        logo(t.logo, t.nombre),
+        h('span', { class: 'txt' }, dato('b', null, t.nombre || ''), cuenta),
+        max == null ? null : h('span', { class: 'pct-max' }, 'Hasta el ', dato('b', null, porcentaje(max))),
+        h('span', { class: 'flecha', 'aria-hidden': 'true' }));
+      boton.addEventListener('click', function () { alternarComercio(boton, panel, t); });
+      return h('section', { class: 'comercio' }, boton, panel);
+    });
+  }
+
   function resultadosDelCatalogo(d) {
+    if (estado.soloVer) return vitrinaCerrada(d);
     var productos = d.productos || [];
     if (!productos.length) {
       var f = estado.filtros || {};
@@ -1472,7 +1562,7 @@
     var barra = pendiente
       ? cabecera(estado.yo, true)
       : h('header', { class: 'cabecera' },
-        h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
+        marcaDeliservy(),
         h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), h('small', null, 'Catálogo')),
         h('a', { class: 'btn chico borde', href: '#entrar' }, 'Entrar'),
         h('a', { class: 'btn chico', href: '#registro' }, 'Regístrate'),
