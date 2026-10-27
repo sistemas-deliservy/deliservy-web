@@ -1099,7 +1099,7 @@
     img.width = 34;
     img.height = 34;
     img.decoding = 'async';
-    img.setAttribute('src', '/assets/logo-icon.png');
+    img.setAttribute('src', '/assets/logo-marca.png');
     return img;
   }
 

@@ -70,7 +70,7 @@ a { color: var(--rt); }
   padding: calc(8px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px));
   display: flex; align-items: center; gap: 10px;
 }
-.logo-marca { width: 34px; height: 34px; object-fit: contain; border-radius: 8px; display: block; flex: 0 0 auto; }
+.logo-marca { width: 34px; height: 34px; object-fit: contain; border-radius: 0; background: transparent; display: block; flex: 0 0 auto; }
 .cabecera .titulo { flex: 1; min-width: 0; }
 .cabecera .titulo b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cabecera .titulo small { display: block; color: var(--m); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -413,6 +413,32 @@ button.enlace {
 }
 @media (min-width: 1024px) {
   .productos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* Laptop: el registro deja de ser una columna de teléfono. La marca a la izquierda y el cuadro al ancho. */
+  .entrar {
+    max-width: none; width: 100%; margin: 0;
+    display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    column-gap: 48px; row-gap: 10px; align-items: start;
+    padding: 48px max(40px, env(safe-area-inset-right, 0px)) 72px max(40px, env(safe-area-inset-left, 0px));
+  }
+  .entrar .marca { grid-column: 1; grid-row: 1 / span 8; text-align: left; position: sticky; top: 40px; margin: 0; }
+  .entrar .marca .logo-marca { width: 72px; height: 72px; margin: 0 0 16px; }
+  .entrar > :not(.marca) { grid-column: 2; min-width: 0; }
+  .entrar > .tarjeta { width: 100%; }
+  .form-datos {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; align-items: start;
+  }
+  .form-datos > .paso,
+  .form-datos > h2,
+  .form-datos > .nota,
+  .form-datos > .error,
+  .form-datos > .bien,
+  .form-datos > .botones,
+  .form-datos > .ayuda,
+  .form-datos > .grupo-campo:has(textarea),
+  .form-datos > .grupo-campo:has(.fila-doc),
+  .form-datos > .grupo-campo:has(.redes-campos),
+  .form-datos > .grupo-campo:has(input[type="email"]) { grid-column: 1 / -1; }
+  .redes-campos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 /* Teléfono y teléfono grande: el título no se aplasta y los botones bajan de renglón. El iPad (768) sigue en una línea. */
 @media (max-width: 767px) {
@@ -502,7 +528,7 @@ html.claro body::after {
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
 }
-.logo-marca { box-shadow: 0 0 12px rgba(228, 22, 22, .55); }
+.logo-marca, .logo-entrar, .logo-cab { box-shadow: none; filter: drop-shadow(0 0 10px rgba(228, 22, 22, .72)); }
 .avatar-alisa { background: #e41616; }
 .saldo {
   background: color-mix(in srgb, #e41616 5%, var(--c));

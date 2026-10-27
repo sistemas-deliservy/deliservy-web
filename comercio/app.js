@@ -196,7 +196,7 @@
   }
 
   function pintar(nodo) { C.cerrarDialogos(); C.vaciar(app); C.poner(app, nodo); }
-  function logo(clase) { return h('img', { class: clase || 'logo-marca', src: '/assets/logo-icon.png', alt: '', width: '40', height: '40' }); }
+  function logo(clase) { return h('img', { class: clase || 'logo-marca', src: '/assets/logo-marca.png', alt: '', width: '40', height: '40' }); }
 
   // ── Entrar ─────────────────────────────────────────────────────────────────
 

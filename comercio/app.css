@@ -85,6 +85,7 @@ h1, h2, h3 { letter-spacing: -.03em; }
   padding: calc(8px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
   display: flex; align-items: center; gap: 10px; min-height: 58px;
 }
+.logo-cab, .logo-entrar, .logo-marca { border-radius: 0; background: transparent; object-fit: contain; }
 .logo-cab { width: 32px; height: 32px; flex: 0 0 auto; }
 .cabecera-tel .titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .cabecera-tel .titulo small { color: var(--m); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; line-height: 1.1; }
@@ -894,8 +895,26 @@ html.claro .segmentos button[aria-selected="true"] { background: #fff; }
   .mapa-pedir { height: 360px; }
 }
 
-/* ── Computadora: la barra lateral ── */
+/* ── Computadora: la barra lateral, y el registro al ancho de la laptop ── */
 @media (min-width: 1024px) {
+  .entrar {
+    max-width: none; width: 100%; margin: 0;
+    display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    column-gap: 48px; row-gap: 10px; align-items: start;
+    padding: 48px max(40px, env(safe-area-inset-right, 0px)) 72px max(40px, env(safe-area-inset-left, 0px));
+  }
+  .entrar .marca { grid-column: 1; grid-row: 1 / span 8; text-align: left; position: sticky; top: 40px; margin: 0; }
+  .entrar .logo-entrar { width: 72px; height: 72px; margin: 0 0 16px; }
+  .entrar > :not(.marca) { grid-column: 2; min-width: 0; }
+  .entrar > .tarjeta,
+  .entrar > form { width: 100%; }
+  .firma-pagina .tarjeta,
+  .entrar form.datos {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; align-items: start;
+  }
+  .firma-pagina .tarjeta > :not(.grupo-campo),
+  .firma-pagina .tarjeta > .grupo-campo:has(input[type="email"]) { grid-column: 1 / -1; }
+
   .marco { display: grid; grid-template-columns: var(--lateral) minmax(0, 1fr); }
   .lateral {
     display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; height: 100dvh; background: color-mix(in srgb, var(--c) 92%, #000);
@@ -1140,7 +1159,7 @@ html.claro body::after {
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
 }
-.logo-d { box-shadow: 0 0 12px rgba(228, 22, 22, .55); }
+.logo-marca, .logo-entrar, .logo-cab { box-shadow: none; filter: drop-shadow(0 0 10px rgba(228, 22, 22, .72)); }
 .avatar-alisa { background: #e41616; }
 .saldo {
   background: color-mix(in srgb, #e41616 5%, var(--c));
