@@ -9,8 +9,8 @@
  * «Pedir motorizado», de dos formas que terminan en el mismo pedido:
  *  - Con botones: el tipo (envío, contra viaje y, si se los activaron, contra efectivo y exclusivo), A (la tienda) y B
  *    (buscar o tocar el mapa), quién recibe, nota y paquetes → Cotizar (precio y minutos) → Pedir.
- *    La calle se pide en cuanto A y B tienen coordenadas (sin guardar precio): si Google manda el trazado, sustituye
- *    la recta punteada; si no, la recta se queda.
+ *    La calle se pide en cuanto A y B tienen coordenadas: OpenStreetMap (Valhalla), sin Google y sin guardar
+ *    precio. Si no contesta, se queda la recta punteada. «Cotizar» pide el precio a Google y no cambia la línea.
  *  - Con Alisa: la misma de WhatsApp, en burbujas; si su respuesta trae una cotización, una tarjeta con el mapa (A y B)
  *    y «Sí, pídelo» / «Cancelar», que le mandan «sí» o «cancelar».
  * A una tienda de la app que no está en flota: «Pide motorizados con Deliservy» (por WhatsApp).
@@ -503,26 +503,24 @@
         else m.quitarMarcador(k);
       });
       var clave = claveCalle();
-      var calle = e.cot && e.cot.porRuta !== false ? coordsDeRuta(e.cot.ruta) : [];
-      if (calle.length < 2 && e.calle && e.calleClave === clave) calle = e.calle;
+      var calle = e.calle && e.calleClave === clave ? e.calle : [];
       if (calle.length >= 2) m.ruta(calle, false);
       else if (clave) m.ruta([[e.a.lng, e.a.lat], [e.b.lng, e.b.lat]], true);
       else m.ruta([], true);
       m.encuadrar([e.a, e.b]);
       pedirCalle();
     };
-    /** Pide la calle en cuanto A y B existen. No es el precio: «Cotizar» sigue guardando la cotización. */
+    /** La calle de OpenStreetMap en cuanto A y B existen. No es el precio y no llama a Google. */
     function pedirCalle() {
       var clave = claveCalle();
       if (!clave || e.callePedida === clave) return;
-      if (e.cot && coordsDeRuta(e.cot.ruta).length >= 2) return;
       e.callePedida = clave;
-      var cuerpo = puntosDelMapa();
-      cuerpo.soloTrazado = true;
-      C.pedir('POST', '/flota/cotizar?' + q(ctx), cuerpo).then(function (r) {
+      C.pedir('POST', '/flota/calle?' + q(ctx), {
+        a: { lat: Number(e.a.lat), lng: Number(e.a.lng) },
+        b: { lat: Number(e.b.lat), lng: Number(e.b.lng) },
+      }).then(function (r) {
         if (!v.viva() || e.callePedida !== clave || claveCalle() !== clave) return;
-        r = r || {};
-        var coords = r.porRuta === false ? [] : coordsDeRuta(r.ruta);
+        var coords = coordsDeRuta(r && r.ruta);
         if (coords.length >= 2) { e.calle = coords; e.calleClave = clave; }
         else { e.calle = null; e.calleClave = clave; }
         ponerEnMapa();
@@ -575,8 +573,6 @@
       C.trabajando(cotizar, C.pedir('POST', '/flota/cotizar?' + q(ctx), cuerpo)).then(function (r) {
         r = r || {};
         e.cot = r;
-        var deLaCot = r.porRuta === false ? [] : coordsDeRuta(r.ruta);
-        if (deLaCot.length >= 2) { e.calle = deLaCot; e.calleClave = claveCalle(); e.callePedida = e.calleClave; }
         if (r.a && C.mapa.valido(r.a) && (!e.a || e.a.esTienda)) { e.a = Object.assign({ esTienda: !!(e.a && e.a.esTienda) }, r.a); tienda = e.a.esTienda ? e.a : tienda; }
         if (r.b && C.mapa.valido(r.b) && e.b && e.b.esTienda) e.b = Object.assign({ esTienda: true }, r.b);
         pintarPuntos();
