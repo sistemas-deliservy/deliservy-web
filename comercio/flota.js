@@ -27,6 +27,20 @@
   };
 
   function q(ctx) { return 'storeId=' + encodeURIComponent(ctx.tienda.storeId); }
+  /**
+   * El trazado de una cotización: `[lng, lat]` (lo que pinta el mapa) o `{lat, lng}`.
+   * Con menos de dos puntos no hay calle: el mapa sigue con la recta punteada.
+   */
+  function coordsDeRuta(ruta) {
+    if (!Array.isArray(ruta)) return [];
+    var out = [];
+    for (var i = 0; i < ruta.length; i++) {
+      var p = ruta[i];
+      if (Array.isArray(p) && isFinite(p[0]) && isFinite(p[1])) out.push([Number(p[0]), Number(p[1])]);
+      else if (p && isFinite(Number(p.lng)) && isFinite(Number(p.lat))) out.push([Number(p.lng), Number(p.lat)]);
+    }
+    return out.length >= 2 ? out : [];
+  }
   function tonoServicio(s) {
     var t = C.sinTildes(s);
     return /exclusivo/.test(t) ? 'roja' : /efectivo/.test(t) ? 'ambar' : /viaje/.test(t) ? 'azul' : '';
@@ -368,7 +382,8 @@
       if (p.b) m.marcador('b', 'b', p.b);
       var rep = p.repartidor && typeof p.repartidor === 'object' ? p.repartidor : null;
       if (rep && C.mapa.valido(rep)) m.marcador('moto', 'moto', rep);
-      if (Array.isArray(p.ruta) && p.ruta.length >= 2) m.ruta(p.ruta, false);
+      var calle = coordsDeRuta(p.ruta);
+      if (calle.length >= 2) m.ruta(calle, false);
       else if (p.a && p.b) m.ruta([[p.a.lng, p.a.lat], [p.b.lng, p.b.lat]], true);
       if (!encuadrado) { m.encuadrar([p.a, p.b, rep]); encuadrado = true; }
     };
@@ -471,7 +486,8 @@
         if (p && C.mapa.valido(p)) m.marcador(k, k, p, { arrastrable: true, alSoltar: function (lat, lng) { ponerPunto(k, { lat: lat, lng: lng }); } });
         else m.quitarMarcador(k);
       });
-      if (e.cot && Array.isArray(e.cot.ruta) && e.cot.ruta.length >= 2) m.ruta(e.cot.ruta, false);
+      var calle = e.cot && e.cot.porRuta !== false ? coordsDeRuta(e.cot.ruta) : [];
+      if (calle.length >= 2) m.ruta(calle, false);
       else if (e.a && e.b && C.mapa.valido(e.a) && C.mapa.valido(e.b)) m.ruta([[e.a.lng, e.a.lat], [e.b.lng, e.b.lat]], true);
       else m.ruta([], true);
       m.encuadrar([e.a, e.b]);
@@ -643,7 +659,8 @@
           mapas.push(mm);
           if (cot.a) mm.marcador('a', 'a', cot.a);
           if (cot.b) mm.marcador('b', 'b', cot.b);
-          if (Array.isArray(cot.ruta) && cot.ruta.length >= 2) mm.ruta(cot.ruta, false);
+          var calle = cot.porRuta === false ? [] : coordsDeRuta(cot.ruta);
+          if (calle.length >= 2) mm.ruta(calle, false);
           else if (cot.a && cot.b) mm.ruta([[cot.a.lng, cot.a.lat], [cot.b.lng, cot.b.lat]], true);
           mm.encuadrar([cot.a, cot.b], 36);
         }, function () { /* sin mapa: quedan A y B escritos */ });
