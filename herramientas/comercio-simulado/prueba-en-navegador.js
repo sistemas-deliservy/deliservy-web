@@ -354,7 +354,7 @@ async function telefonoClaro(browser) {
 
   // Billetera
   await ir(page, '#billetera', 900);
-  check('billetera: cuenta enmascarada, sin forma de cambiarla', /3456/.test(await textoDe(page, '.cuenta-banco')) && !(await page.$('#c-numero')));
+  check('billetera: banco, tipo y cuenta enmascarada; el formulario cerrado', /3456/.test(await textoDe(page, '.cuenta-num')) && !/01910000/.test(await textoDe(page, '.cuenta-banco')) && /Corriente/.test(await textoDe(page, '.cuenta-banco')) && /Nacional de Crédito/.test(await textoDe(page, '.cuenta-banco')) && !(await page.$('#c-numero')));
   await foto(page, '21-billetera', true);
   const [descarga2] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.etq-fila .btn')]);
   check('billetera: exportar a Excel', /\.csv$/.test(descarga2.suggestedFilename()));
@@ -369,6 +369,24 @@ async function telefonoClaro(browser) {
   await foto(page, '23-billetera-retiro-listo');
   await page.click('.dialogo-pie .btn');
   await esperar(900);
+  await page.click('#cambiar-cuenta');
+  await page.waitForSelector('#c-numero');
+  await page.fill('#c-numero', '123');
+  await page.click('#guardar-cuenta');
+  await esperar(200);
+  check('billetera: un número corto no se guarda', /20 números/.test(await textoDe(page, 'form .error')));
+  await page.selectOption('#c-banco', '0134');
+  await page.fill('#c-numero', '01340000000000000987');
+  await page.fill('#c-titular', 'Ana Rodríguez');
+  await page.fill('#c-cedula', '18765432');
+  await page.click('#guardar-cuenta');
+  await page.waitForFunction(() => {
+    var c = document.querySelector('#contenido');
+    var num = c && c.querySelector('.cuenta-num');
+    return c && /espera 24 horas/.test(c.textContent || '') && num && /0987/.test(num.textContent || '') && !document.querySelector('#c-numero');
+  }, null, { timeout: 8000 });
+  check('billetera: al guardar, el retiro espera 24 h', /espera 24 horas/.test(await textoDe(page, '#contenido')));
+  check('billetera: la cuenta nueva solo enseña las últimas 4', /0987/.test(await textoDe(page, '.cuenta-num')) && !/01340000/.test(await textoDe(page, '.cuenta-num')));
 
   // Flota (una tienda de la app sin flota) y estadísticas
   await ir(page, '#flota', 600);

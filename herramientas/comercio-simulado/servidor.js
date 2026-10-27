@@ -236,7 +236,12 @@ function datosNuevos() {
       { id: 15, nombre: 'Postres y café' }, { id: 30, nombre: 'Ropa y calzado' }, { id: 31, nombre: 'Tecnología' },
       { id: 32, nombre: 'Farmacia' },
     ],
-    cuentaBancaria: { banco: 'Banco Nacional de Crédito (0191)', titular: 'Ana Rodríguez', cuentaParaVer: '0191 •••• •••• •••• 3456' },
+    cuentaReal: { codigo: '0191', tipo: 'CNTA', numero: '01910000000000003456', titular: 'Ana Rodríguez', cedula: 'V18765432' },
+    bancos: [
+      { codigo: '0102', nombre: 'Banco de Venezuela' },
+      { codigo: '0134', nombre: 'Banesco' },
+      { codigo: '0191', nombre: 'Banco Nacional de Crédito' },
+    ],
     ajustesCobro: Object.assign({}, AJUSTES),
     planes: {
       // La Arepera: Premium activa (la pagó dos veces); la boutique: Básica.
@@ -1323,7 +1328,7 @@ async function api(req, res, url) {
   if (partesRuta[0] === 'billetera' || ruta === 'facturas') {
     soloDueno(s);
     if (metodo === 'GET' && ruta === 'billetera') {
-      return Object.assign({}, D.billetera, { cuentaBancaria: D.cuentaBancaria, pagoAutomatico: 'todos los días a las 11 p. m.' });
+      return Object.assign({}, D.billetera, { cuentaBancaria: vistaDeCuenta(), bancos: D.bancos, pagoAutomatico: 'todos los días a las 11 p. m.' });
     }
     if (metodo === 'GET' && ruta === 'billetera/movimientos') {
       const rr = rango(q, 400);
@@ -1348,6 +1353,29 @@ async function api(req, res, url) {
       D.movimientos.unshift({ id: 9999, fecha: iso(ahora), tipo: 'retiro', descripcion: 'Retiro a tu cuenta (BNC)', montoBs: -monto });
       anotar(s, 'retiro', 'billetera', s.userId, { disponibleBs: monto }, { disponibleBs: 0 });
       return { ok: true, montoBs: monto, mensaje: 'Listo: te enviamos ' + bs(monto) + ' a tu cuenta del BNC.' };
+    }
+    if (metodo === 'POST' && ruta === 'billetera/cuenta') {
+      const banco = String(body.creditorBank || '').replace(/\D/g, '');
+      const tipo = String(body.creditorAccType || '');
+      const numero = String(body.creditorAccount || '').replace(/\D/g, '');
+      const titular = String(body.creditorName || '').replace(/\s+/g, ' ').trim();
+      const cedula = String(body.creditorID || '').toUpperCase().replace(/[^VEJG0-9]/g, '');
+      if (!/^\d{4}$/.test(banco)) throw new Fallo(400, 'El banco va con su código de 4 cifras, por ejemplo 0191.');
+      if (tipo !== 'CNTA' && tipo !== 'AHORRO') throw new Fallo(400, 'Elige si es cuenta corriente o de ahorro.');
+      if (numero.length !== 20) throw new Fallo(400, 'El número de cuenta debe tener 20 dígitos');
+      if (numero.slice(0, 4) !== banco) throw new Fallo(400, 'Ese número de cuenta no es de ese banco: los primeros 4 números son los del banco.');
+      if (titular.length < 2 || titular.length > 60) throw new Fallo(400, 'Escribe el nombre del titular.');
+      if (!/^[VEJG]\d{6,9}$/.test(cedula)) throw new Fallo(400, 'Escribe la cédula del titular.');
+      const antes = D.cuentaReal;
+      const cambio = !!(antes && (antes.codigo !== banco || antes.numero !== numero || antes.cedula !== cedula));
+      D.cuentaReal = { codigo: banco, tipo: tipo, numero: numero, titular: titular, cedula: cedula };
+      if (cambio) D.billetera.retiroBloqueadoHasta = iso(Date.now() + 24 * HORA_MS);
+      anotar(s, 'cuenta_bancaria', 'user_bank_accounts', s.userId, antes ? { banco: antes.codigo, cuenta: '····' + antes.numero.slice(-4) } : null, { banco: banco, cuenta: '····' + numero.slice(-4), espera24h: cambio });
+      return {
+        ok: true, espera24h: cambio, retiroBloqueadoHasta: cambio ? D.billetera.retiroBloqueadoHasta : null,
+        mensaje: cambio ? 'Cuenta guardada. Por seguridad, el retiro espera 24 horas.' : 'Cuenta guardada.',
+        cuentaBancaria: vistaDeCuenta(),
+      };
     }
     if (metodo === 'GET' && ruta === 'facturas') {
       const rr = q.desde || q.hasta ? rango(q, 800) : null;
@@ -1728,18 +1756,29 @@ function luhn(n) {
   for (let i = n.length - 1; i >= 0; i--) { let x = Number(n.charAt(i)); if (doble) { x *= 2; if (x > 9) x -= 9; } suma += x; doble = !doble; }
   return suma % 10 === 0;
 }
+function vistaDeCuenta() {
+  const c = D.cuentaReal;
+  if (!c) return null;
+  const n = String(c.numero || '').replace(/\D/g, '');
+  const banco = (D.bancos || []).find((b) => b.codigo === c.codigo);
+  return {
+    banco: banco ? c.codigo + ' ' + banco.nombre : c.codigo,
+    codigoBanco: c.codigo, tipo: c.tipo, titular: c.titular,
+    cuentaParaVer: n.length >= 4 ? '•••• •••• •••• ' + n.slice(-4) : '••••',
+  };
+}
 function requisitos(t) {
   const conFoto = D.productos.filter((p) => p.companyId === t.companyId && !p.borrado && p.images.length && p.precio > 0).length;
   const r = {
     productos: conFoto >= 3, horario: t.horarios.some((h) => !h.cerrado), ubicacion: isFinite(t.lat) && isFinite(t.lng),
-    rif: /^[JGVE]\d{9}$/.test(t.rif || ''), cuenta: !!D.cuentaBancaria,
+    rif: /^[JGVE]\d{9}$/.test(t.rif || ''), cuenta: !!D.cuentaReal,
   };
   const faltan = [];
   if (!r.productos) faltan.push('Agrega ' + (3 - conFoto) + (3 - conFoto === 1 ? ' producto' : ' productos') + ' con foto y precio (tienes ' + conFoto + ' de 3).');
   if (!r.horario) faltan.push('Abre al menos un día en tu horario.');
   if (!r.ubicacion) faltan.push('Marca la ubicación de tu tienda.');
   if (!r.rif) faltan.push('Escribe un RIF válido.');
-  if (!r.cuenta) faltan.push('Registra tu cuenta bancaria en la app.');
+  if (!r.cuenta) faltan.push('Registra tu cuenta para cobrar en Billetera.');
   return { r, faltan };
 }
 function vistaTienda(t) {
@@ -1750,7 +1789,7 @@ function vistaTienda(t) {
     logo: t.logo, banner: t.banner, marcador: t.marcador,
     horarios: t.horarios.map((h) => Object.assign({}, h)),
     comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto,
-    afiliada: t.authorized === 0 || t.authorized === 1 || t.authorized === 3, tipo: t.tipo, cuentaBancaria: D.cuentaBancaria,
+    afiliada: t.authorized === 0 || t.authorized === 1 || t.authorized === 3, tipo: t.tipo, cuentaBancaria: vistaDeCuenta(),
     visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, tieneFlota: !!t.flota, requisitos: requisitos(t).r,
   };
 }

@@ -547,7 +547,9 @@ html.claro .segmentos button[aria-selected="true"] { background: #fff; }
 .fila-grupo-campos { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
 .fila-grupo-campos .cuenta { grid-column: 1 / -1; order: 3; }
 .fila-grupo-campos .campo { min-height: 44px; font-size: 16px; }
+.fila-campos { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; align-items: center; }
 .fila-campos-boton { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.opciones-tipo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 /* Las fotos */
 .zona-foto-caja { min-width: 0; }

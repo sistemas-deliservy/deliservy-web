@@ -4,7 +4,7 @@
  * Datos (nombre, dirección, ubicación, correo, RIF, categoría; el teléfono de contacto se cambia con un código por
  * WhatsApp al número NUEVO), el horario de los 7 días (con «cerrado» por día: «cerrado» viaja como `cerrado: true`, y
  * nunca sale un 00:00–00:00 por error en un día abierto), logo, banner y marcador, la comisión de Deliservy (solo
- * lectura, con su promoción), la cuenta bancaria enmascarada (no se cambia desde la web) y «Mostrar en la app» (solo
+ * lectura, con su promoción), la cuenta bancaria enmascarada (se cambia en Billetera) y «Mostrar en la app» (solo
  * para comercios de flota: si falta algo, la API dice qué). Trabajadores: nombre, WhatsApp y permisos.
  */
 (function (raiz) {
@@ -81,13 +81,16 @@
       h('p', { class: 'nota' }, 'En la tienda web y con promotores, cobra por producto: ', h('a', { href: '#plan' }, 'Mi plan'), '.'),
       h('p', { class: 'nota' }, 'La pone Deliservy. Si tienes dudas, escríbenos.'));
   }
+  var TIPO_CUENTA = { CNTA: 'Corriente', AHORRO: 'Ahorro' };
   function tarjetaCuenta(cuenta) {
+    var tipo = cuenta && TIPO_CUENTA[cuenta.tipo] ? TIPO_CUENTA[cuenta.tipo] : '';
     return h('div', { class: 'tarjeta' },
       h('h2', null, 'Cuenta para cobrar'),
       cuenta ? h('div', { class: 'cuenta-banco' }, h('div', { class: 'icono-grande' }, ico('banco')),
-        h('div', { class: 'txt' }, dato('b', null, cuenta.banco || ''), dato('span', { class: 'cuenta-num' }, cuenta.cuentaParaVer || ''), dato('small', null, cuenta.titular || '')))
+        h('div', { class: 'txt' }, dato('b', null, cuenta.banco || ''), dato('span', { class: 'cuenta-num' }, cuenta.cuentaParaVer || ''),
+          h('small', null, tipo || (cuenta.tipo ? dato('span', null, cuenta.tipo) : null), (tipo || cuenta.tipo) && cuenta.titular ? ' · ' : null, cuenta.titular ? dato('span', null, cuenta.titular) : null)))
         : h('p', { class: 'nota' }, 'Aún no tienes cuenta bancaria.'),
-      h('p', { class: 'nota' }, ico('candado'), ' Por seguridad, la cuenta solo se cambia desde la app.'));
+      h('p', { class: 'nota' }, 'Para cambiar el número, entra en ', h('a', { href: '#billetera' }, 'Billetera'), '.'));
   }
   function requisitoOk(r) { return r === true || (r && typeof r === 'object' && r.ok === true); }
 

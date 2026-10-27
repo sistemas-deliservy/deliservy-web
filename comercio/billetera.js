@@ -2,9 +2,9 @@
  * EL PANEL DEL COMERCIO — «Billetera» (24-oct-2026).
  *
  * Disponible y retenido (24 h por tarjeta de crédito), los movimientos por fechas, «Retirar ahora» (siempre con un
- * código por WhatsApp, y solo a la cuenta ya registrada: la cuenta bancaria NO se cambia desde la web; aquí solo se ve
- * enmascarada) y sus facturas con el PDF. El pago automático de las 11 p. m. sigue igual. Exportar a Excel: un CSV
- * con «;» y coma decimal, armado aquí con los movimientos que se ven. Solo el dueño.
+ * código por WhatsApp, a la cuenta registrada) y sus facturas con el PDF. La cuenta se ve aquí (banco, tipo y las
+ * 4 últimas) y el dueño la cambia: al guardar otra, el texto dice que el retiro espera 24 h. Exportar a Excel: un
+ * CSV con «;» y coma decimal, armado aquí con los movimientos que se ven. Solo el dueño.
  */
 (function (raiz) {
   'use strict';
@@ -12,7 +12,75 @@
   var C = raiz.Comercio;
   var h = C.h, dato = C.dato, ico = C.ico;
   var rango = { modo: '30', desde: null, hasta: null };
+  var avisoCuenta = '';
   var TIPOS = { MANAGER: 'Comisión', FLOTA: 'Flota', VENDEDOR: 'Promotores', MEMBRESIA: 'Membresía' };
+  var TIPO_CUENTA = { CNTA: 'Corriente', AHORRO: 'Ahorro' };
+
+  function lineaDeLaCuenta(cuenta) {
+    var tipo = TIPO_CUENTA[cuenta.tipo] || '';
+    return h('div', { class: 'txt' },
+      dato('b', null, cuenta.banco || ''),
+      dato('span', { class: 'cuenta-num' }, cuenta.cuentaParaVer || ''),
+      h('small', null, tipo || (cuenta.tipo ? dato('span', null, cuenta.tipo) : null), (tipo || cuenta.tipo) && cuenta.titular ? ' · ' : null, cuenta.titular ? dato('span', null, cuenta.titular) : null));
+  }
+
+  /** Banco, tipo, número, titular y cédula: lo mismo que pide el API al guardar. */
+  function formularioCuenta(cuenta, bancos, alCerrar) {
+    var error = h('p', { class: 'error', role: 'alert', hidden: true });
+    var banco;
+    if (bancos.length) {
+      banco = h('select', { class: 'campo', id: 'c-banco', required: true }, h('option', { value: '' }, 'Elige tu banco'));
+      bancos.forEach(function (b) {
+        var o = dato('option', { value: b.codigo }, (b.codigo || '') + ' · ' + (b.nombre || ''));
+        if (cuenta && String(cuenta.codigoBanco) === String(b.codigo)) o.selected = true;
+        banco.appendChild(o);
+      });
+      if (cuenta && cuenta.codigoBanco && !bancos.some(function (b) { return String(b.codigo) === String(cuenta.codigoBanco); })) {
+        var extra = dato('option', { value: cuenta.codigoBanco, selected: true }, cuenta.codigoBanco);
+        banco.appendChild(extra);
+      }
+    } else {
+      banco = C.entrada({ id: 'c-banco', inputmode: 'numeric', maxlength: '4', placeholder: '0191', value: cuenta && cuenta.codigoBanco ? cuenta.codigoBanco : '' });
+    }
+    var corriente = h('input', { type: 'radio', name: 'tipo-cuenta', value: 'CNTA' });
+    var ahorro = h('input', { type: 'radio', name: 'tipo-cuenta', value: 'AHORRO' });
+    if (cuenta && cuenta.tipo === 'AHORRO') ahorro.checked = true; else corriente.checked = true;
+    var numero = C.entrada({ id: 'c-numero', inputmode: 'numeric', maxlength: '26', placeholder: '0191 0001 23 4567890123', autocomplete: 'off' });
+    var titular = C.entrada({ id: 'c-titular', maxlength: '60', autocomplete: 'name', value: cuenta && cuenta.titular ? cuenta.titular : '' });
+    var letra = h('select', { class: 'campo', id: 'c-letra', 'aria-label': 'Tipo de cédula' }, ['V', 'E', 'J', 'G'].map(function (x) { return h('option', { value: x }, x); }));
+    var cedula = C.entrada({ id: 'c-cedula', inputmode: 'numeric', maxlength: '9', placeholder: '12345678' });
+    var guardar = C.boton('Guardar cuenta', { class: 'btn', id: 'guardar-cuenta', type: 'submit' }, 'check');
+    return h('form', { novalidate: true, onsubmit: function (ev) {
+      ev.preventDefault();
+      var codigo = String(banco.value || '').replace(/\D/g, '');
+      var digitos = String(numero.value || '').replace(/\D/g, '');
+      var nom = String(titular.value || '').trim();
+      var ced = String(cedula.value || '').replace(/\D/g, '');
+      var malo = !/^\d{4}$/.test(codigo) ? 'Elige tu banco.'
+        : digitos.length !== 20 ? 'El número de cuenta tiene 20 números.'
+          : digitos.slice(0, 4) !== codigo ? 'Ese número de cuenta no es de ese banco: los primeros 4 números son los del banco.'
+            : nom.length < 2 ? 'Escribe el nombre del titular.'
+              : !/^\d{6,9}$/.test(ced) ? 'Escribe la cédula del titular.' : '';
+      if (malo) { error.textContent = malo; error.hidden = false; return; }
+      error.hidden = true;
+      C.trabajando(guardar, C.pedir('POST', '/billetera/cuenta', {
+        creditorBank: codigo, creditorAccType: ahorro.checked ? 'AHORRO' : 'CNTA', creditorAccount: digitos,
+        creditorName: nom, creditorID: String(letra.value) + ced,
+      })).then(function (r) {
+        avisoCuenta = r && r.espera24h ? 'Cuenta guardada. Por seguridad, el retiro espera 24 horas.' : 'Cuenta guardada.';
+        C.avisar(avisoCuenta);
+        C.mostrar();
+      }, function (e) { error.textContent = e.message || 'No se pudo guardar.'; error.hidden = false; });
+    } },
+    C.campo('c-banco', 'Banco', banco),
+    h('span', { class: 'etq-campo' }, 'Tipo de cuenta'),
+    h('div', { class: 'opciones-tipo' }, h('label', { class: 'opcion-radio' }, corriente, 'Corriente'), h('label', { class: 'opcion-radio' }, ahorro, 'Ahorro')),
+    C.campo('c-numero', 'Número de cuenta (20 números)', numero, { ayuda: 'Escribe los 20 números. Los primeros 4 son los del banco.' }),
+    C.campo('c-titular', 'Titular', titular),
+    h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'c-cedula' }, 'Cédula del titular'), h('div', { class: 'fila-campos' }, h('div', { class: 'con-flecha' }, letra, ico('abajo')), cedula)),
+    error,
+    h('div', { class: 'botones' }, guardar, cuenta ? C.boton('Cancelar', { class: 'btn borde', type: 'button', onclick: alCerrar }) : null));
+  }
 
   function rangoDelModo(modo) {
     var hoy = C.diaCaracas();
@@ -88,6 +156,22 @@
 
   function pintar(ctx, v, d) {
     var cuenta = d.cuentaBancaria;
+    var aviso = avisoCuenta;
+    avisoCuenta = '';
+    var bancos = Array.isArray(d.bancos) ? d.bancos : [];
+    var editando = !cuenta;
+    var tarjetaCuenta = h('div', { class: 'tarjeta' });
+    var dibujarCuenta = function () {
+      C.reemplazar(tarjetaCuenta, [
+        h('h2', null, 'Tu cuenta bancaria'),
+        aviso ? h('p', { class: 'bien' }, aviso) : null,
+        cuenta ? h('div', { class: 'cuenta-banco' }, h('div', { class: 'icono-grande' }, ico('banco')), lineaDeLaCuenta(cuenta))
+          : h('p', { class: 'nota' }, 'Aún no tienes cuenta bancaria. Regístrala aquí para cobrar.'),
+        cuenta && !editando ? h('div', { class: 'botones' }, C.boton('Cambiar cuenta', { class: 'btn borde chico', id: 'cambiar-cuenta', onclick: function () { editando = true; aviso = ''; dibujarCuenta(); } }, 'banco')) : null,
+        editando ? formularioCuenta(cuenta, bancos, function () { editando = false; dibujarCuenta(); }) : null,
+      ]);
+    };
+    dibujarCuenta();
     var bloqueado = d.retiroBloqueadoHasta && Date.parse(d.retiroBloqueadoHasta) > Date.now();
     var disponible = C.num(d.disponibleBs);
     var movs = h('div', { class: 'lista' }, C.cargando());
@@ -134,14 +218,9 @@
             class: 'btn blanco', disabled: !!bloqueado || disponible <= 0 || !cuenta,
             onclick: function () { retirar(d, function () { C.mostrar(); }); },
           }, 'banco')),
-          bloqueado ? h('p', { class: 'nota' }, 'Cambiaste tu cuenta hace poco: podrás retirar desde el ', C.fechaHora(d.retiroBloqueadoHasta), '.') : null,
+          bloqueado ? h('p', { class: 'nota' }, 'Por seguridad, el retiro espera 24 horas. Podrás retirar desde el ', C.fechaHora(d.retiroBloqueadoHasta), '.') : null,
           h('p', { class: 'nota' }, 'Pago automático: ', h('span', null, d.pagoAutomatico || 'todos los días a las 11 p. m.'), /\.\s*$/.test(d.pagoAutomatico || 'm.') ? null : '.')),
-        h('div', { class: 'tarjeta' },
-          h('h2', null, 'Tu cuenta bancaria'),
-          cuenta ? h('div', { class: 'cuenta-banco' }, h('div', { class: 'icono-grande' }, ico('banco')),
-            h('div', { class: 'txt' }, dato('b', null, cuenta.banco || ''), dato('span', { class: 'cuenta-num' }, cuenta.cuentaParaVer || ''), dato('small', null, cuenta.titular || '')))
-            : h('p', { class: 'nota' }, 'Aún no tienes cuenta bancaria. Regístrala en la app para cobrar.'),
-          h('p', { class: 'nota' }, ico('candado'), ' Por seguridad, la cuenta solo se cambia desde la app.'))),
+        tarjetaCuenta),
       h('div', { class: 'etq-fila' }, h('span', { class: 'etq' }, 'Movimientos'), exportar),
       h('div', { class: 'barra-filtros' },
         C.segmentos('Fechas', [['7', '7 días'], ['30', '30 días'], ['mes', 'Este mes'], ['pasado', 'Mes pasado']], rango.modo, function (m) { rango = { modo: m }; C.mostrar(); }),
