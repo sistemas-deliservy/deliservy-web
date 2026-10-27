@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#08080a">
+  <title>Propuesta visual — comercio y promotores</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="propuesta.css">
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-hoy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+    </symbol>
+    <symbol id="i-pedidos" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/>
+    </symbol>
+    <symbol id="i-productos" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>
+    </symbol>
+    <symbol id="i-gente" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="3"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </symbol>
+    <symbol id="i-billetera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 15h2"/>
+    </symbol>
+    <symbol id="i-flota" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 7h11v8H3z"/><path d="M14 11h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>
+    </symbol>
+    <symbol id="i-grafica" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/>
+    </symbol>
+    <symbol id="i-tienda" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 10l1.5-5h13L20 10"/><path d="M4 10h16v9H4z"/><path d="M9 19v-5h6v5"/>
+    </symbol>
+    <symbol id="i-estrella" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l2.2 4.8 5.3.6-4 3.6 1.1 5.2L12 15.8 7.4 17.2 8.5 12 4.5 8.4l5.3-.6z"/>
+    </symbol>
+    <symbol id="i-mas" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>
+    </symbol>
+    <symbol id="i-inicio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/>
+    </symbol>
+    <symbol id="i-enlace" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.1.1l1.4-1.5a5 5 0 0 0-7.1-7.1L10 6"/><path d="M14 11a5 5 0 0 0-7.1-.1L5.5 12.4a5 5 0 0 0 7.1 7.1L14 18"/>
+    </symbol>
+    <symbol id="i-ventas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 3h10v18l-2-1.2L13 21l-2-1.2L9 21l-2-1.2z"/><path d="M9 8h6M9 12h6"/>
+    </symbol>
+    <symbol id="i-banco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 10l9-6 9 6"/><path d="M4 10v8h16v-8"/><path d="M4 18h16"/><path d="M8 10v8M12 10v8M16 10v8"/>
+    </symbol>
+  </svg>
+
+  <header class="indice">
+    <p><b>Propuesta para aprobar.</b> No está publicada.</p>
+    <nav aria-label="Pantallas de la propuesta">
+      <a href="#comercio-oscuro">Comercio oscuro</a>
+      <a href="#comercio-claro">Comercio claro</a>
+      <a href="#promotores">Promotores</a>
+    </nav>
+  </header>
+
+  <section id="comercio-oscuro" class="escena comercio" aria-label="Panel del comercio, modo oscuro">
+    <div class="manchas"></div>
+    <div class="resplandor"></div>
+    <div class="resplandor atras"></div>
+    <div class="cuadricula"></div>
+    <p class="leyenda">Comercio · oscuro</p>
+    <div class="marco">
+      <aside class="lateral" aria-label="Secciones">
+        <div class="lateral-marca">
+          <span class="logo-d" aria-hidden="true">D</span>
+          <div><b>Deliservy</b><small>Panel del comercio</small></div>
+        </div>
+        <div class="lateral-tienda">Doña Pizza</div>
+        <nav class="lateral-nav">
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-hoy"></use></svg>Hoy</a>
+          <a href="#comercio-oscuro" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-pedidos"></use></svg>Pedidos<span class="punto-nuevo"></span></a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-productos"></use></svg>Productos</a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-gente"></use></svg>Promotores</a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-billetera"></use></svg>Billetera</a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-flota"></use></svg>Flota</a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-grafica"></use></svg>Estadísticas</a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-tienda"></use></svg>Mi tienda</a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-estrella"></use></svg>Mi plan</a>
+        </nav>
+        <div class="lateral-pie">
+          <div class="yo-fila"><span class="yo" aria-hidden="true">CL</span><div><b>Carmen López</b><small>Dueña</small></div></div>
+          <div class="botones-pie">
+            <a class="tema" href="#comercio-claro">Claro</a>
+            <button class="idioma" type="button">English</button>
+            <button class="salir" type="button">Salir</button>
+          </div>
+        </div>
+      </aside>
+      <div class="columna">
+        <header class="cabecera-tel">
+          <span class="logo-d" aria-hidden="true">D</span>
+          <div class="titulo"><small>Panel del comercio</small><b>Doña Pizza</b></div>
+          <span class="yo" aria-hidden="true">CL</span>
+        </header>
+        <main class="contenido">
+          <div class="cab-seccion">
+            <h1>Pedidos</h1>
+            <p class="sub">Hoy en Doña Pizza.</p>
+          </div>
+          <label class="sr" for="busca-pedidos-oscuro">Buscar</label>
+          <input class="campo" id="busca-pedidos-oscuro" type="search" placeholder="Busca un pedido o un cliente" readonly>
+          <div class="lista-pedidos">
+            <a class="fila-pedido es-nuevo" href="#comercio-oscuro">
+              <div class="fp-cab"><span class="fp-num">#418</span><span class="pill roja">Nuevo</span><span class="fp-hora">7:42 p. m.</span></div>
+              <div class="fp-cuerpo"><div class="fp-comanda"><span>2× Pizza familiar</span><span>1× Pepsi 1,5 L</span></div><div class="fp-monto"><b>18,50&nbsp;$</b></div></div>
+              <div class="fp-pie">María González · Prebo</div>
+            </a>
+            <a class="fila-pedido" href="#comercio-oscuro">
+              <div class="fp-cab"><span class="fp-num">#417</span><span class="pill ambar">En preparación</span><span class="fp-hora">7:15 p. m.</span></div>
+              <div class="fp-cuerpo"><div class="fp-comanda"><span>1× Pizza pepperoni</span><span>Sin cebolla</span></div><div class="fp-monto"><b>9,50&nbsp;$</b></div></div>
+              <div class="fp-pie">Carlos Méndez · El Trigal</div>
+            </a>
+            <a class="fila-pedido" href="#comercio-oscuro">
+              <div class="fp-cab"><span class="fp-num">#416</span><span class="pill verde">Entregado</span><span class="fp-hora">6:40 p. m.</span></div>
+              <div class="fp-cuerpo"><div class="fp-comanda"><span>1× Brownie</span><span>1× Pepsi</span></div><div class="fp-monto"><b>5,50&nbsp;$</b></div></div>
+              <div class="fp-pie">Ana Suárez · La Viña</div>
+            </a>
+          </div>
+          <span class="etq">Billetera</span>
+          <div class="rejilla dos">
+            <article class="tarjeta saldo">
+              <small>Disponible para retirar</small>
+              <span class="grande">1.240,50&nbsp;Bs</span>
+              <p class="nota">Ejemplo. Se paga a las 11 p.&nbsp;m.</p>
+              <button class="btn blanco" type="button">Retirar ahora</button>
+            </article>
+            <article class="tarjeta">
+              <h2>Tu cuenta</h2>
+              <div class="cuenta-banco">
+                <span class="marca-banco" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#i-banco"></use></svg></span>
+                <div class="txt">
+                  <b>Banco de ejemplo</b>
+                  <span class="cuenta-num">•••• •••• •••• 4821</span>
+                  <small>Corriente · Doña Pizza, C.A.</small>
+                </div>
+              </div>
+            </article>
+          </div>
+        </main>
+        <nav class="barra-abajo" aria-label="Secciones">
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-hoy"></use></svg><span>Hoy</span></a>
+          <a href="#comercio-oscuro" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-pedidos"></use></svg><span>Pedidos</span><span class="punto-nuevo"></span></a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-flota"></use></svg><span>Flota</span></a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-productos"></use></svg><span>Productos</span></a>
+          <a href="#comercio-oscuro"><svg class="ico" aria-hidden="true"><use href="#i-mas"></use></svg><span>Más</span></a>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <section id="comercio-claro" class="escena comercio claro" aria-label="Panel del comercio, modo claro">
+    <div class="manchas"></div>
+    <div class="resplandor"></div>
+    <div class="resplandor atras"></div>
+    <div class="cuadricula"></div>
+    <p class="leyenda">Comercio · claro</p>
+    <div class="marco">
+      <aside class="lateral" aria-label="Secciones">
+        <div class="lateral-marca">
+          <span class="logo-d" aria-hidden="true">D</span>
+          <div><b>Deliservy</b><small>Panel del comercio</small></div>
+        </div>
+        <div class="lateral-tienda">Doña Pizza</div>
+        <nav class="lateral-nav">
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-hoy"></use></svg>Hoy</a>
+          <a href="#comercio-claro" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-pedidos"></use></svg>Pedidos<span class="punto-nuevo"></span></a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-productos"></use></svg>Productos</a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-gente"></use></svg>Promotores</a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-billetera"></use></svg>Billetera</a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-flota"></use></svg>Flota</a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-grafica"></use></svg>Estadísticas</a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-tienda"></use></svg>Mi tienda</a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-estrella"></use></svg>Mi plan</a>
+        </nav>
+        <div class="lateral-pie">
+          <div class="yo-fila"><span class="yo" aria-hidden="true">CL</span><div><b>Carmen López</b><small>Dueña</small></div></div>
+          <div class="botones-pie">
+            <a class="tema" href="#comercio-oscuro">Oscuro</a>
+            <button class="idioma" type="button">English</button>
+            <button class="salir" type="button">Salir</button>
+          </div>
+        </div>
+      </aside>
+      <div class="columna">
+        <header class="cabecera-tel">
+          <span class="logo-d" aria-hidden="true">D</span>
+          <div class="titulo"><small>Panel del comercio</small><b>Doña Pizza</b></div>
+          <span class="yo" aria-hidden="true">CL</span>
+        </header>
+        <main class="contenido">
+          <div class="cab-seccion">
+            <h1>Pedidos</h1>
+            <p class="sub">Hoy en Doña Pizza.</p>
+          </div>
+          <label class="sr" for="busca-pedidos-claro">Buscar</label>
+          <input class="campo" id="busca-pedidos-claro" type="search" placeholder="Busca un pedido o un cliente" readonly>
+          <div class="lista-pedidos">
+            <a class="fila-pedido es-nuevo" href="#comercio-claro">
+              <div class="fp-cab"><span class="fp-num">#418</span><span class="pill roja">Nuevo</span><span class="fp-hora">7:42 p. m.</span></div>
+              <div class="fp-cuerpo"><div class="fp-comanda"><span>2× Pizza familiar</span><span>1× Pepsi 1,5 L</span></div><div class="fp-monto"><b>18,50&nbsp;$</b></div></div>
+              <div class="fp-pie">María González · Prebo</div>
+            </a>
+            <a class="fila-pedido" href="#comercio-claro">
+              <div class="fp-cab"><span class="fp-num">#417</span><span class="pill ambar">En preparación</span><span class="fp-hora">7:15 p. m.</span></div>
+              <div class="fp-cuerpo"><div class="fp-comanda"><span>1× Pizza pepperoni</span><span>Sin cebolla</span></div><div class="fp-monto"><b>9,50&nbsp;$</b></div></div>
+              <div class="fp-pie">Carlos Méndez · El Trigal</div>
+            </a>
+            <a class="fila-pedido" href="#comercio-claro">
+              <div class="fp-cab"><span class="fp-num">#416</span><span class="pill verde">Entregado</span><span class="fp-hora">6:40 p. m.</span></div>
+              <div class="fp-cuerpo"><div class="fp-comanda"><span>1× Brownie</span><span>1× Pepsi</span></div><div class="fp-monto"><b>5,50&nbsp;$</b></div></div>
+              <div class="fp-pie">Ana Suárez · La Viña</div>
+            </a>
+          </div>
+          <span class="etq">Billetera</span>
+          <div class="rejilla dos">
+            <article class="tarjeta saldo">
+              <small>Disponible para retirar</small>
+              <span class="grande">1.240,50&nbsp;Bs</span>
+              <p class="nota">Ejemplo. Se paga a las 11 p.&nbsp;m.</p>
+              <button class="btn blanco" type="button">Retirar ahora</button>
+            </article>
+            <article class="tarjeta">
+              <h2>Tu cuenta</h2>
+              <div class="cuenta-banco">
+                <span class="marca-banco" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#i-banco"></use></svg></span>
+                <div class="txt">
+                  <b>Banco de ejemplo</b>
+                  <span class="cuenta-num">•••• •••• •••• 4821</span>
+                  <small>Corriente · Doña Pizza, C.A.</small>
+                </div>
+              </div>
+            </article>
+          </div>
+        </main>
+        <nav class="barra-abajo" aria-label="Secciones">
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-hoy"></use></svg><span>Hoy</span></a>
+          <a href="#comercio-claro" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-pedidos"></use></svg><span>Pedidos</span><span class="punto-nuevo"></span></a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-flota"></use></svg><span>Flota</span></a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-productos"></use></svg><span>Productos</span></a>
+          <a href="#comercio-claro"><svg class="ico" aria-hidden="true"><use href="#i-mas"></use></svg><span>Más</span></a>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <section id="promotores" class="escena promotores" aria-label="Página de promotores, modo oscuro">
+    <div class="manchas"></div>
+    <div class="resplandor"></div>
+    <div class="resplandor atras"></div>
+    <div class="cuadricula"></div>
+    <p class="leyenda">Promotores · oscuro</p>
+    <div class="marco">
+      <div class="columna">
+        <header class="cabecera">
+          <span class="logo-d" aria-hidden="true">D</span>
+          <div class="titulo"><b>Deliservy</b><small>Promotores</small></div>
+          <span class="yo" aria-hidden="true">AR</span>
+          <button class="tema" type="button">Claro</button>
+          <button class="idioma" type="button">English</button>
+          <button class="salir" type="button">Salir</button>
+        </header>
+        <nav class="pestanas" aria-label="Secciones">
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-inicio"></use></svg>Inicio</a>
+          <a href="#promotores" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-productos"></use></svg>Catálogo</a>
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-enlace"></use></svg>Enlaces</a>
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-ventas"></use></svg>Ventas</a>
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-billetera"></use></svg>Cobros</a>
+        </nav>
+        <main class="contenido">
+          <h1 class="saludo">Catálogo</h1>
+          <p class="sub">Escoge qué promocionar. Ganas en cada unidad que se venda con tu enlace.</p>
+          <label class="sr" for="busca-catalogo">Buscar</label>
+          <input class="campo" id="busca-catalogo" type="search" placeholder="Busca un producto o una tienda" readonly>
+          <div class="tienda-cab">
+            <span class="inicial" aria-hidden="true">D</span>
+            <div><b>Doña Pizza</b><small>Valencia · 4 productos</small></div>
+          </div>
+          <div class="chips">
+            <button class="chip activo" type="button">Todas</button>
+            <button class="chip" type="button">Pizzas</button>
+            <button class="chip" type="button">Bebidas</button>
+            <button class="chip" type="button">Postres</button>
+          </div>
+          <div class="productos">
+            <article class="producto">
+              <div class="sin-foto" aria-hidden="true">P</div>
+              <div class="datos"><b>Pizza margarita</b><small>Doña Pizza</small><span class="precio">8,50&nbsp;$</span><span class="gana">Ganas 0,40&nbsp;$</span></div>
+              <div class="pie-prod"><button class="btn" type="button">Mi enlace</button></div>
+            </article>
+            <article class="producto">
+              <div class="sin-foto" aria-hidden="true">P</div>
+              <div class="datos"><b>Pizza pepperoni familiar para compartir</b><small>Doña Pizza</small><span class="precio">9,50&nbsp;$</span><span class="gana">Ganas 0,45&nbsp;$</span></div>
+              <div class="pie-prod"><button class="btn" type="button">Mi enlace</button></div>
+            </article>
+            <article class="producto">
+              <div class="sin-foto" aria-hidden="true">B</div>
+              <div class="datos"><b>Brownie</b><small>Doña Pizza</small><span class="precio">3,50&nbsp;$</span><span class="gana">Ganas 0,20&nbsp;$</span></div>
+              <div class="pie-prod"><button class="btn" type="button">Mi enlace</button></div>
+            </article>
+            <article class="producto agotado">
+              <div class="sin-foto" aria-hidden="true">R</div>
+              <div class="datos"><b>Refresco 1,5 L</b><small>Doña Pizza</small><span class="pill">Agotado por ahora</span><span class="precio">2,00&nbsp;$</span><span class="gana">Ganas 0,15&nbsp;$</span></div>
+              <div class="pie-prod"><button class="btn" type="button" disabled>Mi enlace</button></div>
+            </article>
+          </div>
+        </main>
+        <nav class="navegacion" aria-label="Secciones">
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-inicio"></use></svg><span>Inicio</span></a>
+          <a href="#promotores" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-productos"></use></svg><span>Catálogo</span></a>
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-enlace"></use></svg><span>Enlaces</span></a>
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-ventas"></use></svg><span>Ventas</span></a>
+          <a href="#promotores"><svg class="ico" aria-hidden="true"><use href="#i-billetera"></use></svg><span>Cobros</span></a>
+        </nav>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
