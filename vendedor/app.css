@@ -406,3 +406,78 @@ button.enlace {
 .listo-firma { text-align: center; }
 .listo-firma .circulo { width: 64px; height: 64px; border-radius: 50%; background: var(--oks); color: var(--ok); display: grid; place-items: center; margin: 0 auto 12px; font-size: 32px; font-weight: 800; }
 .listo-firma h1 { font-size: 26px; margin: 0 0 6px; font-weight: 800; }
+
+/* Fondo: manchas rojas difuminadas y cuadrícula que se apaga.
+   Acento #e41616, sin degradado naranja. El saldo es un velo, sin sombra roja. */
+:root, html.claro {
+  --naranja: #e41616;
+  --grad: #e41616;
+  --fondo: var(--s);
+}
+body { background: var(--s); }
+body::before, body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  contain: paint;
+}
+body::before {
+  background:
+    radial-gradient(42% 58% at 18% 22%, rgba(228, 22, 22, .30), transparent 70%),
+    radial-gradient(36% 52% at 84% 12%, rgba(228, 22, 22, .16), transparent 70%),
+    radial-gradient(30% 46% at 58% 42%, rgba(228, 22, 22, .12), transparent 70%);
+  filter: blur(12px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 36%, transparent 78%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 36%, transparent 78%);
+}
+body::after {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 92px, transparent 210px);
+  mask-image: linear-gradient(180deg, #000 0, #000 92px, transparent 210px);
+}
+html.claro body::before {
+  background:
+    radial-gradient(42% 58% at 18% 22%, rgba(228, 22, 22, .12), transparent 70%),
+    radial-gradient(36% 52% at 84% 12%, rgba(228, 22, 22, .07), transparent 70%),
+    radial-gradient(30% 46% at 58% 42%, rgba(228, 22, 22, .05), transparent 70%);
+}
+html.claro body::after {
+  background-image:
+    linear-gradient(rgba(8, 8, 10, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 8, 10, .055) 1px, transparent 1px);
+}
+#app { position: relative; z-index: 1; }
+.cabecera-tel, .cabecera, .barra-abajo, .navegacion {
+  background: color-mix(in srgb, var(--c) 86%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+}
+.logo-d { box-shadow: 0 0 12px rgba(228, 22, 22, .55); }
+.avatar-alisa { background: #e41616; }
+.saldo {
+  background: color-mix(in srgb, #e41616 5%, var(--c));
+  color: var(--t);
+  border: 1px solid rgba(228, 22, 22, .32);
+  box-shadow: none;
+}
+html.claro .saldo {
+  background: color-mix(in srgb, #e41616 6%, var(--c));
+  border-color: rgba(228, 22, 22, .22);
+}
+.saldo small { color: var(--m); }
+.saldo .grande { color: #e41616; text-shadow: none; }
+.saldo .nota, .saldo p { color: var(--m); }
+.saldo .retenido { background: color-mix(in srgb, var(--t) 8%, transparent); color: var(--t); }
+.saldo .btn.blanco { border: 1px solid rgba(228, 22, 22, .28); box-shadow: none; }
+@media (min-width: 1024px) {
+  .lateral {
+    background: color-mix(in srgb, var(--c) 86%, transparent);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+  }
+}
