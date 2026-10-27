@@ -1427,6 +1427,8 @@ async function api(req, res, url) {
       const a = pto(body.a) || { lat: t.lat, lng: t.lng, direccion: t.direccion };
       const b = pto(body.b);
       if (!b) throw new Fallo(400, 'Marca a dónde va (el punto B).');
+      // La calle, en cuanto A y B están. No guarda cotización ni precio.
+      if (body.soloTrazado === true) return { porRuta: true, ruta: rutaEntre(a, b) };
       if (!body.recibe || String(body.recibe.nombre || '').trim().length < 2) throw new Fallo(400, 'Escribe el nombre de quien recibe.');
       if (!telefonoNormal(body.recibe.telefono)) throw new Fallo(400, 'Escribe el teléfono de quien recibe.');
       const c = nuevaCotizacion(t, tipo, a, b, { recibe: body.recibe, nota: body.nota });
