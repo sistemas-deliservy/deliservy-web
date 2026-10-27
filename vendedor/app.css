@@ -51,7 +51,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--fondo); color: var(--t);
   font-family: var(--letra); font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent; overflow-x: hidden;
 }
 img { display: block; max-width: 100%; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -67,24 +67,27 @@ a { color: var(--rt); }
 /* ── El marco ── */
 .cabecera {
   position: sticky; top: 0; z-index: 30; background: var(--c); border-bottom: 1px solid var(--b);
-  padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px; display: flex; align-items: center; gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 8px max(14px, env(safe-area-inset-left, 0px));
+  display: flex; align-items: center; gap: 10px;
 }
 .logo-d { width: 34px; height: 34px; border-radius: 10px; background: var(--r); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; flex: 0 0 auto; }
 .cabecera .titulo { flex: 1; min-width: 0; }
 .cabecera .titulo b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cabecera .titulo small { display: block; color: var(--m); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cabecera > .btn { min-height: 44px; width: auto; }
 .yo { width: 34px; height: 34px; border-radius: 50%; background: var(--rs); color: var(--rt); display: grid; place-items: center; font-weight: 800; flex: 0 0 auto; }
 .yo.foto { display: block; object-fit: cover; object-position: center; background: none; }
 .foto-previa { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; object-position: center; margin: 12px auto; overflow: hidden; }
 .foto-archivo { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
-.salir, .idioma, .tema { border: 1px solid var(--b); background: var(--c); color: var(--t); border-radius: 999px; min-height: 36px; padding: 0 12px; font-weight: 700; font-size: 14.5px; white-space: nowrap; box-shadow: var(--sombra2); }
+.salir, .idioma, .tema { border: 1px solid var(--b); background: var(--c); color: var(--t); border-radius: 999px; min-height: 44px; padding: 0 12px; font-weight: 700; font-size: 14.5px; white-space: nowrap; box-shadow: var(--sombra2); }
 .salir:hover, .idioma:hover, .tema:hover { border-color: var(--m); background: var(--c2); }
 .idioma { padding: 0 12px; }
 
 .pestanas { display: none; }
 .navegacion {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--c); border-top: 1px solid var(--b);
-  display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 6px max(4px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px));
 }
 .navegacion a {
   display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; color: var(--m);
@@ -93,7 +96,10 @@ a { color: var(--rt); }
 .navegacion a[aria-current="page"] { color: var(--rt); background: var(--rs); }
 .ico { width: 22px; height: 22px; flex: 0 0 auto; display: inline-block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-.contenido { max-width: none; margin: 0; padding: 12px 16px calc(var(--barra) + 24px + env(safe-area-inset-bottom, 0px)); }
+.contenido {
+  max-width: none; margin: 0;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(var(--barra) + 24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
 .vista { animation: entra .18s ease-out; }
 @keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .vista, .hoja, .velo, .aviso { animation: none !important; } }
@@ -187,7 +193,7 @@ textarea.campo { min-height: 78px; resize: vertical; line-height: 1.4; font-weig
 .grupo-campo .etq-campo { margin-top: 14px; }
 .error-campo { color: var(--rt); font-weight: 700; font-size: 13px; margin: 6px 2px 0; }
 .redes-campos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.redes-campos .campo { min-height: 46px; font-size: 15px; padding: 10px 12px 10px 104px; }
+.redes-campos .campo { min-height: 46px; font-size: 16px; padding: 10px 12px 10px 104px; }
 .prefijo.red > span { font-size: 13.5px; font-weight: 800; }
 .form-datos h2 { font-size: 18px; margin: 2px 0 0; font-weight: 800; letter-spacing: -.01em; }
 .form-datos > .nota { margin-top: 4px; }
@@ -211,7 +217,7 @@ button.enlace {
 .datos-lista dt { color: var(--m); font-weight: 700; font-size: 13px; }
 .datos-lista dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .dato-fijo { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--c2); font-weight: 700; }
-.zona-aviso-datos { max-width: none; margin: 0; padding: 10px 16px 0; }
+.zona-aviso-datos { max-width: none; margin: 0; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
 .aviso-datos {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   background: var(--avs); color: var(--av); border: 1px solid var(--b); border-radius: var(--radio); padding: 10px 12px;
@@ -332,7 +338,9 @@ button.enlace {
 @media (min-width: 768px) {
   .navegacion { display: none; }
   .pestanas {
-    display: flex; gap: 6px; max-width: none; margin: 0; padding: 8px 20px 0; position: sticky; top: 51px; z-index: 25; background: var(--s);
+    display: flex; gap: 6px; max-width: none; margin: 0; position: sticky; z-index: 25; background: var(--s);
+    top: calc(61px + env(safe-area-inset-top, 0px));
+    padding: 8px max(20px, env(safe-area-inset-right, 0px)) 0 max(20px, env(safe-area-inset-left, 0px));
   }
   .pestanas a {
     display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 12px; text-decoration: none;
@@ -340,8 +348,8 @@ button.enlace {
   }
   .pestanas a[aria-current="page"] { background: var(--c); color: var(--rt); border-color: var(--b); box-shadow: var(--sombra2); }
   .pestanas .ico { width: 18px; height: 18px; }
-  .contenido { padding: 14px 20px 36px; }
-  .zona-aviso-datos { padding: 10px 20px 0; }
+  .contenido { padding: 14px max(20px, env(safe-area-inset-right, 0px)) 36px max(20px, env(safe-area-inset-left, 0px)); }
+  .zona-aviso-datos { padding: 10px max(20px, env(safe-area-inset-right, 0px)) 0 max(20px, env(safe-area-inset-left, 0px)); }
   .aviso { bottom: 28px; }
   .productos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .rejilla.dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
@@ -361,6 +369,18 @@ button.enlace {
 @media (min-width: 1024px) {
   .productos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+/* Teléfono y teléfono grande: el título no se aplasta y los botones bajan de renglón. El iPad (768) sigue en una línea. */
+@media (max-width: 767px) {
+  .cabecera { flex-wrap: wrap; row-gap: 8px; }
+  .cabecera .titulo { flex: 1 1 auto; min-width: 8.5rem; }
+  .cabecera::after { content: ''; order: 3; flex-basis: 100%; height: 0; }
+  .cabecera .logo-d { order: 1; }
+  .cabecera .titulo { order: 2; }
+  .cabecera .yo { order: 3; }
+  .cabecera > .btn, .cabecera > .tema, .cabecera > .idioma, .cabecera > .salir {
+    order: 4; flex: 1 1 calc(50% - 10px); max-width: calc(50% - 5px); justify-content: center; min-height: 44px;
+  }
+}
 @media (max-width: 420px) {
   .filtros .dos { grid-template-columns: minmax(0, 1fr); }
   .cabecera .yo { display: none; }
@@ -379,7 +399,7 @@ button.enlace {
 .firma-ya .nombre { font-family: 'Segoe Script', 'Snell Roundhand', 'Apple Chancery', cursive; font-size: 32px; line-height: 1; color: var(--rt); margin: 2px 0; }
 .firma-ya .dato { font-size: 12.5px; color: var(--m); font-weight: 600; }
 .correo-enviado { border: 1px solid var(--b); border-radius: 14px; overflow: hidden; background: var(--c); margin-top: 14px; text-align: left; }
-.correo-enviado .franja { background: var(--r); color: #fff; padding: 12px 14px; font-weight: 800; white-space: nowrap; }
+.correo-enviado .franja { background: var(--r); color: #fff; padding: 12px 14px; font-weight: 800; overflow-wrap: anywhere; }
 .correo-enviado .cuerpo { padding: 14px; }
 .correo-enviado .fila { display: flex; gap: 8px; margin: 0 0 6px; }
 .correo-enviado .fila span { color: var(--m); width: 54px; flex: 0 0 auto; font-weight: 700; }
