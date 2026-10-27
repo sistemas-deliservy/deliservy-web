@@ -28,7 +28,7 @@
     esDueno: false,
     puede: function (permiso) { return ctx.esDueno || (ctx.cuenta && (ctx.cuenta.permisos || []).indexOf(permiso) >= 0); },
   };
-  var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', correo: '', espera: null, verificando: false };
+  var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', telefonoNacional: '', correo: '', espera: null, verificando: false };
 
   /** Los pedidos que ya abrió en este navegador (para la pastilla «Nuevo»). */
   var vistos = (function () { var v = C.almacen.leer(CLAVE_VISTOS); return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'number'; }) : []; })();
@@ -83,6 +83,118 @@
     }, claro ? (en ? 'Dark' : 'Oscuro') : (en ? 'Light' : 'Claro'));
   }
 
+  // El +58 sigue siendo el defecto. Al presionarlo se elige otro país; Estados Unidos va segundo.
+  var PAISES = (raiz.PAISES_DEL_TELEFONO && raiz.PAISES_DEL_TELEFONO.length >= 2) ? raiz.PAISES_DEL_TELEFONO : [
+    ['VE', '58', 'Venezuela', 'Venezuela'],
+    ['US', '1', 'Estados Unidos', 'United States'],
+  ];
+  var paisElegido = 'VE';
+
+  function paisPorIso(iso) {
+    for (var i = 0; i < PAISES.length; i++) if (PAISES[i][0] === iso) return PAISES[i];
+    return PAISES[0];
+  }
+  function plano(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  /**
+   * Lo que viaja a la API. Con +58 se manda tal como se escribió (la API pone el +58): 04xx, 10 dígitos.
+   * Con +1 son 10 dígitos locales, sin repetir el 1. Otro país va en E.164.
+   */
+  function telefonoParaLaApi(iso, escrito) {
+    var codigo = paisPorIso(iso)[1];
+    var crudo = String(escrito == null ? '' : escrito).trim();
+    var d = crudo.replace(/\D/g, '');
+    if (codigo === '58') {
+      var n = d;
+      if (n.startsWith('58') && n.length === 12) n = n.slice(2);
+      if (n.charAt(0) === '0' && n.length === 11) n = n.slice(1);
+      if (!/^4\d{9}$/.test(n)) return { error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' };
+      return { telefono: crudo };
+    }
+    if (codigo === '1') {
+      if (d.startsWith('1') && d.length === 11) d = d.slice(1);
+      if (d.charAt(0) === '0' && d.length === 11) d = d.slice(1);
+      if (!/^[2-9]\d{9}$/.test(d)) return { error: 'Escribe los 10 dígitos, sin el +1.' };
+      return { telefono: '+1' + d };
+    }
+    if (d.startsWith(codigo) && d.length - codigo.length >= 8 && d.length <= 15) d = d.slice(codigo.length);
+    if (d.charAt(0) === '0') d = d.replace(/^0+/, '');
+    var todo = codigo + d;
+    if (!/^[1-9]\d{7,14}$/.test(todo)) return { error: 'Escribe el número local, sin el código del país.' };
+    return { telefono: '+' + todo };
+  }
+
+  function abrirPaises(alElegir) {
+    var buscar = h('input', {
+      class: 'campo', id: 'pais-buscar', type: 'search', autocomplete: 'off', enterkeyhint: 'search',
+      placeholder: 'Buscar país o código', 'aria-label': 'Buscar país o código',
+    });
+    var lista = h('div', { class: 'lista-paises', role: 'listbox', 'aria-label': 'Código del país' });
+    function pintarLista() {
+      var q = String(buscar.value || '').trim().replace(/^\+/, '');
+      var busqueda = plano(q);
+      while (lista.firstChild) lista.removeChild(lista.firstChild);
+      var n = 0;
+      PAISES.forEach(function (p) {
+        var codigo = p[1];
+        var es = String(p[2] || '');
+        var en = String(p[3] || '');
+        if (busqueda && plano(es).indexOf(busqueda) < 0 && plano(en).indexOf(busqueda) < 0 && codigo.indexOf(busqueda) < 0 && ('+' + codigo).indexOf(busqueda) < 0) return;
+        n += 1;
+        lista.appendChild(h('button', {
+          type: 'button', class: p[0] === paisElegido ? 'elegido' : '', role: 'option',
+          'aria-selected': p[0] === paisElegido ? 'true' : 'false',
+          onclick: function () {
+            paisElegido = p[0];
+            dialogo.cerrar();
+            if (alElegir) alElegir(p);
+          },
+        }, dato('span', null, C.segunIdioma(es, en)), dato('b', null, '+' + codigo)));
+      });
+      if (!n) ponerListaVacia();
+    }
+    function ponerListaVacia() { lista.appendChild(h('p', { class: 'nota' }, 'Ningún país coincide.')); }
+    buscar.addEventListener('input', pintarLista);
+    var dialogo = C.abrirDialogo({
+      titulo: 'Código del país',
+      cuerpo: [
+        h('p', { class: 'nota' }, 'Venezuela queda primero. Presiona un país para usar su código.'),
+        buscar,
+        lista,
+      ],
+    });
+    pintarLista();
+  }
+
+  /** El prefijo (+58 por defecto) y el número local. `leer()` es lo que se manda a la API. */
+  function campoDeWhatsapp(id, valor) {
+    var pais = paisPorIso(paisElegido);
+    var cifra = dato('span', null, '+' + pais[1]);
+    var input = h('input', {
+      class: 'campo', id: id, name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
+      placeholder: pais[1] === '58' ? '412 555 0198' : (pais[1] === '1' ? '669 225 5520' : '201 555 0123'),
+      value: valor || '', required: true, maxlength: '20',
+    });
+    var boton = h('button', {
+      class: 'codigo-pais', type: 'button', 'aria-haspopup': 'dialog', 'aria-label': 'Código del país',
+      title: 'Presiona para elegir el código de tu país.',
+      onclick: function (ev) {
+        ev.preventDefault();
+        abrirPaises(function (p) {
+          cifra.textContent = '+' + p[1];
+          input.placeholder = p[1] === '58' ? '412 555 0198' : (p[1] === '1' ? '669 225 5520' : '201 555 0123');
+          input.focus();
+        });
+      },
+    }, cifra, ico('abajo'));
+    return {
+      fila: h('div', { class: 'prefijo tel' }, boton, input),
+      input: input,
+      leer: function () { return telefonoParaLaApi(paisElegido, input.value); },
+    };
+  }
+
   function pintar(nodo) { C.cerrarDialogos(); C.vaciar(app); C.poner(app, nodo); }
   function logo(clase) { return h('img', { class: clase || 'logo-marca', src: '/assets/logo-icon.png', alt: '', width: '40', height: '40' }); }
 
@@ -115,7 +227,7 @@
         h('button', { class: 'btn borde chico', type: 'button', onclick: function () {
           clearInterval(entrada.espera);
           if (porCorreo) { entrada.paso = 'correo'; pintar(pantallaEntrar('correo', { correo: entrada.correo })); enfocar('correo-entrar'); }
-          else { entrada.paso = 'telefono'; pintar(pantallaEntrar('telefono', { telefono: entrada.telefono })); enfocar('telefono'); }
+          else { entrada.paso = 'telefono'; pintar(pantallaEntrar('telefono', { telefono: entrada.telefonoNacional || '' })); enfocar('telefono'); }
         } }, porCorreo ? 'Cambiar correo' : 'Cambiar número'),
         reenviar));
     } else if (paso === 'correo') {
@@ -139,22 +251,21 @@
       h('p', { class: 'ayuda' }, 'Te mandamos un código al correo de la cuenta del dueño. El cajero entra con WhatsApp.'),
       h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'whatsapp'; entrada.paso = 'telefono'; pintar(pantallaEntrar('telefono')); enfocar('telefono'); } }, 'Entrar con WhatsApp')));
     } else {
-      var telefono = h('input', {
-        class: 'campo', id: 'telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
-        placeholder: '412 555 0198', value: d.telefono || '', required: true, maxlength: '20',
-      });
+      var telefono = campoDeWhatsapp('telefono', d.telefono || entrada.telefonoNacional || '');
       cuerpo = h('form', {
         novalidate: true,
         onsubmit: function (ev) {
           ev.preventDefault();
-          var tel = String(telefono.value || '').trim();
-          if (!C.telefonoValido(tel)) { pintar(pantallaEntrar('telefono', { telefono: tel, error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' })); enfocar('telefono'); return; }
-          pedirCodigo(tel, ev.target.querySelector('button[type="submit"]'), false);
+          var leido = telefono.leer();
+          var nacional = String(telefono.input.value || '');
+          if (leido.error) { pintar(pantallaEntrar('telefono', { telefono: nacional, error: leido.error })); enfocar('telefono'); return; }
+          entrada.telefonoNacional = nacional;
+          pedirCodigo(leido.telefono, ev.target.querySelector('button[type="submit"]'), false);
         },
       },
       d.aviso ? h('p', { class: 'aviso-entrar', role: 'status' }, d.aviso) : null,
       h('label', { class: 'etq-campo', for: 'telefono' }, 'Tu número de WhatsApp'),
-      h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
+      telefono.fila,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'),
@@ -197,7 +308,7 @@
       if (reenvio) C.avisar('Te enviamos otro código');
     }, function (e) {
       if (boton) boton.disabled = false;
-      pintar(pantallaEntrar(entrada.paso, { telefono: telefono, error: e.message }));
+      pintar(pantallaEntrar(entrada.paso, { telefono: entrada.paso === 'telefono' ? (entrada.telefonoNacional || '') : telefono, error: e.message }));
       if (entrada.paso === 'codigo') { cuentaAtras(); enfocar('codigo'); } else enfocar('telefono');
     });
   }

@@ -333,6 +333,129 @@
    */
   function segunIdioma(es, en) { return idiomaActual() === 'en' ? en : es; }
 
+  // El +58 sigue siendo el defecto. Al presionarlo se elige otro país; Estados Unidos va segundo.
+  var PAISES = (raiz.PAISES_DEL_TELEFONO && raiz.PAISES_DEL_TELEFONO.length >= 2) ? raiz.PAISES_DEL_TELEFONO : [
+    ['VE', '58', 'Venezuela', 'Venezuela'],
+    ['US', '1', 'Estados Unidos', 'United States'],
+  ];
+  var paisElegido = 'VE';
+
+  function paisPorIso(iso) {
+    for (var i = 0; i < PAISES.length; i++) if (PAISES[i][0] === iso) return PAISES[i];
+    return PAISES[0];
+  }
+
+  function plano(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  /**
+   * Lo que viaja a la API. Con +58 se manda tal como se escribió (la API pone el +58): 04xx, 10 dígitos.
+   * Con +1 son 10 dígitos locales (`+16692255520`), sin repetir el 1. Otro país va en E.164.
+   */
+  function telefonoParaLaApi(iso, escrito) {
+    var codigo = paisPorIso(iso)[1];
+    var crudo = String(escrito == null ? '' : escrito).trim();
+    var d = crudo.replace(/\D/g, '');
+    if (codigo === '58') {
+      var n = d;
+      if (n.startsWith('58') && n.length === 12) n = n.slice(2);
+      if (n.charAt(0) === '0' && n.length === 11) n = n.slice(1);
+      if (!/^4\d{9}$/.test(n)) return { error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' };
+      return { telefono: crudo };
+    }
+    if (codigo === '1') {
+      if (d.startsWith('1') && d.length === 11) d = d.slice(1);
+      if (d.charAt(0) === '0' && d.length === 11) d = d.slice(1);
+      if (!/^[2-9]\d{9}$/.test(d)) return { error: 'Escribe los 10 dígitos, sin el +1.' };
+      return { telefono: '+1' + d };
+    }
+    if (d.startsWith(codigo) && d.length - codigo.length >= 8 && d.length <= 15) d = d.slice(codigo.length);
+    if (d.charAt(0) === '0') d = d.replace(/^0+/, '');
+    var todo = codigo + d;
+    if (!/^[1-9]\d{7,14}$/.test(todo)) return { error: 'Escribe el número local, sin el código del país.' };
+    return { telefono: '+' + todo };
+  }
+
+  function cerrarPaises() {
+    var c = documento.getElementById('capa-paises');
+    if (c && c.parentNode) c.parentNode.removeChild(c);
+  }
+
+  function abrirPaises(alElegir) {
+    cerrarPaises();
+    var buscar = h('input', {
+      class: 'campo', id: 'pais-buscar', type: 'search', autocomplete: 'off', enterkeyhint: 'search',
+      placeholder: 'Buscar país o código', 'aria-label': 'Buscar país o código',
+    });
+    var lista = h('div', { class: 'lista-paises', role: 'listbox', 'aria-label': 'Código del país' });
+    function pintarLista() {
+      var q = String(buscar.value || '').trim().toLowerCase().replace(/^\+/, '');
+      while (lista.firstChild) lista.removeChild(lista.firstChild);
+      var n = 0;
+      PAISES.forEach(function (p) {
+        var codigo = p[1];
+        var es = String(p[2] || '');
+        var en = String(p[3] || '');
+        var busqueda = plano(q);
+        if (busqueda && plano(es).indexOf(busqueda) < 0 && plano(en).indexOf(busqueda) < 0 && codigo.indexOf(busqueda) < 0 && ('+' + codigo).indexOf(busqueda) < 0) return;
+        n += 1;
+        var fila = h('button', {
+          type: 'button', class: p[0] === paisElegido ? 'elegido' : '', role: 'option',
+          'aria-selected': p[0] === paisElegido ? 'true' : 'false',
+          onclick: function () {
+            paisElegido = p[0];
+            cerrarPaises();
+            if (alElegir) alElegir(p);
+          },
+        }, dato('span', null, segunIdioma(es, en)), dato('b', null, '+' + codigo));
+        lista.appendChild(fila);
+      });
+      if (!n) poner(lista, h('p', { class: 'nota' }, 'Ningún país coincide.'));
+    }
+    buscar.addEventListener('input', pintarLista);
+    var capa = h('div', { id: 'capa-paises' },
+      h('div', { class: 'velo', onclick: cerrarPaises }),
+      h('div', { class: 'hoja paises', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'paises-titulo' },
+        h('div', { class: 'asa' }),
+        h('h2', { id: 'paises-titulo' }, 'Código del país'),
+        h('p', { class: 'nota' }, 'Venezuela queda primero. Presiona un país para usar su código.'),
+        buscar,
+        lista,
+        h('div', { class: 'botones' }, h('button', { class: 'btn borde', type: 'button', onclick: cerrarPaises }, 'Listo'))));
+    documento.body.appendChild(capa);
+    pintarLista();
+    buscar.focus();
+  }
+
+  /** El prefijo (+58 por defecto) y el número local. `leer()` es lo que se manda a la API. */
+  function campoDeWhatsapp(id, valor) {
+    var pais = paisPorIso(paisElegido);
+    var cifra = dato('span', null, '+' + pais[1]);
+    var input = h('input', {
+      class: 'campo', id: id, name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
+      placeholder: pais[1] === '58' ? '412 555 0198' : '201 555 0123',
+      value: valor || '', required: true,
+    });
+    var boton = h('button', {
+      class: 'codigo-pais', type: 'button', 'aria-haspopup': 'dialog', 'aria-label': 'Código del país',
+      title: 'Presiona para elegir el código de tu país.',
+      onclick: function (ev) {
+        ev.preventDefault();
+        abrirPaises(function (p) {
+          cifra.textContent = '+' + p[1];
+          input.placeholder = p[1] === '58' ? '412 555 0198' : '201 555 0123';
+          input.focus();
+        });
+      },
+    }, cifra, ico('abajo'));
+    return {
+      fila: h('div', { class: 'prefijo tel' }, boton, input),
+      input: input,
+      leer: function () { return telefonoParaLaApi(paisElegido, input.value); },
+    };
+  }
+
   function botonIdioma() {
     var en = idiomaActual() === 'en';
     return h('button', {
@@ -501,7 +624,7 @@
         h('button', { class: 'btn borde chico', type: 'button', onclick: function () {
           clearInterval(entrada.espera);
           if (porCorreo) { entrada.paso = 'correo'; pintar(entrar('correo', { correo: entrada.correo })); }
-          else { entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: entrada.telefono })); }
+          else { entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: entrada.telefonoNacional })); }
         } }, porCorreo ? 'Cambiar correo' : 'Cambiar número'),
         reenviar));
     } else if (paso === 'correo') {
@@ -525,10 +648,7 @@
       h('p', { class: 'ayuda' }, 'Te mandamos un código por correo. WhatsApp sigue disponible.'),
       h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'whatsapp'; entrada.paso = 'telefono'; pintar(entrar('telefono')); } }, 'Entrar con WhatsApp')));
     } else if (paso === 'clave') {
-      var telClave = h('input', {
-        class: 'campo', id: 'telefono-clave', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
-        placeholder: '412 555 0198', value: d.telefono || entrada.telefono || '', required: true,
-      });
+      var telClave = campoDeWhatsapp('telefono-clave', d.telefono || entrada.telefonoNacional || '');
       var claveEntrar = h('input', {
         class: 'campo', id: 'clave-entrar', name: 'clave', type: 'password', autocomplete: 'current-password', maxlength: '72', required: true,
       });
@@ -536,49 +656,51 @@
         novalidate: true,
         onsubmit: function (ev) {
           ev.preventDefault();
-          var tel = String(telClave.value || '').trim();
+          var leido = telClave.leer();
+          var nacional = String(telClave.input.value || '');
           var clave = String(claveEntrar.value || '');
-          if (tel.replace(/\D/g, '').length < 10) { pintar(entrar('clave', { telefono: tel, error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' })); return; }
-          if (clave.length < 8) { pintar(entrar('clave', { telefono: tel, error: 'La contraseña va de 8 a 72 caracteres.' })); return; }
+          if (leido.error) { pintar(entrar('clave', { telefono: nacional, error: leido.error })); return; }
+          if (clave.length < 8) { pintar(entrar('clave', { telefono: nacional, error: 'La contraseña va de 8 a 72 caracteres.' })); return; }
           var boton = ev.target.querySelector('button[type="submit"]');
           boton.disabled = true;
-          pedir('POST', '/acceso/clave', { telefono: tel, clave: clave }).then(function (r) {
+          pedir('POST', '/acceso/clave', { telefono: leido.telefono, clave: clave }).then(function (r) {
             boton.disabled = false;
-            if (!r || typeof r.token !== 'string') { pintar(entrar('clave', { telefono: tel, error: 'Ese dato o esa contraseña no coinciden.' })); return; }
-            entrada.telefono = tel;
+            if (!r || typeof r.token !== 'string') { pintar(entrar('clave', { telefono: nacional, error: 'Ese dato o esa contraseña no coinciden.' })); return; }
+            entrada.telefono = leido.telefono;
+            entrada.telefonoNacional = nacional;
             sesion.guardar(r.token);
             arrancar();
           }, function (e) {
             boton.disabled = false;
-            pintar(entrar('clave', { telefono: tel, error: e.message || 'Ese dato o esa contraseña no coinciden.' }));
+            pintar(entrar('clave', { telefono: nacional, error: e.message || 'Ese dato o esa contraseña no coinciden.' }));
           });
         },
       },
       h('label', { class: 'etq-campo', for: 'telefono-clave' }, 'Tu número de WhatsApp'),
-      h('div', { class: 'prefijo' }, h('span', null, '+58'), telClave),
+      telClave.fila,
       grupoDeCampo('clave-entrar', 'Contraseña', claveEntrar, d.error),
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Entrar')),
-      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: telClave.value })); } }, 'Entrar con WhatsApp')));
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'telefono'; pintar(entrar('telefono', { telefono: telClave.input.value })); } }, 'Entrar con WhatsApp')));
     } else {
-      var telefono = h('input', {
-        class: 'campo', id: 'telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
-        placeholder: '412 555 0198', value: d.telefono || '', required: true,
-      });
+      var telefono = campoDeWhatsapp('telefono', d.telefono || '');
       cuerpo = h('form', {
         novalidate: true,
         onsubmit: function (ev) {
           ev.preventDefault();
-          var tel = String(telefono.value || '').trim();
-          if (tel.replace(/\D/g, '').length < 10) { pintar(entrar('telefono', { telefono: tel, error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' })); return; }
-          pedirCodigo(tel, ev.target.querySelector('button[type="submit"]'));
+          var leido = telefono.leer();
+          var nacional = String(telefono.input.value || '');
+          if (leido.error) { pintar(entrar('telefono', { telefono: nacional, error: leido.error })); return; }
+          entrada.telefonoNacional = nacional;
+          pedirCodigo(leido.telefono, ev.target.querySelector('button[type="submit"]'));
         },
       },
       h('label', { class: 'etq-campo', for: 'telefono' }, 'Tu número de WhatsApp'),
-      h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
+      telefono.fila,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp.'),
-      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'clave'; pintar(entrar('clave', { telefono: telefono.value })); } }, 'Entrar con contraseña')),
+      h('p', { class: 'ayuda' }, 'El +58 es Venezuela. Presiona el código para elegir otro país.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'clave'; pintar(entrar('clave', { telefono: telefono.input.value })); } }, 'Entrar con contraseña')),
       h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(entrar('correo')); } }, 'Entrar con correo')));
     }
     return sinSesion('Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.', cuerpo,
@@ -641,7 +763,7 @@
         h('b', null, 'Ese número ya está registrado'),
         dato('p', { class: 'nota sin-cortes' }, telefonoParaVer(reg.telefono)),
         h('p', { class: 'nota' }, 'Entra con tu WhatsApp.'),
-        h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'button', onclick: function () { irAEntrar(reg.telefono); } }, 'Entrar')));
+        h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'button', onclick: function () { irAEntrar(reg.telefonoNacional || reg.telefono); } }, 'Entrar')));
     } else if (paso === 'codigo') {
       var casillas = casillasDeCodigo('r-codigo', function (cod) { codigoDeRegistro(cod); });
       var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'reenviar', disabled: true, onclick: function () { pedirCodigoDeRegistro(reg.telefono, reenviar, true); } }, 'Reenviar código');
@@ -661,33 +783,33 @@
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, reg.listo ? 'Enviar' : 'Seguir')),
       h('div', { class: 'botones' },
-        h('button', { class: 'btn borde chico', type: 'button', onclick: function () { clearInterval(entrada.espera); pintar(registro('telefono', { telefono: reg.telefono })); } }, 'Cambiar número'),
+        h('button', { class: 'btn borde chico', type: 'button', onclick: function () { clearInterval(entrada.espera); pintar(registro('telefono', { telefono: reg.telefonoNacional })); } }, 'Cambiar número'),
         reenviar));
     } else if (paso === 'datos') {
       cuerpo = formularioDeRegistro(d);
     } else {
-      var telefono = h('input', {
-        class: 'campo', id: 'r-telefono', name: 'telefono', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national',
-        placeholder: '412 555 0198', value: d.telefono || '', required: true,
-      });
+      var telefono = campoDeWhatsapp('r-telefono', d.telefono || '');
       cuerpo = h('form', {
         novalidate: true,
         onsubmit: function (ev) {
           ev.preventDefault();
-          var tel = String(telefono.value || '').trim();
-          if (tel.replace(/\D/g, '').length < 10) { pintar(registro('telefono', { telefono: tel, error: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.' })); return; }
-          pedirCodigoDeRegistro(tel, ev.target.querySelector('button[type="submit"]'), false);
+          var leido = telefono.leer();
+          var nacional = String(telefono.input.value || '');
+          if (leido.error) { pintar(registro('telefono', { telefono: nacional, error: leido.error })); return; }
+          reg.telefonoNacional = nacional;
+          pedirCodigoDeRegistro(leido.telefono, ev.target.querySelector('button[type="submit"]'), false);
         },
       },
       h('p', { class: 'paso' }, 'Paso 1 de 3'),
       h('label', { class: 'etq-campo', for: 'r-telefono' }, 'Tu número de WhatsApp'),
-      h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
+      telefono.fila,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
+      h('p', { class: 'ayuda' }, 'El +58 es Venezuela. Presiona el código para elegir otro país.'),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp para confirmarlo.'));
     }
     return sinSesion('Regístrate y gana en cada venta que hagas con tus enlaces.', cuerpo,
-      h('p', { class: 'pie-entrar' }, '¿Ya vendes con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: function () { irAEntrar(reg.telefono); } }, 'Entrar')));
+      h('p', { class: 'pie-entrar' }, '¿Ya vendes con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: function () { irAEntrar(reg.telefonoNacional || ''); } }, 'Entrar')));
   }
 
   /** Paso 3: los datos para facturar. Lo escrito vive en `reg.escrito` (así un error no borra nada). */
@@ -1320,7 +1442,7 @@
     fotoSegura: fotoSegura, urlSegura: urlSegura, hrefSeguro: hrefSeguro, enlacesParaCompartir: enlacesParaCompartir,
     verificadorDelRif: verificadorDelRif, documentoNormalizado: documentoNormalizado, documentoParaVer: documentoParaVer,
     numeroDelDocumento: numeroDelDocumento, nombreValido: nombreValido, correoValido: correoValido, revisarDatos: revisarDatos,
-    telefonoParaVer: telefonoParaVer,
+    telefonoParaVer: telefonoParaVer, telefonoParaLaApi: telefonoParaLaApi, paisesDelTelefono: function () { return PAISES; },
   };
 
   if (!documento || !documento.getElementById || !documento.getElementById('app')) return; // (en las pruebas, hasta aquí)
@@ -1351,9 +1473,9 @@
     // Sus datos para facturar (`GET /yo`: `datos` y `faltanDatos`) y si «Mis datos» está abierto para cambiarlos.
     datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false, soloVer: false,
   };
-  var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', correo: '', espera: null, verificando: false };
+  var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', telefonoNacional: '', correo: '', espera: null, verificando: false };
   /** El registro en curso: su WhatsApp, el código, lo escrito en el formulario y lo que se manda. */
-  function registroNuevo() { return { telefono: '', codigo: '', escrito: null, paraEnviar: null, listo: false, enviando: false }; }
+  function registroNuevo() { return { telefono: '', telefonoNacional: '', codigo: '', escrito: null, paraEnviar: null, listo: false, enviando: false }; }
   var reg = registroNuevo();
 
   function pedir(metodo, ruta, cuerpo) {
@@ -1808,7 +1930,7 @@
       cuentaAtras();
     }, function (e) {
       if (boton) boton.disabled = false;
-      pintar(entrar(entrada.paso, { telefono: telefono, error: e.message }));
+      pintar(entrar(entrada.paso, { telefono: entrada.telefonoNacional, error: e.message }));
       if (entrada.paso === 'codigo') cuentaAtras();
     });
   }
@@ -1874,15 +1996,15 @@
   }
   function mostrarRegistro() {
     clearInterval(entrada.espera);
-    pintar(registro('telefono', { telefono: reg.telefono || entrada.telefono }));
+    pintar(registro('telefono', { telefono: reg.telefonoNacional || entrada.telefonoNacional || '' }));
   }
   /** «Entrar» (desde el registro): la pantalla de entrar con su número ya escrito. */
   function irAEntrar(telefono) {
     clearInterval(entrada.espera);
     entrada.paso = 'telefono';
-    entrada.telefono = telefono || '';
+    entrada.telefonoNacional = telefono || '';
     if (raiz.location.hash === '#registro') { try { raiz.history.pushState(null, '', raiz.location.pathname); } catch (_) { /* se queda el «#» */ } }
-    pintar(entrar('telefono', { telefono: entrada.telefono }));
+    pintar(entrar('telefono', { telefono: entrada.telefonoNacional }));
   }
 
   /** Paso 1: el código por WhatsApp. Si ese número ya vende, «Ese número ya está registrado» y «Entrar». */
@@ -1897,7 +2019,7 @@
       if (reenvio) avisar('Te enviamos otro código');
     }, function (e) {
       if (boton) boton.disabled = false;
-      pintar(registro(reenvio ? 'codigo' : 'telefono', { telefono: telefono, error: e.message }));
+      pintar(registro(reenvio ? 'codigo' : 'telefono', { telefono: reg.telefonoNacional, error: e.message }));
       if (reenvio) cuentaAtras();
     });
   }
@@ -2029,7 +2151,11 @@
     });
   }
 
-  documento.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cerrarHoja(); });
+  documento.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Escape') return;
+    if (documento.getElementById('capa-paises')) { cerrarPaises(); return; }
+    cerrarHoja();
+  });
   raiz.addEventListener('hashchange', function () {
     if (estado.yo) { mostrar(); return; }
     if (sesion.leer()) return; // entrando: lo pinta `arrancar`

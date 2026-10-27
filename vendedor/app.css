@@ -158,6 +158,24 @@ select.campo { appearance: none; -webkit-appearance: none; background-image: non
 .prefijo { position: relative; }
 .prefijo > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 800; color: var(--m); pointer-events: none; }
 .prefijo > .campo { padding-left: 54px; }
+.prefijo.tel { display: flex; align-items: stretch; gap: 8px; }
+.prefijo.tel > .campo { padding-left: 14px; flex: 1; min-width: 0; }
+.codigo-pais {
+  flex: 0 0 auto; min-width: 84px; min-height: 48px; padding: 0 10px; border-radius: 14px;
+  border: 1px solid var(--b); background: var(--c2); color: var(--t); font-weight: 800; font-size: 16px;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+}
+.codigo-pais .ico { width: 16px; height: 16px; color: var(--m); }
+.hoja.paises { display: flex; flex-direction: column; }
+.lista-paises { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; max-height: min(52vh, 420px); overflow-y: auto; }
+.lista-paises button {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid transparent;
+  background: transparent; color: var(--t); font-weight: 700; font-size: 15px; text-align: left; cursor: pointer;
+}
+.lista-paises button b { font-weight: 800; color: var(--m); }
+.lista-paises button.elegido { border-color: var(--r); background: var(--rs); }
+.lista-paises button.elegido b { color: var(--rt); }
 /* Dentro de una tarjeta blanca, los campos con relleno suave (nada blanco sobre blanco). */
 .tarjeta .campo { background: var(--c2); }
 .tarjeta .campo:focus { background: var(--c); }

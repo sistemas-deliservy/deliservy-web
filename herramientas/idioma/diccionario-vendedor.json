@@ -283,5 +283,13 @@
 "Cambiar correo": "Change email",
 "Escribe el código que te llegó por correo.": "Enter the code you got by email.",
 "Por favor espera, está procesando.": "Please wait, it is processing.",
-"No se pudo enviar. Intenta de nuevo.": "Couldn't send it. Try again."
+"No se pudo enviar. Intenta de nuevo.": "Couldn't send it. Try again.",
+"Código del país": "Country code",
+"Buscar país o código": "Search country or code",
+"Ningún país coincide.": "No country matches.",
+"Escribe el número local, sin el código del país.": "Enter the local number, without the country code.",
+"Presiona para elegir el código de tu país.": "Press to choose your country code.",
+"El +58 es Venezuela. Presiona el código para elegir otro país.": "The +58 is Venezuela. Press the code to choose another country.",
+"Venezuela queda primero. Presiona un país para usar su código.": "Venezuela stays first. Press a country to use its code.",
+"Escribe los 10 dígitos, sin el +1.": "Enter the 10 digits, without the +1."
 }
