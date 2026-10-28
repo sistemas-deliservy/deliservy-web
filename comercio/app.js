@@ -279,7 +279,8 @@
         h('p', null, 'Entra con tu WhatsApp. Aquí ves tus pedidos, tus productos y tu dinero.')),
       h('div', { class: 'tarjeta' }, cuerpo),
       h('p', { class: 'pie-entrar' }, '¿Aún no vendes con Deliservy? ', h('a', { href: C.WHATSAPP, target: '_blank', rel: 'noopener noreferrer' }, 'Escríbenos')),
-      h('div', { class: 'pie-idioma' }, botonIdioma(), botonTema()));
+      h('div', { class: 'pie-idioma' }, botonIdioma(), botonTema()),
+      h('img', { class: 'foto-lado', src: '/comercio/foto-registro.jpg?v=2026102803', alt: '' }));
   }
 
   function enfocar(id) {

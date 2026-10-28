@@ -594,7 +594,8 @@
         h('p', null, texto)),
       h('div', { class: 'tarjeta' }, cuerpo),
       pie,
-      h('div', { class: 'pie-idioma' }, botonTema(), botonIdioma()));
+      h('div', { class: 'pie-idioma' }, botonTema(), botonIdioma()),
+      fotoDeRegistro());
   }
 
   function entrar(paso, d) {
@@ -1091,6 +1092,14 @@
     return cuadroFoto(foto, { clase: 'logo', claseVacia: 'inicial', nombre: nombre || '' });
   }
 
+  /** Foto fija del registro. La ruta es de esta web: no pasa por el filtro de fotos del catálogo. */
+  function fotoDeRegistro() {
+    var img = documento.createElement('img');
+    img.className = 'foto-lado';
+    img.alt = '';
+    img.setAttribute('src', '/vendedor/foto-registro.jpg?v=2026102803');
+    return img;
+  }
   /** El logo de Deliservy (el archivo de la marca). La ruta es fija: no pasa por el filtro de fotos del catálogo. */
   function marcaDeliservy() {
     var img = documento.createElement('img');

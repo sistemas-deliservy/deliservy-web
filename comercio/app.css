@@ -365,6 +365,7 @@ html.claro .segmentos button[aria-selected="true"] { background: #fff; }
 
 /* ── Entrar ── */
 .entrar { max-width: 440px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 40px; }
+.foto-lado { display: none; }
 .entrar .marca { text-align: center; margin-bottom: 18px; }
 .logo-entrar { width: 72px; height: 72px; margin: 0 auto 10px; }
 .entrar .marca small { display: block; font-size: 11px; font-weight: 800; color: var(--rt); text-transform: uppercase; letter-spacing: .08em; }
@@ -908,6 +909,23 @@ html.claro .segmentos button[aria-selected="true"] { background: #fff; }
   .entrar > :not(.marca) { grid-column: 2; min-width: 0; }
   .entrar > .tarjeta,
   .entrar > form { width: 100%; }
+  /* El cuadro llega hasta la mitad. La foto ocupa la otra mitad y no baja de ahí. */
+  .entrar:has(.foto-lado) {
+    grid-template-columns: minmax(200px, 240px) minmax(320px, 42vw) minmax(0, 1fr);
+  }
+  .entrar > .foto-lado {
+    display: block; grid-column: 3; grid-row: 1 / span 8; align-self: start;
+    width: 100%; height: 50vh; max-height: 50vh; object-fit: cover; object-position: center 28%;
+    border-radius: 0;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%),
+      linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%),
+      linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+    mask-composite: intersect;
+  }
   .firma-pagina .tarjeta,
   .entrar form.datos {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; align-items: start;
