@@ -23,6 +23,8 @@
   RewriteRule ^pedido/[A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43}/?$ tienda.php [L]
   RewriteRule ^p/[0-9]{1,10}/?$ tienda.php [L]
   RewriteRule ^t/[0-9]{1,10}/?$ tienda.php [L]
+  # La baja del correo de las campañas. La barra se queda en www; baja.php le pide la página al panel.
+  RewriteRule ^baja/[A-Za-z0-9]{8,80}/?$ baja.php [L]
 </IfModule>
 
 # Sin mod_rewrite, al menos que los enlaces lleguen a la tienda (en api.deliservy.site).

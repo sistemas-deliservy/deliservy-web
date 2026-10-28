@@ -888,7 +888,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 .pxw-txt{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px 40px;align-items:start;}
 .pxw-txt .pxw-k,.pxw-txt .pxw-t{grid-column:1 / -1;}
 .pxw-lado{display:flex;flex-direction:column;gap:14px;}
-.pxw-video video{display:block;width:100%;height:100%;object-fit:cover;}
+.pxw-video video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
 .pxw-k{font-size:11.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
 .pxw-t{font-size:clamp(19px,2vw,24px);font-weight:900;letter-spacing:-.02em;line-height:1.22;margin-bottom:12px;}
 .pxw-p{font-size:14.5px;line-height:1.6;color:rgba(255,255,255,.80);margin-bottom:14px;}
@@ -1170,15 +1170,10 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     </div>
 
     <!-- Pedidos por WhatsApp con la flota (12-oct-2026). Aquí apunta el enlace del correo a los comercios
-         (deliservy.com/#pedidos-por-whatsapp). El video vive en /campana/, fuera del repo. -->
+         (deliservy.com/#pedidos-por-whatsapp). El video es el archivo de /campana/, en este mismo sitio. -->
     <div class="pxw fade-up" id="pedidos-por-whatsapp">
-      <!-- El video va por Bunny Stream (el mismo CDN de los videos de las tiendas): Ferozo lo servía a
-           170 KB/s y tardaba 40 s en cargar. Biblioteca 651270, video fa3a5dbd…; el mp4 de /campana/ queda de respaldo. -->
       <div class="pxw-video">
-        <iframe src="https://iframe.mediadelivery.net/embed/651270/fa3a5dbd-85de-4b36-bb4b-5a3b49cfc147?autoplay=false&loop=false&muted=false&preload=true&responsive=true"
-                loading="lazy" title="Pedidos por WhatsApp para su comercio"
-                style="border:0;position:absolute;top:0;left:0;width:100%;height:100%;"
-                allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;" allowfullscreen></iframe>
+        <video controls playsinline preload="metadata" src="/campana/pedidos-por-whatsapp-30s.mp4" title="Pedidos por WhatsApp para su comercio"></video>
       </div>
       <div class="pxw-txt">
         <div class="pxw-k">Pedidos por WhatsApp · Para su comercio</div>
