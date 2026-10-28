@@ -28,9 +28,21 @@
   <h1>Promotores</h1>
   <p>Valencia, estado Carabobo. El video de la campaña para promotores.</p>
   <div class="video">
-    <video controls playsinline preload="metadata" src="promotores.mp4"></video>
+    <video controls playsinline autoplay preload="auto" src="promotores.mp4"></video>
   </div>
   <a class="btn" href="https://wa.me/584265201529">WhatsApp 0426-5201529</a>
 </main>
+<script>
+(function () {
+  var video = document.querySelector("video");
+  if (!video) return;
+  var intento = video.play();
+  if (!intento || !intento.catch) return;
+  intento.catch(function () {
+    video.muted = true;
+    video.play().catch(function () {});
+  });
+})();
+</script>
 </body>
 </html>
