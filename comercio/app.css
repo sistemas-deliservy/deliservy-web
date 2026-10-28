@@ -909,22 +909,50 @@ html.claro .segmentos button[aria-selected="true"] { background: #fff; }
   .entrar > :not(.marca) { grid-column: 2; min-width: 0; }
   .entrar > .tarjeta,
   .entrar > form { width: 100%; }
-  /* El cuadro llega hasta la mitad. La foto ocupa la otra mitad y no baja de ahí. */
+  /* Dos mitades: el texto y el cuadro son un solo bloque, centrado. La foto se ve entera. */
   .entrar:has(.foto-lado) {
-    grid-template-columns: minmax(200px, 240px) minmax(320px, 42vw) minmax(0, 1fr);
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+    grid-template-rows: 1fr auto auto auto auto 1fr;
+    column-gap: 64px; row-gap: 20px; align-items: center; justify-items: center;
+    padding: 40px 56px 40px max(48px, env(safe-area-inset-left, 0px));
   }
-  .entrar > .foto-lado {
-    display: block; grid-column: 3; grid-row: 1 / span 8; align-self: start;
-    width: 100%; height: 50vh; max-height: 50vh; object-fit: cover; object-position: center 28%;
-    border-radius: 0;
-    -webkit-mask-image:
-      linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%),
-      linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
-    -webkit-mask-composite: source-in;
-    mask-image:
-      linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%),
-      linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
-    mask-composite: intersect;
+  .entrar:has(.foto-lado) > .marca {
+    grid-column: 1; grid-row: 2; position: static; text-align: center; margin: 0;
+    width: min(460px, 100%);
+  }
+  .entrar:has(.foto-lado) > .marca .logo-entrar { width: 88px; height: 88px; margin: 0 auto 16px; display: block; }
+  .entrar:has(.foto-lado) .marca small { font-size: 13px; }
+  .entrar:has(.foto-lado) h1 { font-size: 34px; line-height: 1.12; }
+  .entrar:has(.foto-lado) .marca p { font-size: 18px; line-height: 1.4; }
+  .entrar:has(.foto-lado) > .tarjeta,
+  .entrar:has(.foto-lado) > form {
+    grid-column: 1; grid-row: 3; width: min(460px, 100%);
+  }
+  .entrar:has(.foto-lado) > .tarjeta { padding: 22px; }
+  .entrar:has(.foto-lado) .paso { font-size: 13px; }
+  .entrar:has(.foto-lado) .etq-campo { font-size: 16px; }
+  .entrar:has(.foto-lado) .campo,
+  .entrar:has(.foto-lado) .codigo-pais { font-size: 18px; min-height: 54px; }
+  .entrar:has(.foto-lado) .btn { font-size: 18px; min-height: 54px; }
+  .entrar:has(.foto-lado) .ayuda { font-size: 16px; line-height: 1.4; }
+  .entrar:has(.foto-lado) > .pie-entrar {
+    grid-column: 1; grid-row: 4; width: min(460px, 100%); margin: 0; text-align: center; font-size: 16px;
+  }
+  .entrar:has(.foto-lado) > .pie-idioma {
+    grid-column: 1; grid-row: 5; width: min(460px, 100%); margin: 0; justify-content: center;
+  }
+  .entrar:has(.foto-lado) .idioma,
+  .entrar:has(.foto-lado) .tema { font-size: 15px; }
+  .entrar:has(.foto-lado) > .foto-lado {
+    display: block; grid-column: 2; grid-row: 1 / -1; align-self: center; justify-self: center;
+    width: auto; height: auto; max-width: 100%; max-height: min(86vh, 880px);
+    object-fit: contain; object-position: center; border-radius: 24px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 100%);
+    -webkit-mask-composite: source-over;
+    mask-composite: add;
+    filter: drop-shadow(0 22px 40px rgba(0, 0, 0, .38));
   }
   .firma-pagina .tarjeta,
   .entrar form.datos {
