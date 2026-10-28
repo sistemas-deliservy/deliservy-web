@@ -194,8 +194,11 @@
       leer: function () { return telefonoParaLaApi(paisElegido, input.value); },
     };
   }
+  C.campoDeWhatsapp = campoDeWhatsapp;
 
   function pintar(nodo) { C.cerrarDialogos(); C.vaciar(app); C.poner(app, nodo); }
+  C.pintarPublico = pintar;
+  C.mostrarEntrada = function () { pintar(pantallaEntrar('telefono')); };
   function logo(clase) { return h('img', { class: clase || 'logo-marca', src: '/assets/logo-marca.png', alt: '', width: '40', height: '40' }); }
 
   // ── Entrar ─────────────────────────────────────────────────────────────────
@@ -268,8 +271,35 @@
       telefono.fila,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
-      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'),
-      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(pantallaEntrar('correo')); enfocar('correo-entrar'); } }, 'Entrar con correo')));
+      h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp.'),
+      h('label', { class: 'etq-campo', for: 'correo-entrar' }, 'Tu correo'),
+      h('input', {
+        class: 'campo', id: 'correo-entrar', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email',
+        placeholder: 'tu@correo.com', value: d.correo || entrada.correo || '', maxlength: '120',
+      }),
+      h('label', { class: 'etq-campo', for: 'clave-correo' }, 'Contraseña'),
+      h('input', {
+        class: 'campo', id: 'clave-correo', name: 'clave', type: 'password', autocomplete: 'current-password', maxlength: '72',
+      }),
+      d.errorClave ? h('p', { class: 'error', role: 'alert' }, d.errorClave) : null,
+      h('div', { class: 'botones' }, h('button', { class: 'btn borde', type: 'button', onclick: function () {
+        var campo = documento.getElementById('correo-entrar');
+        var claveEl = documento.getElementById('clave-correo');
+        var c = String(campo && campo.value || '').trim();
+        var clave = String(claveEl && claveEl.value || '');
+        var nacional = String(telefono.input.value || '');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) {
+          pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: 'Escribe un correo válido.' }));
+          return;
+        }
+        if (clave.length < 8 || clave.length > 72) {
+          pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: 'La contraseña va de 8 a 72 caracteres.' }));
+          return;
+        }
+        pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: 'El comercio todavía no entra con correo y contraseña. Usa el código de WhatsApp o el del correo.' }));
+      } }, 'Entrar')),
+      h('p', { class: 'ayuda' }, 'Si te registraste con contraseña, aquí va con tu correo. El código de WhatsApp sigue arriba.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(pantallaEntrar('correo', { correo: (documento.getElementById('correo-entrar') || {}).value || '' })); enfocar('correo-entrar'); } }, 'Enviarme un código al correo')));
     }
     return h('div', { class: 'entrar' },
       h('div', { class: 'marca' },
@@ -278,7 +308,7 @@
         h('h1', null, 'Panel del comercio'),
         h('p', null, 'Entra con tu WhatsApp. Aquí ves tus pedidos, tus productos y tu dinero.')),
       h('div', { class: 'tarjeta' }, cuerpo),
-      h('p', { class: 'pie-entrar' }, '¿Aún no vendes con Deliservy? ', h('a', { href: C.WHATSAPP, target: '_blank', rel: 'noopener noreferrer' }, 'Escríbenos')),
+      h('p', { class: 'pie-entrar' }, '¿Aún no vendes con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: function () { raiz.location.hash = 'registro'; if (C.abrirRegistro) C.abrirRegistro(); } }, 'Registra tu comercio')),
       h('div', { class: 'pie-idioma' }, botonIdioma(), botonTema()),
       h('img', { class: 'foto-lado', src: '/comercio/foto-registro.jpg?v=2026102803', alt: '' }));
   }
@@ -626,7 +656,16 @@
     function mostrarError(t) { error.hidden = !t; error.textContent = t || ''; }
     function ponerEspera(si) {
       espera.hidden = !si;
-      espera.textContent = si ? 'Por favor espera, está procesando.' : '';
+      espera.textContent = si ? 'Cargando…' : '';
+      if (si) {
+        if (!boton.getAttribute('data-rotulo')) boton.setAttribute('data-rotulo', boton.textContent || '');
+        boton.textContent = 'Cargando…';
+        boton.disabled = true;
+      } else {
+        var rotulo = boton.getAttribute('data-rotulo');
+        if (rotulo) boton.textContent = rotulo;
+        boton.disabled = false;
+      }
     }
     function enviar(ev) {
       if (ev) ev.preventDefault();
@@ -685,15 +724,17 @@
     otra.addEventListener('click', function () {
       if (otra.disabled) return;
       otra.disabled = true;
+      otra.textContent = 'Cargando…';
       errorOtra.hidden = true;
       esperaOtra.hidden = false;
-      esperaOtra.textContent = 'Por favor espera, está procesando.';
+      esperaOtra.textContent = 'Cargando…';
       C.pedir('POST', '/contrato', cuerpo).then(function (r) {
         pintar(firmaEnviada(c, cuerpo, !!(r && r.correo)));
       }, function (e) {
         esperaOtra.hidden = true;
         esperaOtra.textContent = '';
         otra.disabled = false;
+        otra.textContent = 'Enviar otra vez';
         errorOtra.hidden = false;
         errorOtra.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
       });
@@ -716,7 +757,11 @@
   }
 
   function arrancar() {
-    if (!C.sesion.leer()) { pintar(pantallaEntrar('telefono')); return; }
+    if (!C.sesion.leer()) {
+      if (raiz.location.hash === '#registro' && typeof C.abrirRegistro === 'function') { C.abrirRegistro(); return; }
+      pintar(pantallaEntrar('telefono'));
+      return;
+    }
     pintar(C.cargando());
     C.pedir('GET', '/yo').then(function (r) {
       ctx.cuenta = (r && r.cuenta) || {};
@@ -910,6 +955,7 @@
 
   raiz.addEventListener('hashchange', function () {
     if (ctx.cuenta) { mostrar(); return; }
+    if (raiz.location.hash === '#registro' && typeof C.abrirRegistro === 'function') C.abrirRegistro();
   });
   documento.title = C.traducir(TITULO);
   arrancar();

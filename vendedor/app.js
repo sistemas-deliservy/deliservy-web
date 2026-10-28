@@ -256,6 +256,22 @@
       REDES_DEL_REGISTRO.forEach(function (r) { var v = textoLimpio(c.redes[r[0]]).slice(0, 120); if (v) redes[r[0]] = v; });
       if (Object.keys(redes).length) datos.redes = redes;
     }
+    if (o.conDocumento) {
+      var cedulaArchivo = String(c.cedulaArchivo || '');
+      if (!/^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,/.test(cedulaArchivo)) errores.cedulaArchivo = 'Carga la fotocopia de tu cédula (JPG, PNG, WebP o PDF).';
+      else datos.cedulaArchivo = cedulaArchivo;
+      if (c.sinRif) datos.sinRif = true;
+      else {
+        datos.sinRif = false;
+        var rifLimpio = String(c.rifNumero || '').toUpperCase().replace(/[\s.\-_/]/g, '');
+        var rifM = /^([VEJPGC])(\d{8})(\d)$/.exec(rifLimpio);
+        if (!rifM || verificadorDelRif(rifM[1], rifM[2]) !== Number(rifM[3])) errores.rifNumero = 'Escribe tu RIF, por ejemplo J-504754129.';
+        else datos.rifNumero = rifM[1] + '-' + rifM[2] + rifM[3];
+        var rifArchivo = String(c.rifArchivo || '');
+        if (!/^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,/.test(rifArchivo)) errores.rifArchivo = 'Carga la fotocopia de tu RIF (JPG, PNG, WebP o PDF).';
+        else datos.rifArchivo = rifArchivo;
+      }
+    }
     return { datos: datos, errores: errores, hayErrores: Object.keys(errores).length > 0 };
   }
 
@@ -491,7 +507,8 @@
 
   function caraDe(yo) {
     if (!yo) return null;
-    return cuadroFoto(yo.foto, { clase: 'yo foto', claseVacia: 'yo', nombre: yo.nombre || '' });
+    return h('a', { class: 'cara-perfil', href: '#perfil', 'aria-label': 'Perfil' },
+      cuadroFoto(yo.foto, { clase: 'yo foto', claseVacia: 'yo', nombre: yo.nombre || '' }));
   }
 
   /** Cuadrada, como mucho 640 px, en JPG. Así es como la guarda Firebase. */
@@ -531,6 +548,7 @@
       marcaDeliservy(),
       h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), dato('small', null, (yo && yo.nombre) || '')),
       caraDe(yo),
+      h('a', { class: 'perfil', href: '#perfil' }, 'Perfil'),
       botonTema(),
       botonIdioma(),
       conSalir ? h('button', { class: 'salir', type: 'button', onclick: salir }, 'Salir') : null);
@@ -697,12 +715,64 @@
       },
       h('label', { class: 'etq-campo', for: 'telefono' }, 'Tu número de WhatsApp'),
       telefono.fila,
-      d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+      d.error && d.errorEn !== 'correo' ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp.'),
       h('p', { class: 'ayuda' }, 'El +58 es Venezuela. Presiona el código para elegir otro país.'),
-      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'clave'; pintar(entrar('clave', { telefono: telefono.input.value })); } }, 'Entrar con contraseña')),
-      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(entrar('correo')); } }, 'Entrar con correo')));
+      h('label', { class: 'etq-campo', for: 'correo-entrar' }, 'Tu correo'),
+      h('input', {
+        class: 'campo', id: 'correo-entrar', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email',
+        placeholder: 'tu@correo.com', value: d.correo || entrada.correo || '', maxlength: '120',
+      }),
+      h('label', { class: 'etq-campo', for: 'clave-correo' }, 'Contraseña'),
+      h('input', {
+        class: 'campo', id: 'clave-correo', name: 'clave', type: 'password', autocomplete: 'current-password', maxlength: '72',
+      }),
+      d.error && d.errorEn === 'correo' ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'button', onclick: function (ev) {
+        var campo = documento.getElementById('correo-entrar');
+        var claveEl = documento.getElementById('clave-correo');
+        var c = String(campo && campo.value || '').trim();
+        var clave = String(claveEl && claveEl.value || '');
+        var nacional = String(telefono.input.value || '');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) {
+          pintar(entrar('telefono', { telefono: nacional, correo: c, error: 'Escribe un correo válido.', errorEn: 'correo' }));
+          return;
+        }
+        if (clave.length < 8 || clave.length > 72) {
+          pintar(entrar('telefono', { telefono: nacional, correo: c, error: 'La contraseña va de 8 a 72 caracteres.', errorEn: 'correo' }));
+          return;
+        }
+        entrada.correo = c;
+        entrada.telefonoNacional = nacional;
+        var boton = ev.currentTarget;
+        boton.disabled = true;
+        pedir('POST', '/acceso/clave', { correo: c, clave: clave }).then(function (r) {
+          boton.disabled = false;
+          if (!r || typeof r.token !== 'string') {
+            pintar(entrar('telefono', { telefono: nacional, correo: c, error: 'Ese dato o esa contraseña no coinciden.', errorEn: 'correo' }));
+            return;
+          }
+          sesion.guardar(r.token);
+          arrancar();
+        }, function (e) {
+          boton.disabled = false;
+          pintar(entrar('telefono', { telefono: nacional, correo: c, error: e.message || 'Ese dato o esa contraseña no coinciden.', errorEn: 'correo' }));
+        });
+      } }, 'Entrar')),
+      h('p', { class: 'ayuda' }, 'Es la contraseña que pusiste al registrarte.'),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function (ev) {
+        var campo = documento.getElementById('correo-entrar');
+        var c = String(campo && campo.value || '').trim();
+        var nacional = String(telefono.input.value || '');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) {
+          pintar(entrar('telefono', { telefono: nacional, correo: c, error: 'Escribe un correo válido.', errorEn: 'correo' }));
+          return;
+        }
+        entrada.telefonoNacional = nacional;
+        pedirCodigoDeCorreo(c, ev.currentTarget);
+      } }, 'Enviarme un código al correo')),
+      h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.paso = 'clave'; pintar(entrar('clave', { telefono: telefono.input.value, correo: (documento.getElementById('correo-entrar') || {}).value || '' })); } }, 'Entrar con WhatsApp y contraseña')));
     }
     return sinSesion('Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.', cuerpo,
       h('div', null,
@@ -813,6 +883,41 @@
       h('p', { class: 'pie-entrar' }, '¿Ya vendes con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: function () { irAEntrar(reg.telefonoNacional || ''); } }, 'Entrar')));
   }
 
+  function leerArchivoDe(input) {
+    return new Promise(function (ok, mal) {
+      var f = input && input.files && input.files[0];
+      if (!f) { ok(''); return; }
+      if (f.size > 8 * 1024 * 1024) { mal('Ese archivo pesa más de 8 MB.'); return; }
+      if (f.type === 'application/pdf') {
+        if (f.size > 900 * 1024) { mal('El PDF pesa más de 900 KB.'); return; }
+        var lector = new FileReader();
+        lector.onload = function () { ok(String(lector.result || '')); };
+        lector.onerror = function () { mal('No se pudo leer el archivo.'); };
+        lector.readAsDataURL(f);
+        return;
+      }
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { mal('Usa JPG, PNG, WebP o PDF.'); return; }
+      var img = new Image();
+      var url = URL.createObjectURL(f);
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var lado = Math.max(img.width, img.height) || 1;
+        var escala = Math.min(1, 1280 / lado);
+        var lienzo = documento.createElement('canvas');
+        lienzo.width = Math.max(1, Math.round(img.width * escala));
+        lienzo.height = Math.max(1, Math.round(img.height * escala));
+        lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+        ok(lienzo.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); mal('No se pudo leer esa imagen.'); };
+      img.src = url;
+    });
+  }
+  function archivoPrevio(input, anterior) {
+    if (input && input.files && input.files[0]) return leerArchivoDe(input);
+    return Promise.resolve(anterior || '');
+  }
+
   /** Paso 3: los datos para facturar. Lo escrito vive en `reg.escrito` (así un error no borra nada). */
   function formularioDeRegistro(d) {
     var v = reg.escrito || {};
@@ -837,6 +942,12 @@
       var edad = edadDe(nacimiento.value);
       edadTexto.textContent = edad == null ? '' : edad + ' años';
     });
+    var cedulaArchivo = h('input', { class: 'campo', id: 'r-cedula', name: 'cedulaArchivo', type: 'file', accept: 'image/jpeg,image/png,image/webp,application/pdf' });
+    var sinRif = h('input', { type: 'checkbox', id: 'r-sin-rif', name: 'sinRif' });
+    sinRif.checked = !!v.sinRif;
+    var rifNumero = h('input', { class: 'campo', id: 'r-rif', name: 'rifNumero', maxlength: '20', placeholder: 'J-504754129', value: v.rifNumero || '' });
+    var rifArchivo = h('input', { class: 'campo', id: 'r-rif-archivo', name: 'rifArchivo', type: 'file', accept: 'image/jpeg,image/png,image/webp,application/pdf' });
+    var grupoRif = h('div', { id: 'r-grupo-rif' });
     var clave = h('input', { class: 'campo', id: 'r-clave', name: 'clave', type: 'password', autocomplete: 'new-password', maxlength: '72', value: v.clave || '' });
     var clave2 = h('input', { class: 'campo', id: 'r-clave2', name: 'clave2', type: 'password', autocomplete: 'new-password', maxlength: '72', value: v.clave2 || '' });
     // Cada red con su nombre delante (como el +58 del WhatsApp): escrito, se sigue sabiendo cuál es cuál.
@@ -847,23 +958,35 @@
     var boton = h('button', { class: 'btn', type: 'submit' }, 'Enviar');
     var form = h('form', {
       novalidate: true, class: 'form-datos',
-      onsubmit: function (ev) {
+        onsubmit: function (ev) {
         ev.preventDefault();
         var f = ev.target;
-        var escrito = {
-          nombre: f.elements.nombre.value, razonSocial: f.elements.razonSocial.value, tipoDocumento: f.elements.tipoDocumento.value,
-          numero: f.elements.documento.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value, redes: {},
-          sexo: grupoSexo.hidden ? '' : ((f.querySelector('input[name="sexo"]:checked') || {}).value || ''),
-          nacimiento: grupoNacimiento.hidden ? '' : f.elements.nacimiento.value,
-          clave: f.elements.clave.value, clave2: f.elements.clave2.value,
-        };
-        REDES_DEL_REGISTRO.forEach(function (r) { escrito.redes[r[0]] = f.elements['red-' + r[0]].value; });
-        reg.escrito = escrito;
-        var r = revisarDatos(escrito, { conNombre: true, conDocumento: true, conClave: true });
-        if (r.hayErrores) { pintar(registro('datos', { errores: r.errores })); enfocarError(r.errores, 'r'); return; }
-        reg.listo = true;
-        reg.paraEnviar = r.datos;
-        enviarRegistro(boton);
+        boton.disabled = true;
+        var previo = reg.escrito || {};
+        var sinRif = !!(f.elements.sinRif && f.elements.sinRif.checked);
+        Promise.all([
+          archivoPrevio(f.elements.cedulaArchivo, previo.cedulaArchivo),
+          sinRif ? Promise.resolve('') : archivoPrevio(f.elements.rifArchivo, previo.rifArchivo),
+        ]).then(function (archivos) {
+          var escrito = {
+            nombre: f.elements.nombre.value, razonSocial: f.elements.razonSocial.value, tipoDocumento: f.elements.tipoDocumento.value,
+            numero: f.elements.documento.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value, redes: {},
+            sexo: grupoSexo.hidden ? '' : ((f.querySelector('input[name="sexo"]:checked') || {}).value || ''),
+            nacimiento: grupoNacimiento.hidden ? '' : f.elements.nacimiento.value,
+            clave: f.elements.clave.value, clave2: f.elements.clave2.value,
+            cedulaArchivo: archivos[0], sinRif: sinRif, rifNumero: sinRif ? '' : f.elements.rifNumero.value, rifArchivo: archivos[1],
+          };
+          REDES_DEL_REGISTRO.forEach(function (r) { escrito.redes[r[0]] = f.elements['red-' + r[0]].value; });
+          reg.escrito = escrito;
+          var r = revisarDatos(escrito, { conNombre: true, conDocumento: true, conClave: true });
+          if (r.hayErrores) { boton.disabled = false; pintar(registro('datos', { errores: r.errores })); enfocarError(r.errores, 'r'); return; }
+          reg.listo = true;
+          reg.paraEnviar = r.datos;
+          enviarRegistro(boton);
+        }, function (err) {
+          boton.disabled = false;
+          pintar(registro('datos', { error: err && err.message ? err.message : String(err || 'No se pudo leer el archivo.') }));
+        });
       },
     },
     h('p', { class: 'paso' }, 'Paso 3 de 3'),
@@ -876,6 +999,9 @@
     grupoNacimiento = grupoDeCampo('r-nacimiento', 'Fecha de nacimiento', nacimiento, e.nacimiento, edadTexto),
     grupoDeCampo('r-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
     grupoDeCampo('r-direccion', 'Dirección', direccion, e.direccion),
+    grupoDeCampo('r-cedula', 'Fotocopia de tu cédula', cedulaArchivo, e.cedulaArchivo, v.cedulaArchivo ? 'Fotocopia lista. Puedes cambiarla.' : 'JPG, PNG, WebP o PDF.'),
+    h('label', { class: 'etq-campo', for: 'r-sin-rif' }, sinRif, ' No tengo RIF'),
+    grupoRif,
     grupoDeCampo('r-clave', 'Contraseña', clave, e.clave, 'De 8 a 72 caracteres. Con ella también puedes entrar.'),
     grupoDeCampo('r-clave2', 'Repite la contraseña', clave2, e.clave2),
     h('div', { class: 'grupo-campo' },
@@ -887,6 +1013,12 @@
     grupoSexo.hidden = doc.select.value === 'J' || doc.select.value === 'G';
     grupoNacimiento.hidden = grupoSexo.hidden;
     doc.select.addEventListener('change', function () { grupoNacimiento.hidden = doc.select.value === 'J' || doc.select.value === 'G'; });
+    poner(grupoRif, [
+      grupoDeCampo('r-rif', 'Número de RIF', rifNumero, e.rifNumero, 'Letra y 9 números, por ejemplo J-504754129.'),
+      grupoDeCampo('r-rif-archivo', 'Fotocopia del RIF', rifArchivo, e.rifArchivo, v.rifArchivo ? 'Fotocopia lista. Puedes cambiarla.' : 'JPG, PNG, WebP o PDF.'),
+    ]);
+    grupoRif.hidden = sinRif.checked;
+    sinRif.addEventListener('change', function () { grupoRif.hidden = sinRif.checked; });
     return form;
   }
 
@@ -1144,42 +1276,87 @@
       h('div', { class: 'pie-prod' }, accion));
   }
 
-  function productoCompacto(p) {
-    var tiene = p.enPrograma !== false && num(p.pct) > 0;
-    return h('div', { class: 'producto-compacto' },
-      dato('b', null, p.nombre || ''),
-      tiene ? dato('span', { class: 'pct' }, porcentaje(p.pct)) : null);
+  /** Grupos del catálogo de la tienda (la misma API pública de la tienda web). Si no responde, los productos se ven igual. */
+  function gruposDeLaTienda(id) {
+    var base = baseDeLaApi(raiz.location && raiz.location.hostname);
+    return raiz.fetch(base + '/api/tienda-web/tienda/' + encodeURIComponent(id) + '?canal=cv', {
+      credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json' },
+    }).then(function (r) {
+      return r.ok ? r.json().catch(function () { return null; }) : null;
+    }, function () { return null; });
   }
 
-  function alternarComercio(boton, panel, t) {
-    var abierto = boton.getAttribute('aria-expanded') === 'true';
-    if (abierto) {
-      boton.setAttribute('aria-expanded', 'false');
-      panel.hidden = true;
-      return;
+  function pintarResultados(nodos) {
+    var caja = documento.getElementById('resultados');
+    if (!caja) return;
+    vaciar(caja);
+    poner(caja, nodos);
+  }
+
+  /** El % y lo que se gana vienen de la API (`pct`, `ganas`). No se recalculan aquí. */
+  function bloquesDeProductos(lista, catalogo) {
+    var nombre = {};
+    var de = {};
+    var grupos = (catalogo && catalogo.grupos) || [];
+    grupos.forEach(function (g) {
+      if (!g || Number(g.id) === 0 || !g.nombre) return;
+      nombre[String(g.id)] = String(g.nombre);
+    });
+    ((catalogo && catalogo.productos) || []).forEach(function (p) {
+      if (!p || p.grupoId == null) return;
+      if (nombre[String(p.grupoId)]) de[String(p.id)] = String(p.grupoId);
+    });
+    var por = {};
+    var sueltos = [];
+    lista.forEach(function (p) {
+      var g = de[String(p.id)];
+      if (!g) { sueltos.push(p); return; }
+      if (!por[g]) por[g] = [];
+      por[g].push(p);
+    });
+    var orden = grupos.map(function (g) { return String(g.id); }).filter(function (id) { return por[id] && por[id].length; });
+    var bloques = [];
+    orden.forEach(function (id) {
+      bloques.push(dato('span', { class: 'etq' }, nombre[id]));
+      bloques.push(h('div', { class: 'productos' }, por[id].map(producto)));
+    });
+    if (sueltos.length) {
+      if (orden.length) bloques.push(h('span', { class: 'etq' }, 'Productos'));
+      bloques.push(h('div', { class: 'productos' }, sueltos.map(producto)));
     }
-    boton.setAttribute('aria-expanded', 'true');
-    panel.hidden = false;
-    if (panel.getAttribute('data-listo') === '1' || panel.getAttribute('data-cargando') === '1') return;
-    panel.setAttribute('data-cargando', '1');
-    vaciar(panel);
-    poner(panel, h('p', { class: 'nota' }, 'Cargando…'));
+    return bloques;
+  }
+
+  function volverATiendas() {
+    estado.tiendaAbierta = null;
+    if (estado.catalogo) pintarResultados(vitrinaCerrada(estado.catalogo));
+  }
+
+  function abrirComercio(t) {
+    estado.tiendaAbierta = { id: t.id, nombre: t.nombre || '', logo: t.logo || '' };
+    pintarResultados(h('p', { class: 'nota' }, 'Cargando…'));
     var id = String(Math.round(num(t.id)));
     var f = estado.filtros || {};
-    pedir('GET', '/vitrina?q=' + encodeURIComponent(f.q || '') + '&tienda=' + encodeURIComponent(id) + '&categoria=' + encodeURIComponent(f.categoria || '')).then(function (d) {
-      panel.removeAttribute('data-cargando');
-      panel.setAttribute('data-listo', '1');
-      var lista = (d.productos || []).filter(function (p) { return String(p.companyId) === String(t.id); });
-      vaciar(panel);
-      poner(panel, lista.length ? lista.map(productoCompacto) : h('p', { class: 'nota' }, 'Todavía no hay productos publicados'));
+    var ruta = '/vitrina?q=' + encodeURIComponent(f.q || '') + '&tienda=' + encodeURIComponent(id) + '&categoria=' + encodeURIComponent(f.categoria || '');
+    pedir('GET', ruta).then(function (d) {
+      return gruposDeLaTienda(id).then(function (g) { return { d: d, g: g }; });
+    }).then(function (r) {
+      if (!estado.tiendaAbierta || String(estado.tiendaAbierta.id) !== String(t.id)) return;
+      var lista = (r.d.productos || []).filter(function (p) { return String(p.companyId) === String(t.id); });
+      var cuerpo = [
+        h('div', { class: 'volver-tienda' }, h('button', { class: 'btn borde chico', type: 'button', onclick: volverATiendas }, 'Todas las tiendas')),
+        h('div', { class: 'tienda-cab' }, logo(t.logo, t.nombre),
+          h('div', { class: 'txt' }, dato('b', null, t.nombre || ''), h('small', null, plural(lista.length, 'producto', 'productos')))),
+      ];
+      if (!lista.length) cuerpo.push(h('p', { class: 'nota' }, 'Todavía no hay productos publicados'));
+      else cuerpo.push(bloquesDeProductos(lista, r.g));
+      pintarResultados(cuerpo);
     }, function (e) {
-      panel.removeAttribute('data-cargando');
-      vaciar(panel);
-      poner(panel, h('p', { class: 'nota' }, (e && e.message) || 'No se pudo cargar el catálogo.'));
+      pintarResultados(h('p', { class: 'nota' }, (e && e.message) || 'No se pudo cargar el catálogo.'));
     });
   }
 
-  /** La vitrina de quien no ha entrado: una fila cerrada por comercio, con su % máximo. */
+  /** La vitrina de quien no ha entrado: un recuadro por comercio. Al presionarlo, sus productos. */
   function vitrinaCerrada(d) {
     var tiendas = d.tiendas || [];
     var f = estado.filtros || {};
@@ -1200,18 +1377,18 @@
         ? vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita los filtros.')
         : vacio('Todavía no hay productos publicados', 'Cuando una tienda afiliada tenga productos con precio, aparecen aquí.')];
     }
-    return lista.map(function (t) {
+    return h('div', { class: 'rejilla-comercios' }, lista.map(function (t) {
       var max = maxDelComercio(t);
       var cuenta = typeof t.productos === 'number' ? h('small', null, plural(t.productos, 'producto', 'productos')) : null;
-      var panel = h('div', { class: 'productos-compactos', hidden: true });
-      var boton = h('button', { class: 'tienda-fila', type: 'button', 'aria-expanded': 'false' },
+      var boton = h('button', { class: 'tarjeta-comercio', type: 'button' },
         logo(t.logo, t.nombre),
-        h('span', { class: 'txt' }, dato('b', null, t.nombre || ''), cuenta),
-        max == null ? null : h('span', { class: 'pct-max' }, 'Hasta el ', dato('b', null, porcentaje(max))),
-        h('span', { class: 'flecha', 'aria-hidden': 'true' }));
-      boton.addEventListener('click', function () { alternarComercio(boton, panel, t); });
-      return h('section', { class: 'comercio' }, boton, panel);
-    });
+        h('span', { class: 'txt' },
+          dato('b', null, t.nombre || ''),
+          cuenta,
+          max == null ? null : h('span', { class: 'pct-max' }, 'Hasta el ', dato('b', null, porcentaje(max)))));
+      boton.addEventListener('click', function () { abrirComercio(t); });
+      return boton;
+    }));
   }
 
   function resultadosDelCatalogo(d) {
@@ -1480,7 +1657,7 @@
   var estado = {
     yo: null, seccion: 'inicio', filtros: { q: '', tienda: '', categoria: '' }, catalogo: null, ventas: null, cobros: null,
     // Sus datos para facturar (`GET /yo`: `datos` y `faltanDatos`) y si «Mis datos» está abierto para cambiarlos.
-    datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false, soloVer: false,
+    datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false, soloVer: false, tiendaAbierta: null,
   };
   var entrada = { paso: 'telefono', medio: 'whatsapp', telefono: '', telefonoNacional: '', correo: '', espera: null, verificando: false };
   /** El registro en curso: su WhatsApp, el código, lo escrito en el formulario y lo que se manda. */
@@ -1564,11 +1741,133 @@
     return SECCIONES.some(function (x) { return x[0] === s; }) ? s : 'inicio';
   }
 
+  function cambiarClaveYNumero(yo) {
+    var tel = h('input', {
+      class: 'campo', id: 'perfil-telefono', type: 'tel', autocomplete: 'tel', maxlength: '20',
+      value: (yo && yo.telefono) || '',
+    });
+    var clave = h('input', { class: 'campo', id: 'perfil-clave', type: 'password', autocomplete: 'new-password', maxlength: '72' });
+    var clave2 = h('input', { class: 'campo', id: 'perfil-clave2', type: 'password', autocomplete: 'new-password', maxlength: '72' });
+    var aviso = h('p', { class: 'error', role: 'alert', hidden: true });
+    return h('div', null,
+      h('label', { class: 'etq-campo', for: 'perfil-telefono' }, 'WhatsApp'),
+      tel,
+      h('label', { class: 'etq-campo', for: 'perfil-clave' }, 'Contraseña nueva'),
+      clave,
+      h('label', { class: 'etq-campo', for: 'perfil-clave2' }, 'Repite la contraseña'),
+      clave2,
+      aviso,
+      h('div', { class: 'botones' }, h('button', { class: 'btn chico', type: 'button', onclick: function () {
+        var n = String(clave.value || '');
+        var n2 = String(clave2.value || '');
+        aviso.hidden = false;
+        if (n || n2) {
+          if (n.length < 8 || n.length > 72 || n !== n2) aviso.textContent = 'La contraseña va de 8 a 72 caracteres y las dos tienen que coincidir.';
+          else aviso.textContent = 'La contraseña del registro sigue sirviendo para entrar. Desde aquí todavía no se puede cambiar.';
+          return;
+        }
+        aviso.textContent = 'Este WhatsApp es el del registro. Desde aquí todavía no se puede cambiar.';
+      } }, 'Guardar número y contraseña')));
+  }
+
+  function bloqueFotoPerfil(yo) {
+    var tiene = !!fotoSegura(yo && yo.foto);
+    var piezas = [
+      h('h2', null, 'Tu foto de perfil'),
+      cuadroFoto(yo && yo.foto, { clase: 'foto-perfil yo foto', claseVacia: 'yo', nombre: (yo && yo.nombre) || '' }),
+    ];
+    if (tiene) piezas.push(h('p', { class: 'nota' }, 'Si esta cuenta ya tiene foto, el servidor deja esa. Puedes elegir otra: si no la cambia, se queda la de ahora.'));
+    var lista = null;
+    var error = h('p', { class: 'error', role: 'alert', hidden: true });
+    var guardar = h('button', { class: 'btn chico', type: 'button' }, 'Guardar foto');
+    guardar.disabled = true;
+    var input = h('input', { class: 'foto-archivo', id: 'foto-perfil', type: 'file', accept: 'image/jpeg,image/png' });
+    input.addEventListener('change', function () {
+      fotoParaEnviar(input.files && input.files[0]).then(function (b64) {
+        lista = b64;
+        guardar.disabled = false;
+        error.hidden = true;
+      }, function (e) {
+        lista = null;
+        guardar.disabled = true;
+        error.hidden = false;
+        error.textContent = (e && e.message) || 'No se pudo leer esa foto.';
+      });
+    });
+    guardar.addEventListener('click', function () {
+      if (!lista) return;
+      error.hidden = true;
+      ponerCarga(guardar, null, true);
+      pedir('POST', '/foto', { imagen: lista }).then(function (r) {
+        if (r && r.yaTenia) {
+          ponerCarga(guardar, null, false);
+          error.hidden = false;
+          error.textContent = 'Esta cuenta ya tiene foto. Se queda la que está guardada.';
+          return;
+        }
+        if (!estado.yo) estado.yo = {};
+        if (r && typeof r.foto === 'string') estado.yo.foto = r.foto;
+        mostrar();
+      }, function (e) {
+        ponerCarga(guardar, null, false);
+        error.hidden = false;
+        error.textContent = (e && e.message) || 'No se pudo guardar. Intenta de nuevo.';
+      });
+    });
+    piezas.push(h('p', { class: 'nota' }, 'Así te reconocen en Deliservy promotores.'));
+    piezas.push(h('label', { class: 'btn borde chico', for: 'foto-perfil' }, 'Elige una foto'));
+    piezas.push(input);
+    piezas.push(error);
+    piezas.push(guardar);
+    return h('div', { class: 'tarjeta perfil-foto' }, piezas);
+  }
+
+  /** Lo que la cuenta ya guarda y lo que POST /datos, POST /foto y POST /cuenta aceptan. */
+  function perfil() {
+    var yo = estado.yo || {};
+    var redes = yo.redes && typeof yo.redes === 'object' ? yo.redes : {};
+    var filasRed = [];
+    REDES_DEL_REGISTRO.forEach(function (r) {
+      var v = redes[r[0]];
+      if (!v) return;
+      filasRed.push(h('dt', null, r[1]));
+      filasRed.push(dato('dd', null, String(v)));
+    });
+    return [
+      h('h1', { class: 'saludo' }, 'Perfil'),
+      h('p', { class: 'sub' }, 'Tu foto, tus datos para la factura y cómo entras.'),
+      bloqueFotoPerfil(yo),
+      estado.datos ? tarjetaMisDatos() : h('p', { class: 'nota' }, 'No se pudieron cargar tus datos.'),
+      h('div', { class: 'tarjeta' },
+        h('h2', null, 'Tus redes'),
+        filasRed.length ? h('dl', { class: 'datos-lista' }, filasRed) : h('p', { class: 'nota' }, 'No hay redes guardadas.'),
+        h('p', { class: 'nota' }, 'Se guardan al registrarte. Esta página no las cambia.')),
+      h('div', { class: 'tarjeta' },
+        h('h2', null, 'Cómo entras'),
+        h('p', { class: 'nota' }, 'Entras con un código por WhatsApp, con tu correo y la contraseña del registro, o con tu WhatsApp y esa misma contraseña.'),
+        h('p', { class: 'nota' }, 'El correo se cambia en Mis datos. La foto se carga arriba.'),
+        cambiarClaveYNumero(yo)),
+      h('div', { class: 'tarjeta' },
+        h('h2', null, 'Cuenta para cobrar'),
+        h('p', { class: 'nota' }, 'La cuenta bancaria donde te pagamos cada noche.'),
+        h('div', { class: 'botones' }, h('a', { class: 'btn chico', href: '#cobros' }, 'Tu cuenta bancaria'))),
+    ];
+  }
+
   function mostrar() {
     if (!estado.yo) return;
     cerrarHoja();
-    if (estado.yo.estado === 'pendiente' && raiz.location.hash !== '#datos') { mostrarVitrina(); return; }
+    if (estado.yo.estado === 'pendiente' && raiz.location.hash !== '#datos' && raiz.location.hash !== '#perfil') { mostrarVitrina(); return; }
     estado.soloVer = false;
+    if (raiz.location.hash === '#perfil') {
+      if (estado.yo.estado === 'pendiente') {
+        pintar(h('div', null, cabecera(estado.yo, true), h('main', { class: 'contenido' }, h('div', { class: 'vista' }, perfil()))));
+      } else {
+        pintar(marco('inicio', estado.yo, perfil()));
+      }
+      raiz.scrollTo(0, 0);
+      return;
+    }
     if (estado.yo.estado === 'pendiente') { pintar(revision(estado.yo)); return; }
     var s = estado.seccion = seccionDelHash();
     pintar(marco(s, estado.yo, cargando()));
@@ -1590,6 +1889,7 @@
     var ruta = estado.soloVer ? '/vitrina' : '/catalogo';
     pedir('GET', ruta + consultaDelCatalogo()).then(function (d) {
       estado.catalogo = d;
+      estado.tiendaAbierta = null;
       var r = documento.getElementById('resultados');
       if (!r) return;
       vaciar(r);
@@ -1775,6 +2075,45 @@
     return { tipo: tipo, numero: numero };
   }
 
+  function textoDelContrato() {
+    var local = typeof raiz.TEXTO_DEL_CONTRATO === 'string' ? raiz.TEXTO_DEL_CONTRATO : '';
+    return local.indexOf('Contrato de promoción') >= 0 ? local : '';
+  }
+
+  /** El mismo texto del PDF: títulos y párrafos, sin reescribirlo. No se traduce. */
+  function recuadroDelContrato(texto) {
+    var caja = h('div', {
+      class: 'contrato-leer', tabindex: '0', role: 'region', 'aria-label': 'Contrato de promotor', 'data-idioma': 'no',
+    });
+    String(texto || '').split(/\n\n+/).forEach(function (bloque) {
+      var linea = bloque.trim();
+      if (!linea) return;
+      if (linea.indexOf('# ') === 0) caja.appendChild(dato('h2', null, linea.slice(2)));
+      else if (linea.indexOf('## ') === 0) caja.appendChild(dato('h3', null, linea.slice(3)));
+      else caja.appendChild(dato('p', null, linea));
+    });
+    return caja;
+  }
+
+  /** El botón se apaga y dice «Cargando…». Al fallar, vuelve el rótulo y se ve el error. */
+  function ponerCarga(boton, espera, activo) {
+    if (boton) {
+      if (activo) {
+        if (!boton.getAttribute('data-rotulo')) boton.setAttribute('data-rotulo', boton.textContent || '');
+        boton.textContent = 'Cargando…';
+        boton.disabled = true;
+      } else {
+        var rotulo = boton.getAttribute('data-rotulo');
+        if (rotulo) boton.textContent = rotulo;
+        boton.disabled = false;
+      }
+    }
+    if (espera) {
+      espera.hidden = !activo;
+      if (activo) espera.textContent = 'Cargando…';
+    }
+  }
+
   function pantallaFirma() {
     var d = estado.datos || {};
     var doc = partesDelDocumento(d);
@@ -1798,17 +2137,13 @@
       if (enviando) return;
       if (pad.vacia()) { error.hidden = false; error.textContent = 'Firma en el recuadro.'; return; }
       enviando = true;
-      boton.disabled = true;
       error.hidden = true;
-      espera.hidden = false;
-      espera.textContent = 'Por favor espera, está procesando.';
+      ponerCarga(boton, espera, true);
       pedir('POST', '/contrato', cuerpo()).then(function (r) {
         pintar(firmaEnviada(cuerpo(), !!(r && r.correo)));
       }, function (e) {
         enviando = false;
-        boton.disabled = false;
-        espera.hidden = true;
-        espera.textContent = '';
+        ponerCarga(boton, espera, false);
         error.hidden = false;
         error.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
       });
@@ -1827,6 +2162,7 @@
             h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-tipo' }, 'Documento'), tipo),
             h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-numero' }, 'Número'), numero),
             h('div', { class: 'grupo-campo' }, h('label', { class: 'etq-campo', for: 'firma-correo' }, 'Correo'), correo),
+            recuadroDelContrato(textoDelContrato()),
             h('label', { class: 'etq-campo' }, 'Tu firma'),
             pad.canvas,
             h('p', { class: 'ayuda' }, 'Dibuja la firma con el dedo. El recuadro nace vacío.'),
@@ -1849,16 +2185,12 @@
     var esperaOtra = h('p', { class: 'nota', role: 'status', hidden: true });
     otra.addEventListener('click', function () {
       if (otra.disabled) return;
-      otra.disabled = true;
       errorOtra.hidden = true;
-      esperaOtra.hidden = false;
-      esperaOtra.textContent = 'Por favor espera, está procesando.';
+      ponerCarga(otra, esperaOtra, true);
       pedir('POST', '/contrato', cuerpo).then(function (r) {
         pintar(firmaEnviada(cuerpo, !!(r && r.correo)));
       }, function (e) {
-        esperaOtra.hidden = true;
-        esperaOtra.textContent = '';
-        otra.disabled = false;
+        ponerCarga(otra, esperaOtra, false);
         errorOtra.hidden = false;
         errorOtra.textContent = (e && e.message) || 'No se pudo enviar. Intenta de nuevo.';
       });
@@ -1956,7 +2288,8 @@
       cuentaAtras();
     }, function (e) {
       if (boton) boton.disabled = false;
-      pintar(entrar(entrada.paso === 'codigo' ? 'codigo' : 'correo', { correo: correo, error: e.message }));
+      var paso = entrada.paso === 'codigo' ? 'codigo' : 'telefono';
+      pintar(entrar(paso, { correo: correo, telefono: entrada.telefonoNacional, error: e.message, errorEn: paso === 'telefono' ? 'correo' : null }));
       if (entrada.paso === 'codigo') cuentaAtras();
     });
   }
@@ -1994,8 +2327,8 @@
   }
   /** El primer campo con error (en el orden del formulario). */
   function enfocarError(errores, prefijo) {
-    var ids = { nombre: 'nombre', razonSocial: 'razon', documento: 'documento', correo: 'correo', direccion: 'direccion', sexo: 'sexo' };
-    var orden = ['nombre', 'razonSocial', 'documento', 'sexo', 'correo', 'direccion'];
+    var ids = { nombre: 'nombre', razonSocial: 'razon', documento: 'documento', correo: 'correo', direccion: 'direccion', sexo: 'sexo', cedulaArchivo: 'cedula', rifNumero: 'rif', rifArchivo: 'rif-archivo' };
+    var orden = ['nombre', 'razonSocial', 'documento', 'cedulaArchivo', 'rifNumero', 'rifArchivo', 'sexo', 'correo', 'direccion'];
     for (var i = 0; i < orden.length; i++) if (errores[orden[i]]) { enfocar(prefijo + '-' + ids[orden[i]]); return; }
   }
 

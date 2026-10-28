@@ -79,8 +79,12 @@ a { color: var(--rt); }
 .yo.foto { display: block; object-fit: cover; object-position: center; background: none; }
 .foto-previa { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; object-position: center; margin: 12px auto; overflow: hidden; }
 .foto-archivo { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
-.salir, .idioma, .tema { border: 1px solid var(--b); background: var(--c); color: var(--t); border-radius: 999px; min-height: 44px; padding: 0 12px; font-weight: 700; font-size: 14.5px; white-space: nowrap; box-shadow: var(--sombra2); }
-.salir:hover, .idioma:hover, .tema:hover { border-color: var(--m); background: var(--c2); }
+.salir, .idioma, .tema, .perfil { border: 1px solid var(--b); background: var(--c); color: var(--t); border-radius: 999px; min-height: 44px; padding: 0 12px; font-weight: 700; font-size: 14.5px; white-space: nowrap; box-shadow: var(--sombra2); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.salir:hover, .idioma:hover, .tema:hover, .perfil:hover { border-color: var(--m); background: var(--c2); }
+.cara-perfil { display: flex; flex: 0 0 auto; text-decoration: none; border-radius: 50%; }
+.perfil-foto { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.perfil-foto .foto-perfil { width: 96px; height: 96px; border-radius: 50%; }
+.perfil-foto .yo { width: 96px; height: 96px; font-size: 32px; }
 .idioma { padding: 0 12px; }
 
 .pestanas { display: none; }
@@ -199,11 +203,14 @@ textarea.campo { min-height: 78px; resize: vertical; line-height: 1.4; font-weig
 .bien { color: var(--ok); font-weight: 700; font-size: 14px; margin: 10px 2px 0; }
 .fila-campos { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; }
 .fila-doc { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 8px; }
-.sexo { display: flex; gap: 8px; }
+.grupo-campo { min-width: 0; }
+input[type="date"].campo { min-width: 0; max-width: 100%; }
+.sexo { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .sexo .opcion-sexo {
-  flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer;
+  flex: 1 1 8.5rem; min-width: 0; display: flex; align-items: center; gap: 8px; cursor: pointer;
   border: 1px solid var(--b); border-radius: 12px; padding: 10px 12px; background: var(--c2);
 }
+.sexo .opcion-sexo span { white-space: normal; overflow-wrap: anywhere; }
 .sexo .opcion-sexo:has(input:checked) { border-color: var(--r); background: var(--rs); }
 .con-flecha { position: relative; min-width: 0; }
 .con-flecha select.campo { padding-right: 36px; text-overflow: ellipsis; }
@@ -286,6 +293,19 @@ button.enlace {
   transform: rotate(-45deg); margin-right: 4px;
 }
 .tienda-fila[aria-expanded="true"] .flecha { transform: rotate(45deg); margin-top: -4px; }
+.rejilla-comercios {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 12px;
+}
+.tarjeta-comercio {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; min-width: 0;
+  text-align: left; margin: 0; padding: 14px; border: 1px solid var(--b); border-radius: var(--radio);
+  background: var(--c); color: inherit; cursor: pointer; box-shadow: var(--sombra2); font: inherit;
+}
+.tarjeta-comercio .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; width: 100%; }
+.tarjeta-comercio b { display: block; font-size: 16px; font-weight: 800; line-height: 1.3; overflow-wrap: break-word; white-space: normal; }
+.tarjeta-comercio small { color: var(--m); font-size: 12.5px; font-weight: 600; }
+.tarjeta-comercio .pct-max { color: var(--ok); font-weight: 800; font-size: 14px; }
+.volver-tienda { margin: 4px 0 8px; }
 .productos-compactos {
   border: 1px solid var(--b); border-top: 0; border-radius: 0 0 var(--radio) var(--radio); background: var(--c); margin: 0;
 }
@@ -412,8 +432,12 @@ button.enlace {
   .hoja .asa { display: none; }
   h1.saludo { font-size: 30px; }
 }
+@media (min-width: 720px) {
+  .rejilla-comercios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (min-width: 1024px) {
   .productos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rejilla-comercios { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   /* Laptop: el registro deja de ser una columna de teléfono. La marca a la izquierda y el cuadro al ancho. */
   .entrar {
     max-width: none; width: 100%; margin: 0;
@@ -425,25 +449,23 @@ button.enlace {
   .entrar .marca .logo-marca { width: 72px; height: 72px; margin: 0 0 16px; }
   .entrar > :not(.marca) { grid-column: 2; min-width: 0; }
   .entrar > .tarjeta { width: 100%; }
-  /* Dos mitades, como Stripe y Linear: el texto y el cuadro son un solo bloque,
-     centrado. La foto se ve entera, a su proporción, no recortada en una franja. */
+  /* El cuadro y la foto van juntos y grandes: la foto entera, sin recortar la cara. */
   .entrar:has(.foto-lado) {
-    min-height: 100dvh;
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
-    grid-template-rows: 1fr auto auto auto auto 1fr;
-    column-gap: 64px; row-gap: 20px; align-items: center; justify-items: center;
-    padding: 40px 56px 40px max(48px, env(safe-area-inset-left, 0px));
+    min-height: 100dvh; width: min(1480px, 100%); margin-inline: auto; box-sizing: border-box;
+    grid-template-columns: minmax(340px, 500px) auto;
+    grid-template-rows: auto auto auto auto;
+    column-gap: 24px; row-gap: 14px; align-items: center; align-content: center; justify-content: center; justify-items: stretch;
+    padding: 20px 24px;
   }
   .entrar:has(.foto-lado) > .marca {
-    grid-column: 1; grid-row: 2; position: static; text-align: center; margin: 0;
-    width: min(460px, 100%);
+    grid-column: 1; grid-row: 1; position: static; text-align: center; margin: 0; width: 100%;
   }
-  .entrar:has(.foto-lado) > .marca .logo-marca { width: 88px; height: 88px; margin: 0 auto 16px; display: block; }
-  .entrar:has(.foto-lado) .marca small { font-size: 13px; }
-  .entrar:has(.foto-lado) h1 { font-size: 34px; line-height: 1.12; }
-  .entrar:has(.foto-lado) .marca p { font-size: 18px; line-height: 1.4; }
+  .entrar:has(.foto-lado) > .marca .logo-marca { width: 96px; height: 96px; margin: 0 auto 12px; display: block; }
+  .entrar:has(.foto-lado) .marca small { font-size: 14px; }
+  .entrar:has(.foto-lado) h1 { font-size: 40px; line-height: 1.1; }
+  .entrar:has(.foto-lado) .marca p { font-size: 18px; line-height: 1.35; }
   .entrar:has(.foto-lado) > .tarjeta {
-    grid-column: 1; grid-row: 3; width: min(460px, 100%); padding: 22px;
+    grid-column: 1; grid-row: 2; width: 100%; padding: 22px;
   }
   .entrar:has(.foto-lado) .paso { font-size: 13px; }
   .entrar:has(.foto-lado) .etq-campo { font-size: 16px; }
@@ -453,22 +475,18 @@ button.enlace {
   .entrar:has(.foto-lado) .ayuda { font-size: 16px; line-height: 1.4; }
   .entrar:has(.foto-lado) > .pie-entrar,
   .entrar:has(.foto-lado) > div:has(.pie-entrar) {
-    grid-column: 1; grid-row: 4; width: min(460px, 100%); margin: 0; text-align: center; font-size: 16px;
+    grid-column: 1; grid-row: 3; width: 100%; margin: 0; text-align: center; font-size: 16px;
   }
   .entrar:has(.foto-lado) .pie-entrar { font-size: 16px; }
   .entrar:has(.foto-lado) > .pie-idioma {
-    grid-column: 1; grid-row: 5; width: min(460px, 100%); margin: 0; justify-content: center;
+    grid-column: 1; grid-row: 4; width: 100%; margin: 0; justify-content: center;
   }
   .entrar:has(.foto-lado) .idioma,
   .entrar:has(.foto-lado) .tema { font-size: 15px; }
   .entrar:has(.foto-lado) > .foto-lado {
-    display: block; grid-column: 2; grid-row: 1 / -1; align-self: center; justify-self: center;
-    width: auto; height: auto; max-width: 100%; max-height: min(86vh, 880px);
+    display: block; grid-column: 2; grid-row: 1 / -1; align-self: center; justify-self: start;
+    width: auto; height: min(92dvh, 980px); max-width: min(50vw, 760px); max-height: min(92dvh, 980px);
     object-fit: contain; object-position: center; border-radius: 24px;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 100%);
-    mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 100%);
-    -webkit-mask-composite: source-over;
-    mask-composite: add;
     filter: drop-shadow(0 22px 40px rgba(0, 0, 0, .38));
   }
   .form-datos {
@@ -484,7 +502,10 @@ button.enlace {
   .form-datos > .grupo-campo:has(textarea),
   .form-datos > .grupo-campo:has(.fila-doc),
   .form-datos > .grupo-campo:has(.redes-campos),
+  .form-datos > .grupo-campo:has(.sexo),
+  .form-datos > .grupo-campo:has(input[type="date"]),
   .form-datos > .grupo-campo:has(input[type="email"]) { grid-column: 1 / -1; }
+  .rejilla-comercios { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .redes-campos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 /* Teléfono y teléfono grande: el título no se aplasta y los botones bajan de renglón. El iPad (768) sigue en una línea. */
@@ -495,9 +516,12 @@ button.enlace {
   .cabecera .logo-marca { order: 1; }
   .cabecera .titulo { order: 2; }
   .cabecera .yo { order: 3; }
-  .cabecera > .btn, .cabecera > .tema, .cabecera > .idioma, .cabecera > .salir {
+  .cabecera > .btn, .cabecera > .tema, .cabecera > .idioma, .cabecera > .salir, .cabecera > .perfil {
     order: 4; flex: 1 1 calc(50% - 10px); max-width: calc(50% - 5px); justify-content: center; min-height: 44px;
   }
+}
+@media (min-width: 1280px) {
+  .rejilla-comercios { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 420px) {
   .filtros .dos { grid-template-columns: minmax(0, 1fr); }
@@ -510,7 +534,11 @@ button.enlace {
   .productos { gap: 8px; }
 }
 
-/* La firma del contrato, después de la aprobación (25-oct-2026). */
+/* La firma del contrato, después de la aprobación (25-oct-2026). El texto se lee antes de firmar, como en el comercio. */
+.contrato-leer { height: 560px; max-height: 72vh; overflow: auto; margin-top: 16px; border: 1.5px solid var(--b); border-radius: 12px; background: var(--c); padding: 16px 16px 4px; }
+.contrato-leer h2 { font-size: 18px; line-height: 1.3; margin: 4px 0 12px; font-weight: 800; }
+.contrato-leer h3 { font-size: 15px; line-height: 1.35; margin: 16px 0 8px; font-weight: 800; color: var(--rt); }
+.contrato-leer p { font-size: 14.5px; line-height: 1.55; margin: 0 0 12px; white-space: pre-wrap; }
 .lienzo-firma { width: 100%; height: 148px; border: 1.5px dashed var(--b); border-radius: 12px; background: #fff; touch-action: none; cursor: crosshair; display: block; }
 .firma-ya { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--b); border-radius: 12px; padding: 12px 14px; margin-top: 14px; background: var(--c2); }
 .firma-ya small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--m); }
