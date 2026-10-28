@@ -205,6 +205,8 @@
     var rif = h('input', { class: 'campo', id: 'reg-rif', name: 'rif', maxlength: '20', placeholder: 'J-504754129', value: v.rif || '' });
     var rifArchivo = h('input', { class: 'campo', id: 'reg-rif-archivo', name: 'rifArchivo', type: 'file', accept: 'image/jpeg,image/png,image/webp,application/pdf' });
     var correo = h('input', { class: 'campo', id: 'reg-correo', name: 'correo', type: 'email', maxlength: '120', autocomplete: 'email', value: v.correo || '' });
+    var clave = h('input', { class: 'campo', id: 'reg-clave', name: 'clave', type: 'password', autocomplete: 'new-password', maxlength: '72', value: v.clave || '' });
+    var clave2 = h('input', { class: 'campo', id: 'reg-clave2', name: 'clave2', type: 'password', autocomplete: 'new-password', maxlength: '72', value: v.clave2 || '' });
     var direccion = h('textarea', { class: 'campo', id: 'reg-direccion', name: 'direccion', rows: '2', maxlength: '300' });
     direccion.value = v.direccion || '';
     var mapa = h('div', { class: 'mapa-tienda', id: 'reg-mapa' });
@@ -241,16 +243,30 @@
             rif: f.elements.rif.value,
             rifArchivo: archivos[2],
             correo: f.elements.correo.value,
+            clave: f.elements.clave.value,
+            clave2: f.elements.clave2.value,
             direccion: f.elements.direccion.value,
             categoriaId: f.elements.categoriaId.value,
           };
           reg.mismaPersona = misma.input.checked;
+          var claveEscrita = String(reg.escrito.clave || '');
+          var erroresLocales = {};
+          if (claveEscrita.length < 8 || claveEscrita.length > 72 || claveEscrita !== claveEscrita.trim()) erroresLocales.clave = 'La contraseña va de 8 a 72 caracteres.';
+          else if (claveEscrita !== String(reg.escrito.clave2 || '')) erroresLocales.clave2 = 'Las dos contraseñas tienen que ser iguales.';
+          if (erroresLocales.clave || erroresLocales.clave2) {
+            reg.enviando = false;
+            boton.disabled = false;
+            pintar(pasoDatos({ errores: erroresLocales }));
+            ponerMapa();
+            return { local: true };
+          }
           var cuerpo = {
             telefono: reg.telefono, codigo: reg.codigo,
             nombreTienda: reg.escrito.nombreTienda, razonSocial: reg.escrito.razonSocial,
             telefonoComercio: reg.escrito.telefonoComercio, duenoNombre: reg.escrito.duenoNombre,
             cedulaDueno: reg.escrito.cedulaDueno, mismaPersona: reg.mismaPersona,
             rif: reg.escrito.rif, rifArchivo: reg.escrito.rifArchivo, correo: reg.escrito.correo,
+            clave: claveEscrita,
             direccion: reg.escrito.direccion, categoriaId: Number(reg.escrito.categoriaId) || 0,
           };
           if (!reg.mismaPersona) {
@@ -261,6 +277,7 @@
           if (reg.pin) { cuerpo.lat = reg.pin.lat; cuerpo.lng = reg.pin.lng; }
           return C.pedir('POST', '/registro', cuerpo, { sinSesion: true });
         }).then(function (r) {
+          if (r && r.local) return;
           reg.enviando = false;
           if (!r || r.estado !== 'pendiente') {
             boton.disabled = false;
@@ -293,6 +310,8 @@
     C.campo('reg-rif-archivo', 'Fotocopia del RIF', rifArchivo, { error: e.rifArchivo }),
     vistaPrevia(v.rifArchivo),
     C.campo('reg-correo', 'Correo del dueño', correo, { error: e.correo }),
+    C.campo('reg-clave', 'Contraseña', clave, { error: e.clave, ayuda: 'De 8 a 72 caracteres. Con ella entras al panel.' }),
+    C.campo('reg-clave2', 'Repite la contraseña', clave2, { error: e.clave2 }),
     C.campo('reg-cat', 'Categoría', cat, { error: e.categoria }),
     h('p', { class: 'etq-campo' }, 'Dónde está'),
     h('p', { class: 'ayuda' }, 'Marca el mapa o escribe la dirección. Con una de las dos basta.'),

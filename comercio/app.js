@@ -296,7 +296,20 @@
           pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: 'La contraseña va de 8 a 72 caracteres.' }));
           return;
         }
-        pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: 'El comercio todavía no entra con correo y contraseña. Usa el código de WhatsApp o el del correo.' }));
+        var botonClave = this;
+        botonClave.disabled = true;
+        C.pedir('POST', '/acceso/clave', { correo: c, clave: clave }, { sinSesion: true }).then(function (r) {
+          if (!r || typeof r.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(r.token)) {
+            pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: 'Ese dato o esa contraseña no coinciden.' }));
+            return;
+          }
+          C.sesion.guardar(r.token);
+          desbloquearSonido();
+          try { raiz.history.replaceState(null, '', raiz.location.pathname + '#hoy'); } catch (_) { raiz.location.hash = '#hoy'; }
+          arrancar();
+        }, function (e) {
+          pintar(pantallaEntrar('telefono', { telefono: nacional, correo: c, errorClave: (e && e.message) || 'Ese dato o esa contraseña no coinciden.' }));
+        });
       } }, 'Entrar')),
       h('p', { class: 'ayuda' }, 'Si te registraste con contraseña, aquí va con tu correo. El código de WhatsApp sigue arriba.'),
       h('p', { class: 'ayuda' }, h('button', { class: 'enlace', type: 'button', onclick: function () { entrada.medio = 'correo'; entrada.paso = 'correo'; pintar(pantallaEntrar('correo', { correo: (documento.getElementById('correo-entrar') || {}).value || '' })); enfocar('correo-entrar'); } }, 'Enviarme un código al correo')));

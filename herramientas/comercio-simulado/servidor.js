@@ -136,6 +136,25 @@ function buscarLugares(q) {
     return palabras.every((p) => texto.includes(p));
   });
 }
+/** El pin (!3d!4d) gana sobre la cámara (@). El mismo orden que el panel de verdad. */
+function coordenadasDelEnlace(s) {
+  const t = String(s || '');
+  const par = (a, b) => {
+    const lat = parseFloat(a), lng = parseFloat(b);
+    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+  };
+  let m = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(t);
+  if (m) return par(m[1], m[2]);
+  m = /[?&](?:coordinate|daddr|saddr)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i.exec(t);
+  if (m) return par(m[1], m[2]);
+  m = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(t);
+  if (m) return par(m[1], m[2]);
+  m = /[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i.exec(t);
+  if (m) return par(m[1], m[2]);
+  m = /(?:place|search)\/(-?\d+\.\d+),(-?\d+\.\d+)/.exec(t);
+  if (m) return par(m[1], m[2]);
+  return null;
+}
 function lugarCercano(lat, lng) {
   let mejor = null, d = Infinity;
   for (const l of LUGARES) {
@@ -179,13 +198,14 @@ const SUBIDAS = new Map(); // id → Buffer (las fotos que subió la página)
 let ULTIMA_FOTO = null;
 let FALLAR_FOTOS = 0;
 let PEDIR_FIRMA = false;
-const promotorSimulado = { token: '', firmado: false };
+const promotorSimulado = { token: '', firmado: false, fallarFirma: false };
 
 function datosNuevos() {
   const azar = aleatorioCon(24102026);
   const ahora = Date.now();
   const d = {
     sesiones: new Map(), // sha256 → sesión
+    solicitudes: [],
     frenos: new Map(), // teléfono → [instantes]
     codigos: new Map(), // teléfono → código pedido
     bitacora: [],
@@ -876,6 +896,8 @@ async function api(req, res, url) {
   if (metodo === 'POST' && ruta === 'codigo') {
     const t = telefonoNormal(body.telefono);
     if (!t) throw new Fallo(400, 'Escribe un número de WhatsApp válido.');
+    const pendiente = (D.solicitudes || []).find((s) => s.dueno === t && s.estado === 'pendiente');
+    if (pendiente) throw new Fallo(409, 'Tu comercio está en revisión. Cuando lo aprueben, entra con este WhatsApp.');
     const lista = (D.frenos.get(t) || []).filter((x) => x > ahora - 10 * 60000);
     if (lista.length >= 3) throw new Fallo(429, 'Pediste muchos códigos. Espera unos minutos y vuelve a intentarlo.');
     lista.push(ahora); D.frenos.set(t, lista);
@@ -885,6 +907,8 @@ async function api(req, res, url) {
   }
   if (metodo === 'POST' && ruta === 'entrar') {
     const t = telefonoNormal(body.telefono);
+    const pendiente = t && (D.solicitudes || []).find((s) => s.dueno === t && s.estado === 'pendiente');
+    if (pendiente) throw new Fallo(409, 'Tu comercio está en revisión. Cuando lo aprueben, entra con este WhatsApp.');
     const c = t && D.codigos.get(t);
     if (!c) throw new Fallo(400, 'Pide un código primero.');
     if (++c.intentos > 5) throw new Fallo(429, 'Demasiados intentos. Espera unos minutos y pide un código nuevo.');
@@ -897,6 +921,50 @@ async function api(req, res, url) {
     D.sesiones.set(hash(token), Object.assign({}, quien, { venceEn, cerrada: false }));
     const w = quien.trabajadorId ? D.trabajadores.find((x) => x.id === quien.trabajadorId) : null;
     return { token, venceEn: iso(venceEn), cuenta: { nombre: w ? w.nombre : D.cuentas[quien.userId].nombre, rol: quien.rol, permisos: w ? w.permisos : PERMISOS } };
+  }
+
+  if (metodo === 'POST' && ruta === 'acceso/clave') {
+    const correo = String(body.correo || '').trim().toLowerCase();
+    const clave = String(body.clave || '');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) throw new Fallo(400, 'Escribe un correo válido.');
+    if (clave.length < 8 || clave.length > 72) throw new Fallo(400, 'La contraseña va de 8 a 72 caracteres.');
+    const sol = (D.solicitudes || []).find((s) => s.correo === correo && s.estado === 'pendiente');
+    if (sol) throw new Fallo(409, 'Tu comercio está en revisión. Cuando lo aprueben, entra con este WhatsApp.');
+    const cuenta = Object.values(D.cuentas).find((c) => c.correo === correo && c.clave === clave);
+    if (!cuenta) throw new Fallo(401, 'Ese dato o esa contraseña no coinciden.');
+    const token = crypto.randomBytes(32).toString('base64url');
+    const venceEn = Date.now() + 30 * DIA_MS;
+    D.sesiones.set(hash(token), { userId: cuenta.userId, rol: 'dueno', trabajadorId: null, telefono: cuenta.telefono, venceEn, cerrada: false });
+    return { token, venceEn: iso(venceEn), cuenta: { nombre: cuenta.nombre, rol: 'dueno', permisos: PERMISOS } };
+  }
+
+  if (metodo === 'GET' && ruta === 'registro/categorias') {
+    return { categorias: [{ id: 1, nombre: 'Comida' }, { id: 12, nombre: 'Comida venezolana' }, { id: 30, nombre: 'Tienda' }] };
+  }
+  if (metodo === 'POST' && ruta === 'registro/codigo') {
+    const t = telefonoNormal(body.telefono);
+    if (!t) throw new Fallo(400, 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.');
+    if ((D.solicitudes || []).some((s) => s.dueno === t && s.estado === 'pendiente')) throw new Fallo(409, 'Ya enviaste tu registro. Está en revisión: cuando lo aprueben, entra con este WhatsApp.');
+    if (quienEntra(t)) throw new Fallo(409, 'Ese número ya tiene una tienda. Entra con el código de WhatsApp.');
+    D.codigos.set('reg-' + t, { codigo: CODIGO, intentos: 0 });
+    return { ok: true, mensaje: 'Te enviamos un código por WhatsApp.' };
+  }
+  if (metodo === 'POST' && ruta === 'registro') {
+    const t = telefonoNormal(body.telefono);
+    if (!t) throw new Fallo(400, 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.');
+    if (String(body.codigo || '') !== CODIGO) throw new Fallo(400, 'Ese código no es correcto o ya venció.', { campo: 'codigo' });
+    const misma = body.mismaPersona === true;
+    if (!String(body.cedulaDueno || '').startsWith('data:')) throw new Fallo(400, 'Carga la cédula del dueño (JPG, PNG, WebP o PDF).', { campo: 'cedulaDueno' });
+    if (!misma && !String(body.cedulaEncargado || '').startsWith('data:')) throw new Fallo(400, 'Carga la cédula del encargado, o marca que el encargado eres tú.', { campo: 'cedulaEncargado' });
+    if (!String(body.rifArchivo || '').startsWith('data:')) throw new Fallo(400, 'Carga la fotocopia del RIF (JPG, PNG, WebP o PDF).', { campo: 'rifArchivo' });
+    if (!String(body.nombreTienda || '').trim()) throw new Fallo(400, 'Escribe el nombre de la tienda.', { campo: 'nombreTienda' });
+    const clave = String(body.clave || '');
+    if (clave.length < 8 || clave.length > 72 || clave !== clave.trim()) throw new Fallo(400, 'La contraseña va de 8 a 72 caracteres.', { campo: 'clave' });
+    D.solicitudes.push({
+      id: D.solicitudes.length + 1, estado: 'pendiente', dueno: t, nombre: String(body.nombreTienda).trim(),
+      misma: misma, correo: String(body.correo || '').trim().toLowerCase(), rif: String(body.rif || ''), clave: clave,
+    });
+    return { ok: true, estado: 'pendiente' };
   }
 
   const r = sesionDe(req);
@@ -1416,6 +1484,14 @@ async function api(req, res, url) {
     }
     if (metodo === 'GET' && ruta === 'flota/cortes') return D.flotaCortes;
     if (metodo === 'GET' && ruta === 'flota/facturas') { soloDueno(s); return D.facturasFlota; }
+    if (metodo === 'POST' && ruta === 'flota/resolver-direccion') {
+      exigir(s, 'flota_pedir');
+      const c = coordenadasDelEnlace(body.texto);
+      if (!c || c.lat < 0.6 || c.lat > 12.3 || c.lng < -73.4 || c.lng > -59.8) {
+        throw new Fallo(400, 'No pude leer ese enlace. Prueba con otro o toca el mapa.');
+      }
+      return { lat: c.lat, lng: c.lng, direccion: lugarCercano(c.lat, c.lng) };
+    }
     if (metodo === 'POST' && ruta === 'flota/cotizar') {
       exigir(s, 'flota_pedir');
       if (D.flota.pausado) throw new Fallo(409, 'Tu servicio está pausado: paga para seguir pidiendo.');
@@ -1859,6 +1935,22 @@ const servidor = http.createServer(async (req, res) => {
       }
       if (req.method === 'POST' && p === '/__simulado/vencer-sesiones') { for (const s of D.sesiones.values()) s.venceEn = Date.now() - 1000; responder(res, 200, { ok: true }); return; }
       if (req.method === 'POST' && p === '/__simulado/pedir-firma') { PEDIR_FIRMA = true; responder(res, 200, { ok: true }); return; }
+      if (req.method === 'POST' && p === '/__simulado/fallar-firma') { promotorSimulado.fallarFirma = true; responder(res, 200, { ok: true }); return; }
+      if (req.method === 'POST' && p === '/__simulado/aprobar-comercio') {
+        const s = (D.solicitudes || []).filter((x) => x.estado === 'pendiente').pop();
+        if (!s) { responder(res, 404, { message: 'No hay un comercio en revisión.' }); return; }
+        s.estado = 'aprobado';
+        const userId = 800 + s.id;
+        D.cuentas[userId] = { userId: userId, nombre: s.nombre, telefono: s.dueno, correo: s.correo, clave: s.clave };
+        D.tiendas.push({
+          storeId: 900 + s.id, companyId: 900 + s.id, userId: userId, nombre: s.nombre, tipo: 'comida', authorized: 3,
+          logo: '', banner: '', marcador: '', direccion: 'Valencia', telefono: s.dueno, correo: s.correo, rif: s.rif,
+          lat: 10.16, lng: -68.01, categoria: { id: 1, nombre: 'Comida' }, comisionPct: 10, comisionPromo: null, flota: null,
+          cobroPorProducto: true, horarios: [], pctTienda: 10,
+        });
+        responder(res, 200, { ok: true, estado: 'aprobado', userId: userId });
+        return;
+      }
       if (p === '/__simulado/ultima-foto') { responder(res, 200, ULTIMA_FOTO || {}); return; }
       if (p === '/__simulado/bitacora') { responder(res, 200, D.bitacora.slice(0, 50)); return; }
       responder(res, 404, { message: 'No encontrado.' }); return;
@@ -1890,6 +1982,35 @@ const servidor = http.createServer(async (req, res) => {
         responder(res, 200, { ok: true, token: promotorSimulado.token, estado: 'activo' });
         return;
       }
+      if (req.method === 'POST' && ruta === 'acceso/clave') {
+        const correo = String(body.correo || '').trim().toLowerCase();
+        const tel = telefonoNormal(body.telefono);
+        const clave = String(body.clave || '');
+        const correoOk = correo === 'ana@correo.com' || tel === '584125550198';
+        if (!correoOk || clave !== 'clave-de-prueba') {
+          responder(res, 401, { statusCode: 401, message: 'Ese dato o esa contraseña no coinciden.' });
+          return;
+        }
+        promotorSimulado.token = crypto.randomBytes(32).toString('base64url');
+        promotorSimulado.firmado = true;
+        responder(res, 200, { ok: true, token: promotorSimulado.token, estado: 'activo' });
+        return;
+      }
+      if (req.method === 'POST' && ruta === 'registro/codigo') {
+        responder(res, 200, { ok: true, mensaje: 'Te enviamos un código por WhatsApp.' });
+        return;
+      }
+      if (req.method === 'POST' && ruta === 'registro') {
+        if (String(body.codigo || '') !== CODIGO) { responder(res, 400, { statusCode: 400, message: 'Ese código no es correcto o ya venció.', campo: 'codigo' }); return; }
+        if (!String(body.cedulaArchivo || '').startsWith('data:')) { responder(res, 400, { statusCode: 400, message: 'Carga la fotocopia de tu cédula (JPG, PNG, WebP o PDF).', campo: 'cedulaArchivo' }); return; }
+        if (body.sinRif !== true) {
+          if (!body.rifNumero) { responder(res, 400, { statusCode: 400, message: 'Escribe tu RIF, por ejemplo J-504754129.', campo: 'rifNumero' }); return; }
+          if (!String(body.rifArchivo || '').startsWith('data:')) { responder(res, 400, { statusCode: 400, message: 'Carga la fotocopia de tu RIF (JPG, PNG, WebP o PDF).', campo: 'rifArchivo' }); return; }
+        }
+        promotorSimulado.token = crypto.randomBytes(32).toString('base64url');
+        responder(res, 200, { ok: true, token: promotorSimulado.token, estado: 'pendiente' });
+        return;
+      }
       if (!tokenOk) { responder(res, 401, { statusCode: 401, message: 'Tu sesión terminó. Entra otra vez con tu WhatsApp.' }); return; }
       if (req.method === 'GET' && ruta === 'yo') {
         responder(res, 200, {
@@ -1900,6 +2021,11 @@ const servidor = http.createServer(async (req, res) => {
         return;
       }
       if (req.method === 'POST' && ruta === 'contrato') {
+        if (promotorSimulado.fallarFirma) {
+          promotorSimulado.fallarFirma = false;
+          responder(res, 400, { statusCode: 400, message: 'No se pudo guardar la firma.' });
+          return;
+        }
         if (!String(body.firma || '').startsWith('data:image/png;base64,')) { responder(res, 400, { statusCode: 400, message: 'Firma en el recuadro.' }); return; }
         promotorSimulado.firmado = true;
         responder(res, 200, { ok: true, correo: true });

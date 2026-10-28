@@ -37,7 +37,7 @@ PAGINAS = [
     # archivos (todos se miran), su diccionario y su lista de textos que manda la API.
     {'archivo': 'comercio/index.html',
      'textos': ['comercio/' + n + '.js' for n in ('base', 'mapa', 'fotos', 'graficas', 'plan', 'pedidos', 'productos', 'vendedores',
-                                                  'billetera', 'flota', 'estadisticas', 'tienda', 'app')],
+                                                  'billetera', 'flota', 'estadisticas', 'tienda', 'registro', 'app')],
      'diccionarios': ['diccionario.json', 'diccionario-comercio.json'], 'siempre': 'siempre-comercio.json',
      'motor_aparte': 'comercio/idioma.js'},
 ]
