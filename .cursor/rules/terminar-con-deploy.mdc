@@ -1,0 +1,26 @@
+---
+description: Un cambio de Deliservy no está listo hasta que está en producción y se comprobó en vivo
+alwaysApply: true
+---
+
+# Al terminar
+
+Gilberth, 29-oct-2026. Un commit local no es producción. No digas que ya está desplegado si no lo comprobaste en vivo.
+
+Al cerrar un cambio de panel, API o web:
+
+1. Pruébalo.
+2. Commit solo de esos archivos. No mezcles lo que otra ventana dejó a medias.
+3. Push de esa rama.
+4. Despliegue. Primero la API, después el panel o la web.
+5. Compruébalo en vivo. Una ruta nueva que responde 404 no está. Un 401 sí existe. El HTML de paquetería se busca en el archivo que se sirve.
+6. Anótalo en la memoria del usuario.
+
+Dónde vive cada cosa:
+
+- API: VM `deliservy-app`, `/deliservy/deliservy`, proceso `pm2` `deliservy`. `api.deliservy.site`.
+- Paquetería: la misma VM, `/var/www/paqueteria/index.html`. `deliservypaqueteria.com`.
+- Admin: VM `interbank-deliservy`, `/home/gilberthroca/deliservy-admin`.
+- Web pública: Ferozo, no la VM de GCP.
+
+La app Flutter no se toca ni se publica salvo que él lo pida.

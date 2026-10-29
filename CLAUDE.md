@@ -217,3 +217,16 @@ claro/oscuro, inglés, `.htaccess` con los mismos encabezados). Contrato y captu
   fija sus rutas: las de la API simulada (`GET plan`, `POST plan/solicitar`, `plan/pagar/cotizar`, `plan/pagar`) son la
   propuesta.
 - ⚠️ Orden al desplegar: primero la API (rama `panel-comercio` del servidor), después `comercio/` a Ferozo.
+
+## Al terminar un cambio (29-oct-2026)
+
+Un commit en la máquina no es producción. No decir que ya está desplegado sin mirarlo en vivo.
+
+1. Probarlo.
+2. Commit solo de esos archivos.
+3. Push.
+4. Desplegar: primero la API (`deliservy-app`, `/deliservy/deliservy`, `pm2` `deliservy`), después el panel o esta web (Ferozo).
+5. Comprobar la URL viva. Una ruta nueva en 404 no está publicada. Paquetería se sirve desde `/var/www/paqueteria/index.html` en `deliservy-app`.
+6. Anotarlo en la memoria.
+
+La app no se publica salvo pedido explícito.
