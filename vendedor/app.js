@@ -1199,6 +1199,25 @@
       h('div', { class: 'monto' }, (cuenta ? '+' + dolares(v.netoUsd) : dolares(0)), h('br'), h('span', { class: 'pill ' + tono }, v.estadoTexto || '')));
   }
 
+  function tarjetaViajes() {
+    var estado = h('p', { class: 'nota' }, 'Cargando tu enlace…');
+    pedir('POST', '/viaje').then(function (d) {
+      vaciar(estado);
+      estado.appendChild(document.createTextNode('Tu enlace: '));
+      estado.appendChild(dato('b', null, d.url || ''));
+      estado.appendChild(document.createElement('br'));
+      estado.appendChild(document.createTextNode(
+        Math.round(num(d.ordenes)) + ' viajes · ' + dolares(d.tarifaUsd) + ' en tarifas · ganaste ' + dolares(d.ganadoUsd)));
+    }).catch(function () {
+      vaciar(estado);
+      estado.appendChild(document.createTextNode('Tu enlace de viajes aparece cuando tu cuenta está activa.'));
+    });
+    return h('div', { class: 'tarjeta' },
+      h('h2', null, 'Viajes'),
+      h('p', { class: 'nota' }, 'Comparte este enlace para Delitaxi, mototaxi, XL, lujo, premium y mandaditos. Ganas un porcentaje de cada viaje que salga de él.'),
+      estado);
+  }
+
   function inicio(d) {
     var r = d.resumen || {};
     var lista = d.ventas || [];
@@ -1213,6 +1232,7 @@
             h('div', { class: 'cifra verde' }, h('small', null, 'Ganado este mes'), h('b', null, dolares(r.netoMes))),
             h('div', { class: 'cifra ambar' }, h('small', null, 'Pendiente'), h('b', null, dolares(r.pendienteUsd))))),
         h('div', null, tarjetaCupon(d.cupon), tarjetaVisitas(d.visitas))),
+      tarjetaViajes(),
       h('span', { class: 'etq' }, 'Ventas recientes'),
       lista.length
         ? [h('div', { class: 'lista' }, lista.map(venta)), botonIr('#ventas', 'Ver todas', 'borde')]
