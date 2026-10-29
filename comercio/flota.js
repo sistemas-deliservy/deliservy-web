@@ -449,9 +449,19 @@
     };
     var puntoA = h('div', { class: 'punto-campo' });
     var puntoB = h('div', { class: 'punto-campo' });
+    var claveDelEnlace = e.editando === 'a' ? 'a' : 'b';
     var buscadorDir = C.mapa.buscador({
       id: 'buscar-dir', cerca: function () { return (m && m.centro()) || (C.mapa.valido(tienda) ? tienda : null); },
       alElegir: function (lugar) { ponerPunto(e.editando, lugar); },
+      alEscribir: function () { claveDelEnlace = e.editando === 'a' ? 'a' : 'b'; },
+      alEnlace: function (texto) {
+        var clave = claveDelEnlace === 'a' ? 'a' : 'b';
+        return C.pedir('POST', '/flota/resolver-direccion?' + q(ctx), { texto: texto }).then(function (r) {
+          if (!v.viva()) return;
+          if (!r || !C.mapa.valido(r)) throw new Error('No pude leer ese enlace. Prueba con otro o toca el mapa.');
+          ponerPunto(clave, { lat: Number(r.lat), lng: Number(r.lng), direccion: typeof r.direccion === 'string' ? r.direccion : '' });
+        });
+      },
     });
     var avisoToque = h('p', { class: 'ayuda' }, 'Busca la dirección o toca el punto exacto en el mapa.');
     var pintarPuntos = function () {
@@ -629,7 +639,8 @@
           h('h2', null, '¿De dónde a dónde?'),
           h('div', { class: 'puntos' }, puntoA, puntoB,
             h('button', { class: 'enlace-mini', type: 'button', onclick: function () { var x = e.a; e.a = e.b; e.b = x; quitarCotizacion(); pintarPuntos(); ponerEnMapa(); } }, ico('recargar'), 'Intercambiar A y B')),
-          buscadorDir.caja),
+          buscadorDir.caja,
+          h('p', { class: 'ayuda' }, 'También puedes pegar un enlace de Google Maps o de Apple Maps.')),
         h('div', { class: 'tarjeta' },
           h('h2', null, '¿Quién recibe?'),
           h('div', { class: 'dos-campos' }, C.campo('recibe-nombre', 'Nombre', nombre), C.campo('recibe-telefono', 'Teléfono', telefono)),

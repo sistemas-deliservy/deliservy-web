@@ -694,8 +694,10 @@ html.claro .segmentos button[aria-selected="true"] { background: #fff; }
 .cot-cifras b { display: block; font-size: 17px; font-weight: 800; white-space: nowrap; }
 .cot-cifras .cot-precio b { color: var(--rt); font-size: 20px; }
 
-/* Buscador de direcciones */
+/* Buscador de direcciones. La lista cuelga del campo: la tarjeta de abajo no puede taparla
+   (cada tarjeta arma su propio plano con la sombra). */
 .buscador-dir { position: relative; }
+.tarjeta:has(.resultados-dir:not([hidden])) { position: relative; z-index: 6; }
 .resultados-dir { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40; background: var(--c); border: 1px solid var(--b); border-radius: 12px; box-shadow: var(--sombra); overflow: hidden; max-height: 300px; overflow-y: auto; }
 .resultados-dir button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--b); background: var(--c); padding: 10px 12px; color: var(--t); }
 .resultados-dir button:last-child { border-bottom: 0; }

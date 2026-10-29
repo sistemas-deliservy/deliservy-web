@@ -580,6 +580,8 @@
 "Buscar dirección": "Search address",
 "No encontramos esa dirección. Prueba con otra palabra o toca el mapa.": "We couldn't find that address. Try another word or tap the map.",
 "No se pudo buscar. Toca el punto en el mapa.": "Couldn't search. Tap the spot on the map.",
+"No pude leer ese enlace. Prueba con otro o toca el mapa.": "Couldn't read that link. Try another one or tap the map.",
+"También puedes pegar un enlace de Google Maps o de Apple Maps.": "You can also paste a Google Maps or Apple Maps link.",
 "Cómo le va a": "How it's going for",
 "Ticket promedio": "Average ticket",
 "Qué ver": "What to see",

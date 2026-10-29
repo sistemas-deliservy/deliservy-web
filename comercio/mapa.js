@@ -162,22 +162,60 @@
 
   // ── El buscador de direcciones (el de la tienda web) ───────────────────────
 
+  /** Google Maps o Apple Maps pegados en el campo. Una dirección escrita no entra aquí. */
+  function pareceEnlaceDeMapas(texto) {
+    return /(?:https?:\/\/)?(?:www\.)?(?:maps\.app\.goo\.gl\/\S+|goo\.gl\/maps\/\S+|maps\.google\.[a-z.]+\/\S+|google\.[a-z.]+\/maps\S*|maps\.apple\.com\/\S+)/i.test(String(texto || ''));
+  }
+
   /**
-   * Un buscador con su lista de resultados. `o.cerca()` da el punto para ordenar por cercanía; `o.alElegir({lat, lng,
-   * direccion})` recibe el lugar elegido.
+   * Un buscador con su lista de resultados, desde la primera letra. `o.cerca()` da el punto para ordenar por
+   * cercanía; `o.alElegir({lat, lng, direccion})` recibe el lugar elegido. Un enlace de mapas no se le manda al
+   * autocompletado: si hay `o.alEnlace(texto)`, el servidor lo resuelve.
    */
   function buscador(o) {
-    var input = h('input', { class: 'campo', type: 'search', placeholder: o.pista || 'Busca la calle, edificio o urbanización', 'aria-label': o.rotulo || 'Buscar dirección', autocomplete: 'off', enterkeyhint: 'search', id: o.id || null, maxlength: '120' });
+    var input = h('input', { class: 'campo', type: 'search', placeholder: o.pista || 'Busca la calle, edificio o urbanización', 'aria-label': o.rotulo || 'Buscar dirección', autocomplete: 'off', enterkeyhint: 'search', id: o.id || null, maxlength: o.maxlength || '2048' });
     var resultados = h('div', { class: 'resultados-dir', hidden: true, role: 'listbox' });
     var reloj = null, seq = 0;
+    function cerrarLista() { resultados.hidden = true; }
+    function aviso(texto) {
+      C.vaciar(resultados);
+      resultados.appendChild(h('p', { class: 'ayuda' }, texto));
+      resultados.hidden = false;
+    }
     input.addEventListener('input', function () {
       clearTimeout(reloj);
+      if (typeof o.alEscribir === 'function') o.alEscribir();
       var texto = input.value.trim();
-      if (texto.length < 3) { resultados.hidden = true; return; }
+      if (pareceEnlaceDeMapas(texto)) {
+        cerrarLista();
+        reloj = setTimeout(function () { resolverEnlace(texto); }, 300);
+        return;
+      }
+      // Una URL que no es de un mapa no se busca: el autocompletado es de direcciones.
+      if (/https?:\/\//i.test(texto)) { cerrarLista(); return; }
+      if (!texto) { cerrarLista(); return; }
       reloj = setTimeout(function () { buscar(texto); }, 350);
     });
-    input.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { resultados.hidden = true; } });
+    input.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cerrarLista(); });
+    function resolverEnlace(texto) {
+      var mio = ++seq;
+      if (typeof o.alEnlace !== 'function') {
+        aviso('No pude leer ese enlace. Prueba con otro o toca el mapa.');
+        return;
+      }
+      var hecho = o.alEnlace(texto);
+      if (!hecho || typeof hecho.then !== 'function') return;
+      hecho.then(function () {
+        if (mio !== seq) return;
+        input.value = '';
+        cerrarLista();
+      }, function (e) {
+        if (mio !== seq) return;
+        aviso((e && e.message) || 'No pude leer ese enlace. Prueba con otro o toca el mapa.');
+      });
+    }
     function buscar(texto) {
+      if (!texto || pareceEnlaceDeMapas(texto) || /https?:\/\//i.test(texto)) return;
       var mio = ++seq;
       var c = (o.cerca && o.cerca()) || VALENCIA;
       C.pedir('GET', '/api/client/address/autocomplete/' + encodeURIComponent(texto) + '?latitude=' + Number(c.lat).toFixed(6) + '&longitude=' + Number(c.lng).toFixed(6) + '&mapa=propio', undefined, { sinSesion: true }).then(function (r) {
@@ -204,9 +242,7 @@
         resultados.hidden = false;
       }, function () {
         if (mio !== seq) return;
-        C.vaciar(resultados);
-        resultados.appendChild(h('p', { class: 'ayuda' }, 'No se pudo buscar. Toca el punto en el mapa.'));
-        resultados.hidden = false;
+        aviso('No se pudo buscar. Toca el punto en el mapa.');
       });
     }
     return { caja: h('div', { class: 'buscador-dir' }, h('div', { class: 'con-icono' }, C.ico('buscar'), input), resultados), input: input };
