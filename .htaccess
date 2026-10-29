@@ -2,12 +2,13 @@
 #
 # La tienda del cliente y el seguimiento se abren AQUÍ (Gilberth: «vendedores, sus enlaces, la tienda del cliente y el
 # seguimiento, todo en www.deliservy.com»):
-#   /v/<codigo>      el enlace de un vendedor (6 a 16 minúsculas y cifras)
+#   /v/<codigo>      el enlace de un promotor (6 a 16 minúsculas y cifras); la gente entra por /promotores/
 #   /pedido/<ficha>  el seguimiento de un pedido de la tienda web (la ficha firmada que da la API)
 #   /p/<id>, /t/<id> el producto o la tienda que se comparte desde la APP (2.8.8 en adelante; antes iba a
 #                    api.deliservy.site/api/compartir/p|t/<id>, que sigue igual). Con la app instalada, el teléfono los
 #                    abre en la app por los archivos de `.well-known/` (apple-app-site-association y assetlinks.json).
-# Las dos las pinta `tienda.php`, por dentro: le pide la página a la API (api.deliservy.site) y la devuelve tal cual,
+#   /viaje/<codigo>  el enlace de viajes de un promotor (29-oct-2026). No va en `.well-known/`: Flutter no se tocó.
+# Las pinta `tienda.php`, por dentro: le pide la página a la API (api.deliservy.site) y la devuelve tal cual,
 # así que la barra del navegador sigue en www.deliservy.com. Lo demás de la web, como siempre.
 #
 # ⚠️ Si en Ferozo ya hay un .htaccess, JUNTAR estas reglas con las suyas (no reemplazarlo sin mirarlo).
@@ -23,6 +24,7 @@
   RewriteRule ^pedido/[A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43}/?$ tienda.php [L]
   RewriteRule ^p/[0-9]{1,10}/?$ tienda.php [L]
   RewriteRule ^t/[0-9]{1,10}/?$ tienda.php [L]
+  RewriteRule ^viaje/[a-z0-9]{6,16}/?$ tienda.php [L]
   # La baja del correo de las campañas. La barra se queda en www; baja.php le pide la página al panel.
   RewriteRule ^baja/[A-Za-z0-9]{8,80}/?$ baja.php [L]
 </IfModule>
@@ -33,4 +35,5 @@
   RedirectMatch 302 ^/pedido/([A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43})/?$ https://api.deliservy.site/api/compartir/pedido/$1
   RedirectMatch 302 ^/p/([0-9]{1,10})/?$ https://api.deliservy.site/api/compartir/p/$1
   RedirectMatch 302 ^/t/([0-9]{1,10})/?$ https://api.deliservy.site/api/compartir/t/$1
+  RedirectMatch 302 ^/viaje/([a-z0-9]{6,16})/?$ https://api.deliservy.site/api/compartir/viaje/$1
 </IfModule>

@@ -8,13 +8,14 @@
  *   /pedido/<ficha>   el seguimiento de un pedido de la tienda web (la ficha firmada que da la API)
  *   /p/<id>, /t/<id>  el producto o la tienda que se comparte desde la APP (2.8.8 en adelante): la misma página de
  *                     `…/api/compartir/p/<id>` y `…/t/<id>` (la tienda web si se compra por la web; si no, la de la app)
+ *   /viaje/<codigo>   el enlace de viajes de un promotor (29-oct-2026): Delitaxi, mototaxi, XL, lujo, premium y mandaditos
  * Este archivo le pide la página a la API de Deliservy (`https://api.deliservy.site/api/compartir/v/<codigo>` o
- * `…/compartir/pedido/<ficha>`) y la devuelve TAL CUAL: la barra del navegador sigue en www.deliservy.com y la vista
- * previa de WhatsApp sale con la foto del producto. Reenvía el `User-Agent`, el `Referer` y la IP de quien la abre (y
- * `?red=`), para que la visita y su red se cuenten bien. La página trae sus archivos y habla con la API por su
- * dirección entera (`https://api.deliservy.site/…`).
+ * `…/compartir/pedido/<ficha>` o `…/compartir/viaje/<codigo>`) y la devuelve TAL CUAL: la barra del navegador sigue en
+ * www.deliservy.com y la vista previa de WhatsApp sale con la foto del producto. Reenvía el `User-Agent`, el `Referer`
+ * y la IP de quien la abre (y `?red=`), para que la visita y su red se cuenten bien. La página trae sus archivos y habla
+ * con la API por su dirección entera (`https://api.deliservy.site/…`).
  *
- * Reglas: solo esas dos formas (lo demás, «no disponible» sin preguntar nada); tiempo límite; sin caché. Si la API no
+ * Reglas: solo esas formas (lo demás, «no disponible» sin preguntar nada); tiempo límite; sin caché. Si la API no
  * contesta a tiempo (o se cae, o frena), el visitante va a la MISMA página en api.deliservy.site: nunca se queda sin
  * tienda. Nada se guarda ni se escribe aquí.
  */
@@ -160,6 +161,9 @@ if (preg_match('#^/v/([a-z0-9]{6,16})/?$#', $camino, $m)) {
 } elseif (preg_match('#^/(p|t)/([0-9]{1,10})/?$#', $camino, $m)) {
     // El producto (`p`) o la tienda (`t`) que se comparte desde la app.
     $ruta = '/api/compartir/' . $m[1] . '/' . $m[2];
+} elseif (preg_match('#^/viaje/([a-z0-9]{6,16})/?$#', $camino, $m)) {
+    // El enlace de viajes de un promotor (no se dice «vendedor» en la página).
+    $ruta = '/api/compartir/viaje/' . $m[1];
 } else {
     no_esta();
 }
