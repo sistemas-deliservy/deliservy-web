@@ -10,6 +10,11 @@
  * (390 × 844) y computadora (1366 × 900), en claro, en oscuro y en inglés. Falla si hay un error en la consola, una
  * violación de la CSP o la página se sale de ancho.
  *
+ * El rediseño (30-oct-2026, C2 · C3 · C5 · C7) tiene su pasada: afiliar por la web (el dueño y el encargado), la tabla
+ * de promotores (dos filas cambiadas, un solo «Guardar cambios», el error de una fila), los grupos plegables y los
+ * filtros de Productos, y «Activa tu tienda» con la bodega nueva de Carmen (0412-555-0103). Sus capturas finales van
+ * a FINALES=/carpeta (si se da), como com-*.png en teléfono (390 × 844) y computadora (1366 × 860).
+ *
  *   node herramientas/comercio-simulado/servidor.js &          # la API simulada (puerto 8787)
  *   node herramientas/comercio-simulado/prueba-en-navegador.js  # la prueba (deja las capturas)
  *
@@ -38,7 +43,9 @@ const { chromium } = cargarPlaywright();
 
 const BASE = process.env.BASE || 'http://localhost:8787';
 const CAPTURAS = process.env.CAPTURAS || '/Users/gilberthroca/Documents/Deliservy - Panel del comercio (propuesta 24-oct-2026)/capturas-web';
-const TEL = { dueno: '0412-555-0101', cajero: '0412-555-0102', sinTienda: '0412-555-0199' };
+const TEL = { dueno: '0412-555-0101', cajero: '0412-555-0102', nueva: '0412-555-0103', sinTienda: '0412-555-0199' };
+const FINALES = process.env.FINALES || '';
+const COMPU_FINAL = { width: 1366, height: 860 };
 const TELEFONO = { width: 390, height: 844 };
 const COMPUTADORA = { width: 1366, height: 900 };
 
@@ -86,8 +93,9 @@ function png(ancho, alto) {
 async function abrir(browser, o) {
   o = o || {};
   const ctx = await browser.newContext({
-    viewport: o.viewport || TELEFONO, deviceScaleFactor: o.viewport === COMPUTADORA ? 1 : 2, locale: 'es-VE',
+    viewport: o.viewport || TELEFONO, deviceScaleFactor: o.viewport && o.viewport.width > 1000 ? 1 : 2, locale: 'es-VE',
     timezoneId: 'America/Caracas', colorScheme: o.oscuro ? 'dark' : 'light', acceptDownloads: true,
+    geolocation: o.geo || undefined, permissions: o.geo ? ['geolocation'] : [],
   });
   await ctx.addInitScript((ingles) => {
     try { localStorage.setItem('deliservy_idioma', ingles ? 'en' : 'es'); } catch (_) { /* nada */ }
@@ -118,6 +126,8 @@ async function abrir(browser, o) {
   page.on('console', (m) => {
     if (m.type() !== 'error') return;
     if (/^Failed to load resource: the server responded with a status of \d{3}/.test(m.text())) return;
+    // El mapa (estilos y teselas de www.deliservy.website): si no llega, el recuadro lo dice (como en `requestfailed`).
+    if (/^Failed to load resource: net::/.test(m.text()) && /deliservy\.website/.test((m.location() || {}).url || '')) return;
     errores.push(m.text());
   });
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
@@ -184,6 +194,8 @@ const ERRORES_ESPERADOS = [
   /^POST \/api\/comercio\/fotos 500$/, /^DELETE \/api\/comercio\/grupos\/\d+ 409$/, /^POST \/api\/comercio\/tienda\/\d+\/mostrar-en-app 409$/,
   /^GET \/api\/comercio\/[\w/-]+ 401$/, /^POST \/api\/comercio\/plan\/pagar 402$/,
 ];
+/** Las del rediseño: el código malo al afiliar, la fila de promotores que falla a propósito. */
+const ERRORES_REDISENO = [/^POST \/api\/comercio\/afiliacion 400$/, /^PUT \/api\/comercio\/vendedores-externos\/productos\/9003 409$/];
 
 // ── Las pruebas ──────────────────────────────────────────────────────────────
 
@@ -251,7 +263,7 @@ async function telefonoClaro(browser) {
   await foto(page, '09-pedidos-calendario');
   await ir(page, '#pedidos/2603', 3500);
   check('detalle: datos para la factura', /Deliservyapp/.test(await textoDe(page, '.datos-lista')));
-  check('detalle: la ganancia de verdad', /Vendedor externo/.test(await textoDe(page, '.ganancia')));
+  check('detalle: la ganancia de verdad, con «Promotor» (nunca «vendedor»)', /Promotor/.test(await textoDe(page, '.ganancia')) && !/vendedor/i.test(await textoDe(page, '.ganancia')));
   check('detalle: lo que se descontó (por producto, Premium)', /Deliservy se quedó/.test(await textoDe(page, '.descontado')) && /Premium/.test(await textoDe(page, '.descontado')));
   check('detalle: el repartidor en el mapa', await page.isVisible('.pin-moto').catch(() => false) || await page.isVisible('.cargando-mapa.fallo').catch(() => false));
   await foto(page, '10-pedido-detalle', true);
@@ -284,7 +296,7 @@ async function telefonoClaro(browser) {
   // Productos
   await ir(page, '#productos', 700);
   check('productos por grupo', (await page.$$('.grupo-productos')).length >= 3);
-  check('productos: «Deliservy: … por venta» y «En la app: 10 %»', /Deliservy: 0,12\u00a0\$ por venta/.test(await textoDe(page, '.fila-producto')) && /En la app: 10/.test(await textoDe(page, '.fila-producto')));
+  check('productos: sin la pastilla de cobro en las filas, una línea a «Mi plan»', !/por venta/.test(await textoDe(page, '.productos-lista')) && await page.isVisible('.linea-plan a[href="#plan"]'));
   await foto(page, '14-productos', true);
   await page.fill('#buscar-producto', 'pepiada reina');
   await esperar(900);
@@ -326,26 +338,22 @@ async function telefonoClaro(browser) {
   await esperar(900);
   check('producto nuevo creado', /Arepa de pernil/.test(await textoDe(page, '.productos-lista')));
 
-  // Vendedores externos
+  // Promotores (antes «Vendedores externos»): lo de siempre, ahora en la tabla (el resto, en `rediseno`)
   await ir(page, '#vendedores', 800);
-  check('vendedores externos: nunca dice «Compra-Ventas»', !/Compra-Ventas/i.test(await page.textContent('body')));
-  check('producto pausado por Deliservy: sin cambiar', await page.isDisabled('.fila-cv.pausado .btn'));
-  await foto(page, '19-vendedores-externos', true);
+  check('promotores: nunca dice «Compra-Ventas»', !/Compra-Ventas/i.test(await page.textContent('body')));
+  check('producto pausado por Deliservy: sin cambiar', await page.isDisabled('.tp-fila.pausado input >> nth=0'));
+  await foto(page, '19-promotores', true);
   await page.fill('#cv-pct-tienda', '60');
-  await page.click('.fila-pct .btn');
+  await page.click('.pct-todos .btn');
   await esperar(300);
-  check('% de la tienda: tope 50', /0 a 50/.test(await textoDe(page, '.fila-pct ~ .error-campo')));
-  await foto(page, '20-vendedores-externos-error');
-  await page.fill('#cv-pct-tienda', '12');
-  await page.check('#cv-todos');
-  await page.click('.fila-pct .btn');
-  await esperar(1300);
-  check('% de la tienda guardado y aplicado a todos', (await page.inputValue('#cv-pct-tienda')).replace(',', '.') === '12');
-  const filaArepa = page.locator('.fila-cv', { hasText: 'Arepa pabellón' });
-  await filaArepa.locator('input').nth(1).fill('9,99');
-  await filaArepa.locator('button').click();
+  check('% para todos: tope 50', /0 a 50/.test(await textoDe(page, '.pct-todos .error-campo')));
+  await foto(page, '20-promotores-error');
+  const filaArepa = page.locator('.tp-fila', { hasText: 'Arepa pabellón' });
+  await filaArepa.locator('.tp-redes input').fill('9,99');
+  await page.click('.barra-cambios .btn:not(.borde-blanco)');
   await esperar(400);
   check('precio de redes mayor que el de la app: no', /no puede ser mayor/.test(await filaArepa.locator('.error-campo').textContent()));
+  await page.click('.barra-cambios .btn.borde-blanco');
 
   // Billetera
   await ir(page, '#billetera', 900);
@@ -588,6 +596,7 @@ async function cajero(browser) {
   const secciones = await page.$$eval('.barra-abajo [data-seccion]', (as) => as.map((a) => a.getAttribute('data-seccion')));
   check('cajero: Hoy y Pedidos, nada de dinero ni Mi tienda', secciones.join(',') === 'hoy,pedidos', secciones.join(','));
   check('cajero: «Hoy» sin el saldo', !(await page.$('.saldo-hoy')));
+  check('cajero: sin «Activa tu tienda» (solo el dueño)', !(await page.$('#activacion')));
   await foto(page, '46-cajero-hoy', true);
   await ir(page, '#billetera', 500);
   check('cajero: escribir #billetera no la abre', (await page.evaluate(() => location.hash)) === '#billetera' && !(await page.$('.saldo')));
@@ -607,7 +616,7 @@ async function computadora(browser, oscuro) {
   check('barra lateral', await page.isVisible('.lateral'));
   const rutas = oscuro
     ? [['#hoy', 'hoy'], ['#pedidos/2603', 'pedido-detalle'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan']]
-    : [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/calendario', 'pedidos-calendario'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9013', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']];
+    : [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/calendario', 'pedidos-calendario'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9013', 'producto-editar'], ['#vendedores', 'promotores'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']];
   for (const [h, n] of rutas) {
     await ir(page, h, h.indexOf('2603') > 0 || h === '#tienda' ? 3500 : 900);
     await foto(page, enGrupo(grupo, n));
@@ -655,7 +664,7 @@ async function telefonoOscuro(browser) {
   await page.waitForSelector('#telefono');
   await foto(page, enGrupo('oscuro', 'entrar-telefono'));
   await entrar(page, TEL.dueno);
-  for (const [h, n] of [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']]) {
+  for (const [h, n] of [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'promotores'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario']]) {
     await ir(page, h, h.indexOf('2603') > 0 || h === '#tienda' ? 3500 : 900);
     await foto(page, enGrupo('oscuro', n), true);
     await sinAnchoDeMas(page, n + '-oscuro');
@@ -693,13 +702,56 @@ async function ingles(browser) {
     await page.waitForSelector('#telefono');
     check('inglés: la entrada traducida' + suf, /Merchant panel/.test(await textoDe(page, 'h1')));
     if (vp === TELEFONO) await foto(page, enGrupo(grupo, 'entrar-telefono'));
-    await entrar(page, TEL.dueno);
     const juntar = async () => (await page.evaluate(() => (window.idiomaFaltantes ? window.idiomaFaltantes() : []))).forEach((x) => faltan.add(x));
+    // El rediseño: afiliar (vacío, con errores, el encargado y el código) y la tienda nueva con «Activa tu tienda».
+    await page.click('#ir-afiliar');
+    await page.waitForSelector('#af-form');
+    check('inglés: afiliar traducido' + suf, /Sign up your business/.test(await textoDe(page, 'h1')), await textoDe(page, 'h1'));
+    await page.click('#af-enviar');
+    await page.click('.form-afiliar [role="radio"][data-valor="encargado"]');
+    await esperar(300);
+    await juntar();
+    if (vp === TELEFONO) await foto(page, enGrupo(grupo, 'afiliar'), true);
+    await page.fill('#af-nombre', 'Bodega Sol');
+    await page.click('#af-rubro .chip[data-rubro="otro"]');
+    await page.fill('#af-buscar', 'sambil');
+    await page.waitForSelector('.resultados-dir button');
+    await page.click('.resultados-dir button');
+    await page.fill('#af-tel-dueno', vp === TELEFONO ? '0414-555-0444' : '0414-555-0446');
+    await page.fill('#af-tel-mio', vp === TELEFONO ? '0414-555-0445' : '0414-555-0447');
+    await page.click('#af-enviar');
+    await page.waitForSelector('#af-codigo');
+    await juntar();
+    await page.type('#af-codigo', '123456');
+    await page.waitForSelector('#af-gracias');
+    await juntar();
+    if (vp === TELEFONO) await foto(page, enGrupo(grupo, 'afiliar-gracias'));
+    await entrar(page, TEL.nueva);
+    await page.waitForSelector('#activacion', { timeout: 8000 }).catch(() => {});
+    await juntar();
+    check('inglés: «Activa tu tienda» traducida' + suf, /Activate your store in the app/.test(await textoDe(page, '#activacion')));
+    await foto(page, enGrupo(grupo, 'hoy-activacion'), vp === TELEFONO);
+    await ir(page, '#productos', 900);
+    await juntar();
+    await page.evaluate(() => localStorage.removeItem('deliservy_comercio_sesion'));
+    await entrar(page, TEL.dueno);
     const lista = vp === TELEFONO
-      ? [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'vendedores-externos'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario'], ['#tienda/trabajadores', 'mi-tienda-trabajadores']]
+      ? [['#hoy', 'hoy'], ['#pedidos', 'pedidos-en-curso'], ['#pedidos/2603', 'pedido-detalle'], ['#productos', 'productos'], ['#productos/9001', 'producto-editar'], ['#vendedores', 'promotores'], ['#billetera', 'billetera'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan'], ['#tienda', 'mi-tienda'], ['#tienda/horario', 'mi-tienda-horario'], ['#tienda/trabajadores', 'mi-tienda-trabajadores']]
       : [['#hoy', 'hoy'], ['#pedidos/2603', 'pedido-detalle'], ['#productos/9013', 'producto-editar'], ['#estadisticas', 'estadisticas'], ['#plan', 'mi-plan']];
     for (const [h, n] of lista) {
       await ir(page, h, h.indexOf('2603') > 0 || h === '#tienda' ? 3500 : 900);
+      if (h === '#vendedores') {
+        await page.fill('.tp-fila[data-producto="9001"] .tp-pct input', '11');
+        await page.fill('.tp-fila[data-producto="9002"] .tp-redes input', '9,99');
+        await page.click('.barra-cambios .btn:not(.borde-blanco)');
+        await esperar(500);
+        await juntar();
+        check('inglés: la barra de cambios traducida' + suf, /unsaved change/.test(await textoDe(page, '.barra-cambios')));
+        await page.click('.barra-cambios .btn.borde-blanco');
+        await page.click('.segmentos button[data-valor="ventas"]');
+        await juntar();
+        await page.click('.segmentos button[data-valor="productos"]');
+      }
       await juntar();
       await foto(page, enGrupo(grupo, n), vp === TELEFONO);
     }
@@ -739,13 +791,291 @@ async function ingles(browser) {
   check('inglés: nada de la página queda en español', sinTraducir.length === 0, sinTraducir.slice(0, 8).join(' | '));
 }
 
+
+// ── El rediseño (30-oct-2026): afiliar (C2), «Activa tu tienda» (C3), promotores (C5) y productos (C7) ─────────────
+
+/** Una captura final (com-*.png) del tamaño de la ventana, con `sel` arriba (bajo la cabecera del teléfono). */
+async function final(page, nombre, sel) {
+  if (!FINALES) return;
+  if (sel) {
+    await page.evaluate((s) => {
+      const el = document.querySelector(s);
+      if (!el) return;
+      el.scrollIntoView({ block: 'start' });
+      const cab = document.querySelector('.cabecera-tel');
+      window.scrollBy(0, -((cab && cab.offsetHeight) || 0) - 12);
+    }, sel);
+  }
+  await page.mouse.move(2, 2);
+  await esperar(450);
+  await page.screenshot({ path: path.join(FINALES, 'com-' + nombre + '.png') });
+}
+async function solicitudes() { return (await fetch(BASE + '/__simulado/solicitudes')).json(); }
+async function bitacora() { return (await fetch(BASE + '/__simulado/bitacora')).json(); }
+async function visibles(page, sel) { return page.$$eval(sel, (xs) => xs.filter((x) => x.offsetParent !== null).length); }
+async function quitarAvisos(page) { await page.evaluate(() => document.querySelectorAll('.aviso').forEach((x) => x.remove())); }
+
+async function afiliarDuenoCon(page, sufijo, fin) {
+  const final = (p, cual, sel) => fin(p, cual.replace(sufijo, ''), sel);
+  await page.goto(BASE + '/comercio/');
+  await page.waitForSelector('#telefono');
+  check('entrar: «¿Aún no vendes con Deliservy? Afilia tu comercio»' + sufijo, /Afilia tu comercio/.test(await textoDe(page, '.pie-entrar')));
+  await page.click('#ir-afiliar');
+  await page.waitForSelector('#af-form');
+  check('afiliar: título y la frase de la propuesta' + sufijo, /Afilia tu comercio/.test(await textoDe(page, 'h1')) && /cargamos tu catálogo contigo, sin costo/.test(await textoDe(page, '.intro-afiliar')));
+  check('afiliar: el dueño no ve «Tu WhatsApp»' + sufijo, !(await page.isVisible('#af-tel-mio')));
+  check('afiliar: los 5 rubros' + sufijo, (await page.$$('#af-rubro .chip')).length === 5);
+  await final(page, 'afiliar' + sufijo);
+  await page.click('#af-enviar');
+  await esperar(300);
+  check('afiliar vacío: dice qué falta (nombre, rubro, ubicación, dirección, WhatsApp)' + sufijo, (await visibles(page, '.form-afiliar .error-campo')) >= 5, String(await visibles(page, '.form-afiliar .error-campo')));
+  await page.fill('#af-nombre', 'Panadería La Espiga');
+  await page.click('#af-rubro .chip[data-rubro="restaurante"]');
+  await page.click('#af-usar-ubicacion');
+  await page.waitForFunction(() => document.getElementById('af-direccion').value.length > 8, null, { timeout: 8000 }).catch(() => {});
+  check('«Usar mi ubicación»: marca el punto y llena la dirección' + sufijo, /Sambil/.test(await page.inputValue('#af-direccion')), await page.inputValue('#af-direccion'));
+  await page.fill('#af-tel-dueno', '0414-555-0111');
+  await page.click('#af-enviar');
+  await page.waitForSelector('#af-codigo', { timeout: 8000 });
+  check('afiliar: el código va al WhatsApp del dueño' + sufijo, /0414-555-0111/.test(await textoDe(page, '#af-codigo-caja')));
+  await final(page, 'afiliar-codigo' + sufijo);
+  await page.type('#af-codigo', '000000');
+  await page.waitForSelector('#af-codigo-caja .error:not([hidden])');
+  check('afiliar: código malo, la frase de la API' + sufijo, /no es correcto/.test(await textoDe(page, '#af-codigo-caja .error')));
+  await page.type('#af-codigo', '123456');
+  await page.waitForSelector('#af-gracias', { timeout: 8000 });
+  check('afiliar: «¡Gracias!» con la frase de la API' + sufijo, /Gracias/.test(await textoDe(page, '#af-gracias')) && /Panadería La Espiga/.test(await textoDe(page, '#af-gracias')) && /Nuestro equipo te escribirá por WhatsApp/.test(await textoDe(page, '#af-gracias')));
+  check('afiliar: nada promete un WhatsApp al dueño' + sufijo, !/le llega un WhatsApp|para que confirme/.test(await page.textContent('body')));
+  const s = (await solicitudes()).slice(-1)[0] || {};
+  check('afiliar: llega la solicitud del dueño con su ubicación' + sufijo, s.quien === 'dueno' && s.rubro === 'restaurante' && s.telefono === '584145550111' && s.telefonoDueno === '584145550111' && Math.abs(s.lat - 10.2001) < 0.001, JSON.stringify(s));
+  await final(page, 'afiliar-gracias' + sufijo);
+  await sinAnchoDeMas(page, 'afiliar' + sufijo);
+}
+
+async function afiliarEncargado(page, sufijo) {
+  const final2 = (p, cual, sel) => final(p, cual + '-tel', sel);
+  await page.click('#af-gracias a[href="#entrar"]');
+  await page.waitForSelector('#telefono');
+  check('«Volver a la entrada» después de la solicitud' + sufijo, await page.isVisible('#telefono'));
+  await page.click('#ir-afiliar');
+  await page.waitForSelector('#af-form');
+  check('afiliar otra vez: el formulario vacío' + sufijo, (await page.inputValue('#af-nombre')) === '');
+  await page.click('.form-afiliar [role="radio"][data-valor="encargado"]');
+  check('encargado: pide también su WhatsApp' + sufijo, await page.isVisible('#af-tel-mio'));
+  check('encargado: «Lo usamos para confirmar con el dueño» y la nota del equipo, sin prometer un WhatsApp' + sufijo,
+    /Lo usamos para confirmar con el dueño/.test(await textoDe(page, '.form-afiliar')) && /el equipo de Deliservy confirma con el dueño antes de activar el comercio/.test(await textoDe(page, '.form-afiliar'))
+    && !/le llega un WhatsApp|Le escribimos para que confirme/.test(await textoDe(page, '.form-afiliar')));
+  await page.fill('#af-nombre', 'Farmacia Santa Ana');
+  await page.click('#af-rubro .chip[data-rubro="farmacia"]');
+  await page.fill('#af-buscar', 'metropolis');
+  await page.waitForSelector('.resultados-dir button');
+  await page.click('.resultados-dir button');
+  check('el buscador de direcciones llena la dirección' + sufijo, /Metrópolis/.test(await page.inputValue('#af-direccion')));
+  await page.fill('#af-tel-dueno', '0414-555-0222');
+  await page.fill('#af-tel-mio', '0424-555-0333');
+  await final2(page, 'afiliar-encargado', '#af-tel-dueno');
+  await page.click('#af-enviar');
+  await page.waitForSelector('#af-codigo', { timeout: 8000 });
+  check('encargado: el código va a SU WhatsApp' + sufijo, /0424-555-0333/.test(await textoDe(page, '#af-codigo-caja')));
+  // Un punto fuera de Venezuela (la página no lo deja, así que se cambia en el camino): la API contesta 400
+  // `{ message, campo: 'ubicacion' }` y la frase sale debajo del mapa.
+  const tocar = async (route) => {
+    const b = JSON.parse(route.request().postData() || '{}');
+    b.lat = 50;
+    await route.continue({ postData: JSON.stringify(b) });
+  };
+  await page.route('**/api/comercio/afiliacion', tocar);
+  await page.type('#af-codigo', '123456');
+  await page.waitForSelector('#af-form:not([hidden]) .marco-mapa ~ .error-campo:not([hidden])', { timeout: 8000 }).catch(() => {});
+  await page.unroute('**/api/comercio/afiliacion', tocar);
+  check('error de la API con `campo: ubicacion`: debajo del mapa' + sufijo, /Marca en el mapa dónde queda el comercio/.test(await textoDe(page, '.marco-mapa ~ .error-campo')) && await page.$eval('#af-mapa', (x) => x.classList.contains('mal')));
+  check('`campo: ubicacion` no gasta el código: ninguna solicitud' + sufijo, (await solicitudes()).length === 1);
+  await page.click('#af-enviar');
+  await page.waitForSelector('#af-codigo-caja:not([hidden])', { timeout: 8000 });
+  await page.type('#af-codigo', '123456');
+  await page.waitForSelector('#af-gracias', { timeout: 8000 });
+  check('encargado: la misma respuesta de la API que el dueño' + sufijo, /Nuestro equipo te escribirá por WhatsApp para terminar la afiliación/.test(await textoDe(page, '#af-gracias')) && !/para que confirme/.test(await textoDe(page, '#af-gracias')));
+  const s = (await solicitudes()).slice(-1)[0] || {};
+  check('encargado: la solicitud con los dos números' + sufijo, s.quien === 'encargado' && s.rubro === 'farmacia' && s.telefono === '584245550333' && s.telefonoDueno === '584145550222', JSON.stringify(s));
+  // La misma otra vez (mismo WhatsApp y mismo comercio): no es un error, es un «gracias» con `yaEnviada`.
+  await page.click('#af-gracias a[href="#entrar"]');
+  await page.waitForSelector('#telefono');
+  await page.click('#ir-afiliar');
+  await page.waitForSelector('#af-form');
+  await page.click('.form-afiliar [role="radio"][data-valor="encargado"]');
+  await page.fill('#af-nombre', 'farmacia  santa ana');
+  await page.click('#af-rubro .chip[data-rubro="farmacia"]');
+  await page.fill('#af-buscar', 'metropolis');
+  await page.waitForSelector('.resultados-dir button');
+  await page.click('.resultados-dir button');
+  await page.fill('#af-tel-dueno', '0414-555-0222');
+  await page.fill('#af-tel-mio', '0424-555-0333');
+  await page.click('#af-enviar');
+  await page.waitForSelector('#af-codigo', { timeout: 8000 });
+  await page.type('#af-codigo', '123456');
+  await page.waitForSelector('#af-gracias', { timeout: 8000 });
+  check('solicitud repetida: «gracias» con la frase `yaEnviada`, sin otra solicitud' + sufijo, /Ya recibimos la solicitud de este comercio/.test(await textoDe(page, '#af-gracias')) && !(await page.$('#af-codigo-caja .error:not([hidden])')) && (await solicitudes()).length === 2);
+  await final2(page, 'afiliar-ya-enviada', null);
+}
+
+async function activacionCon(page, sufijo, fin) {
+  const final = (p, cual, sel) => fin(p, cual.replace(sufijo, ''), sel);
+  await entrar(page, TEL.nueva);
+  await page.waitForSelector('#activacion', { timeout: 8000 }).catch(() => {});
+  check('Hoy (tienda nueva): «Activa tu tienda en la app · 2 de 6»' + sufijo, /Activa tu tienda en la app/.test(await textoDe(page, '#activacion')) && /2 de 6/.test(await textoDe(page, '#activacion .act-cab')));
+  check('activación: «Llevas 2 de 5» y el % de promotores, opcional' + sufijo, /Llevas 2 de 5/.test(await textoDe(page, '#activacion')) && /Opcional/.test(await textoDe(page, '[data-paso="promotores"]')));
+  check('activación: «Seguir: horario de atención»' + sufijo, /horario de atención/.test(await textoDe(page, '#act-seguir')));
+  check('activación: «¿Prefieres que lo carguemos nosotros?» con WhatsApp' + sufijo, !!(await page.$('#activacion a[href^="https://wa.me/"]')));
+  await final(page, 'hoy-activacion' + sufijo, '.cab-seccion');
+  await sinAnchoDeMas(page, 'hoy-activacion' + sufijo);
+  if (sufijo) return;
+  await page.click('#act-seguir');
+  await page.waitForSelector('.fila-horario');
+  check('«Seguir» lleva al horario', (await page.evaluate(() => location.hash)) === '#tienda/horario');
+  await page.click('label[for="abierto-1"]');
+  await page.click('.horario ~ .botones .btn');
+  await esperar(900);
+  await ir(page, '#hoy', 1500);
+  await page.waitForSelector('#activacion');
+  check('activación: con el horario, 3 de 6 y sigue «5 productos con foto»', /3 de 6/.test(await textoDe(page, '#activacion .act-cab')) && /productos con foto/.test(await textoDe(page, '#act-seguir')));
+  await ir(page, '#productos', 900);
+  check('productos (tienda nueva): «Sin foto · 1»', /Sin foto · 1/.test(await textoDe(page, '.chips-filtro')));
+  await page.click('.chips-filtro .chip[data-ver="sinFoto"]');
+  await esperar(300);
+  check('«Sin foto»: solo el producto sin foto', (await page.$$('.fila-producto')).length === 1 && /Refresco/.test(await textoDe(page, '.productos-lista')));
+}
+
+async function productosCon(page, sufijo, fin) {
+  const final = (p, cual, sel) => fin(p, cual.replace(sufijo, ''), sel);
+  await ir(page, '#productos', 900);
+  const grupos = await page.$$eval('.gp-cab', (bs) => bs.map((b) => b.getAttribute('aria-expanded')));
+  check('productos: grupos plegables, el primero abierto y los demás cerrados' + sufijo, grupos.length >= 4 && grupos[0] === 'true' && grupos.slice(1).every((x) => x === 'false'), grupos.join(','));
+  check('productos: cada grupo cerrado con su número' + sufijo, /Bebidas\s*4/.test(await textoDe(page, '.grupo-productos:nth-child(2) .gp-cab')));
+  check('productos: «Todos · 13», «Agotados · 1», «Sin foto · 0»' + sufijo, /Todos · 13/.test(await textoDe(page, '.chips-filtro')) && /Agotados · 1/.test(await textoDe(page, '.chips-filtro')) && /Sin foto · 0/.test(await textoDe(page, '.chips-filtro')));
+  check('productos: sin pastilla de cobro en las filas' + sufijo, !(await page.$('.chips.cobro')) && !/por venta/.test(await textoDe(page, '.productos-lista')));
+  check('productos: UNA línea a «Mi plan»' + sufijo, (await page.$$('.linea-plan')).length === 1 && !!(await page.$('.linea-plan a[href="#plan"]')));
+  check('productos: el interruptor «Disponible» sigue en cada fila' + sufijo, (await visibles(page, '.fila-producto .interruptor')) === 6, String(await visibles(page, '.fila-producto .interruptor')));
+  await final(page, 'productos' + sufijo);
+  await sinAnchoDeMas(page, 'productos' + sufijo);
+  if (sufijo) return;
+  await page.click('.grupo-productos:nth-child(2) .gp-cab');
+  check('abrir «Bebidas»: sus 4 productos a la vista', (await visibles(page, '.fila-producto')) === 10);
+  await page.click('.grupo-productos:nth-child(1) .gp-cab');
+  check('cerrar «Arepas»', (await visibles(page, '.fila-producto')) === 4);
+  await page.click('.chips-filtro .chip[data-ver="agotados"]');
+  await esperar(300);
+  check('«Agotados»: solo la cachapa, con su grupo abierto', (await visibles(page, '.fila-producto')) === 1 && /Cachapa/.test(await textoDe(page, '.productos-lista')));
+  await page.click('.chips-filtro .chip[data-ver="todos"]');
+  await page.click('.grupo-productos:nth-child(1) .gp-cab');
+  await page.click('label[for="disp-9003"]');
+  await esperar(900);
+  check('marcar agotado: «Agotados · 2» al momento', /Agotados · 2/.test(await textoDe(page, '.chips-filtro')));
+  await page.click('label[for="disp-9003"]');
+  await esperar(900);
+  await page.click('.linea-plan a');
+  await esperar(600);
+  check('la línea lleva a «Mi plan»', (await page.evaluate(() => location.hash)) === '#plan');
+}
+
+async function promotoresCon(page, sufijo, computadora, fin) {
+  const final = (p, cual, sel) => fin(p, cual.replace(sufijo, ''), sel);
+  await ir(page, '#vendedores', 1200);
+  check('promotores: el título y el menú dicen «Promotores»' + sufijo, /^Promotores$/.test((await textoDe(page, '.cab-seccion h1')).trim()) && /Promotores/.test(await page.textContent(computadora ? '.lateral-nav' : 'body')));
+  check('promotores: nada dice «vendedor» en la sección' + sufijo, !/vendedor/i.test(await textoDe(page, '#contenido')));
+  check('promotores: pestañas «Productos · 13» y «Ventas · n»' + sufijo, /Productos · 13/.test(await textoDe(page, '.segmentos')) && /Ventas · \d+/.test(await textoDe(page, '.segmentos')));
+  check('promotores: «% para todos los productos» con «Aplicar»' + sufijo, /% para todos los productos/.test(await textoDe(page, '.pct-todos')) && /Aplicar/.test(await textoDe(page, '.pct-todos .btn')));
+  check('promotores: botones de grupos' + sufijo, /Arepas · 6/.test(await textoDe(page, '.panel-promotores .chips-filtro')));
+  check('promotores: notas «En la app …», «Pausado por Deliservy» y «Apagado»' + sufijo, /En la app 4,50/.test(await textoDe(page, '.tp-fila[data-producto="9001"] .tp-nota')) && /Pausado por Deliservy/.test(await textoDe(page, '.tp-fila[data-producto="9004"] .tp-nota')) && /Apagado/.test(await textoDe(page, '.tp-fila[data-producto="9006"] .tp-nota')));
+  if (computadora) check('promotores (computadora): más columnas («En la app» y «Estado»)', await page.isVisible('.tp-cab .tp-app') && await page.isVisible('.tp-cab .tp-col-estado'));
+  else check('promotores (teléfono): tabla compacta, sin columnas de más', !(await page.isVisible('.tp-cab .tp-app')));
+  check('promotores: sin «Guardar» por fila, la barra escondida' + sufijo, (await page.$$('.tp-fila .btn')).length === 0 && !(await page.isVisible('.barra-cambios')));
+  await page.fill('.tp-fila[data-producto="9001"] .tp-pct input', '15');
+  await page.fill('.tp-fila[data-producto="9003"] .tp-redes input', '3,50');
+  check('dos filas cambiadas: en ámbar' + sufijo, (await page.$$('.tp-fila.cambiada')).length === 2);
+  check('UNA barra: «2 cambios sin guardar · Guardar cambios»' + sufijo, /2 cambios sin guardar/.test(await textoDe(page, '.barra-cambios')) && /Guardar cambios/.test(await textoDe(page, '.barra-cambios')));
+  await final(page, 'promotores-cambios' + sufijo, computadora ? '.cab-seccion' : '.tabla-promotores');
+  await sinAnchoDeMas(page, 'promotores' + sufijo);
+  if (sufijo) {
+    await page.click('.barra-cambios .btn.borde-blanco');
+    check('«Descartar»: vuelve a lo guardado' + sufijo, !(await page.isVisible('.barra-cambios')) && (await page.inputValue('.tp-fila[data-producto="9001"] .tp-pct input')) === '10');
+    return;
+  }
+  await page.fill('.tp-fila[data-producto="9001"] .tp-pct input', '10');
+  check('volver al valor guardado: ya no cuenta como cambio', /1 cambio sin guardar/.test(await textoDe(page, '.barra-cambios')));
+  await page.fill('.tp-fila[data-producto="9001"] .tp-pct input', '15');
+  await simulado('/__simulado/fallar-promotor?producto=9003');
+  await page.click('.barra-cambios .btn:not(.borde-blanco)');
+  await page.waitForSelector('.tp-fila.con-error', { timeout: 8000 });
+  await esperar(300);
+  const b1 = await bitacora();
+  check('guardar: la fila buena se guarda (un PUT)', b1.some((x) => x.accion === 'cv_producto' && x.entidadId === '9001' && x.despues && x.despues.pct === 15));
+  check('guardar: la fila que falla queda con su error y en ámbar', /cambió mientras/.test(await textoDe(page, '.tp-fila[data-producto="9003"] .tp-error')) && await page.$eval('.tp-fila[data-producto="9003"]', (x) => x.classList.contains('cambiada')));
+  check('guardar: la buena ya no está en ámbar y queda «1 cambio sin guardar»', !(await page.$eval('.tp-fila[data-producto="9001"]', (x) => x.classList.contains('cambiada'))) && /1 cambio sin guardar/.test(await textoDe(page, '.barra-cambios')));
+  await quitarAvisos(page);
+  await final(page, 'promotores-error-fila', '.tp-fila[data-producto="9001"]');
+  await page.click('.barra-cambios .btn:not(.borde-blanco)');
+  await esperar(1200);
+  const b2 = await bitacora();
+  check('guardar otra vez: ahora sí, y la barra se va', !(await page.isVisible('.barra-cambios')) && b2.some((x) => x.accion === 'cv_producto' && x.entidadId === '9003' && x.despues && x.despues.precioRedes === 3.5));
+  check('guardar: solo las filas cambiadas (2 PUT de productos)', b2.filter((x) => x.accion === 'cv_producto').length === 2, String(b2.filter((x) => x.accion === 'cv_producto').length));
+  await page.fill('.tp-fila[data-producto="9002"] .tp-redes input', '9,99');
+  await page.click('.barra-cambios .btn:not(.borde-blanco)');
+  await esperar(400);
+  check('la regla de siempre: precio de redes no mayor que el de la app', /no puede ser mayor/.test(await textoDe(page, '.tp-fila[data-producto="9002"] .tp-error')));
+  check('la regla de siempre: el pausado no se edita', await page.isDisabled('.tp-fila[data-producto="9004"] .tp-pct input'));
+  await page.click('.barra-cambios .btn.borde-blanco');
+  await page.click('.panel-promotores .chip[data-grupo="g402"]');
+  check('grupo «Bebidas»: sus 4 filas', (await visibles(page, '.tp-fila:not(.tp-cab)')) === 4);
+  await page.click('.panel-promotores .chip[data-grupo=""]');
+  await page.fill('#cv-pct-tienda', '12');
+  await page.click('.pct-todos .btn');
+  await page.waitForSelector('.dialogo');
+  await page.click('.dialogo-pie .btn:not(.borde)');
+  await esperar(1500);
+  check('«Aplicar»: el % a todos los productos', (await page.inputValue('#cv-pct-tienda')) === '12' && (await page.inputValue('.tp-fila[data-producto="9001"] .tp-pct input')) === '12');
+  await page.click('.segmentos button[data-valor="ventas"]');
+  check('pestaña «Ventas»: «Promotor #N», nunca «Vendedor #N»', /Promotor #\d+/.test(await textoDe(page, '#pp-ventas')) && !/vendedor/i.test(await textoDe(page, '#pp-ventas')));
+  await final(page, 'promotores-ventas', '.cab-seccion');
+}
+
+async function rediseno(browser) {
+  titulo('Rediseño (30-oct-2026): afiliar, «Activa tu tienda», promotores y productos');
+  if (FINALES) fs.mkdirSync(FINALES, { recursive: true });
+  const geo = { latitude: 10.2001, longitude: -68.0050 };
+  for (const [nombre, o] of [['tel', { geo }], ['pc', { viewport: COMPU_FINAL, geo }], ['tel-oscuro', { geo, oscuro: true }], ['pc-oscuro', { viewport: COMPU_FINAL, geo, oscuro: true }]]) {
+    await simulado('/__simulado/reiniciar');
+    const pc = /^pc/.test(nombre);
+    const suf = nombre === 'tel' ? '' : ' · ' + nombre;
+    const { ctx, page, errores } = await abrir(browser, o);
+    // Las capturas: com-<lo-que-es>-<tel|pc>[-oscuro].png
+    const etiqueta = '-' + nombre;
+    const fin = async (p, cual, sel) => final(p, cual + etiqueta, sel);
+    await afiliarDuenoCon(page, suf, fin);
+    if (nombre === 'tel') await afiliarEncargado(page, '');
+    const c2 = await abrir(browser, o);
+    await activacionCon(c2.page, suf, fin);
+    revisarErrores('rediseño, tienda nueva' + suf, c2.errores, c2.page, ERRORES_REDISENO);
+    check('sin violaciones de la CSP · rediseño, tienda nueva' + suf, (await c2.page.evaluate(() => window.__csp.length)) === 0);
+    await c2.ctx.close();
+    await entrar(page, TEL.dueno);
+    check('Hoy (tienda completa): sin «Activa tu tienda»' + suf, !(await page.$('#activacion')));
+    await productosCon(page, suf, fin);
+    await promotoresCon(page, suf, pc, fin);
+    check('sin violaciones de la CSP · rediseño' + suf, (await page.evaluate(() => window.__csp.length)) === 0);
+    revisarErrores('rediseño' + suf, errores, page, ERRORES_REDISENO);
+    await ctx.close();
+  }
+}
+
 (async () => {
   fs.mkdirSync(CAPTURAS, { recursive: true });
   try { await fetch(BASE + '/comercio/'); } catch (_) {
     console.error('La API simulada no contesta en ' + BASE + '. Arráncala: node herramientas/comercio-simulado/servidor.js');
     process.exit(2);
   }
-  const browser = await chromium.launch({ channel: 'chrome', headless: !process.env.VER });
+  // Chrome instalado (el Mac); si no está, el Chromium de playwright (CHROME=/ruta/al/chrome para otro).
+  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, headless: !process.env.VER } : { channel: 'chrome', headless: !process.env.VER })
+    .catch(() => chromium.launch({ headless: !process.env.VER }));
   try {
     const solo = (process.env.SOLO || '').split(',').filter(Boolean);
     const quiere = (n) => !solo.length || solo.indexOf(n) >= 0;
@@ -754,6 +1084,7 @@ async function ingles(browser) {
     if (quiere('computadora')) { await computadora(browser, false); await computadora(browser, true); }
     if (quiere('oscuro')) await telefonoOscuro(browser);
     if (quiere('ingles')) await ingles(browser);
+    if (quiere('rediseno')) await rediseno(browser);
   } catch (e) {
     mal++;
     fallos.push('se cortó: ' + (e && e.message ? e.message.split('\n')[0] : e));

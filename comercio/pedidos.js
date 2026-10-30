@@ -29,7 +29,7 @@
         h('b', { class: 'fp-num' }, '#' + p.id),
         C.pill(est[0], est[1]),
         p.paraRecoger ? C.pill('Para recoger', 'azul') : null,
-        p.canalTexto ? h('span', { class: 'pill' }, p.canalTexto) : null,
+        p.canalTexto ? h('span', { class: 'pill' }, C.comoPromotor(p.canalTexto)) : null,
         h('span', { class: 'fp-hora' }, o.conFecha ? C.fechaHora(p.creadoEn) : C.hora(p.creadoEn))),
       h('div', { class: 'fp-cuerpo' },
         h('div', { class: 'fp-comanda' }, lineas.slice(0, 3).map(function (l) { return dato('span', null, l); }),
@@ -66,7 +66,69 @@
       h('div', { class: 'botones' }, h('a', { class: 'btn borde chico', href: '#billetera' }, ico('billetera'), 'Ir a Billetera')));
   }
 
-  function pintarHoy(ctx, v, d) {
+  // ── «Activa tu tienda en la app» (C3 del rediseño, 30-oct-2026) ──────────
+  //
+  // Una lista de 6 pasos con su barra, calculada con lo que ya da la API: `tienda/:id` (datos, logo y portada, horario),
+  // `productos` (5 con foto y precio), `billetera` (la cuenta bancaria) y `vendedores-externos` (el % para promotores,
+  // opcional). «Seguir: …» lleva al primer paso que falta. Se oculta cuando están los 5 obligatorios. Solo el dueño y
+  // solo tiendas de la app (las de solo flota tienen su «Mostrar en la app» en «Mi tienda»). Si no se puede leer lo
+  // obligatorio, no sale (mejor nada que una lista equivocada).
+
+  var MIN_PRODUCTOS = 5;
+  function pasosDeActivacion(ctx) {
+    var id = encodeURIComponent(ctx.tienda.storeId);
+    var nada = function () { return null; };
+    var promotores = ctx.tienda.visibleEnApp === true ? C.pedir('GET', '/vendedores-externos?' + q(ctx)).catch(nada) : Promise.resolve(null);
+    return Promise.all([C.pedir('GET', '/tienda/' + id), C.pedir('GET', '/productos?' + q(ctx)), C.pedir('GET', '/billetera'), promotores]).then(function (r) {
+      var t = r[0] || {};
+      var lista = Array.isArray(r[1]) ? r[1] : (r[1] && Array.isArray(r[1].productos) ? r[1].productos : []);
+      var b = r[2] || {};
+      var cv = r[3];
+      var conFoto = lista.filter(function (p) {
+        var foto = C.fotoSegura(p.imagen || p.image || (Array.isArray(p.images) ? p.images[0] : ''));
+        return foto && C.num(p.precio != null ? p.precio : p.price) > 0;
+      }).length;
+      var ubic = t.ubicacion && C.mapa && C.mapa.valido(t.ubicacion);
+      var datos = String(t.nombre || '').trim().length >= 3 && String(t.direccion || '').trim().length >= 8 && !!ubic && !!t.categoria;
+      var imagenes = !!C.fotoSegura(t.logo) && !!C.fotoSegura(t.banner);
+      var horario = (Array.isArray(t.horarios) ? t.horarios : []).some(function (x) { return x && x.cerrado !== true && !(x.abre && x.abre === x.cierra); });
+      var cuenta = !!(b.cuentaBancaria && (b.cuentaBancaria.cuentaParaVer || b.cuentaBancaria.banco));
+      var pct = !!cv && (C.num(cv.pctTienda) > 0 || (Array.isArray(cv.productos) && cv.productos.some(function (p) { return C.num(p.pct) > 0; })));
+      var verPromotores = C.secciones.vendedores && C.secciones.vendedores.visible(ctx);
+      return [
+        { id: 'datos', titulo: 'Datos del comercio', texto: 'Nombre, rubro y ubicación', hecho: datos, ir: '#tienda' },
+        { id: 'imagenes', titulo: 'Logo y portada', texto: 'Así te ven en la app', hecho: imagenes, ir: '#tienda/imagenes' },
+        { id: 'horario', titulo: 'Horario de atención', texto: 'Cuándo recibes pedidos', hecho: horario, ir: '#tienda/horario' },
+        { id: 'productos', titulo: MIN_PRODUCTOS + ' productos con foto', texto: 'Llevas ' + Math.min(conFoto, MIN_PRODUCTOS) + ' de ' + MIN_PRODUCTOS, hecho: conFoto >= MIN_PRODUCTOS, ir: '#productos' },
+        { id: 'cuenta', titulo: 'Cuenta bancaria', texto: 'Para recibir tus pagos', hecho: cuenta, ir: '#billetera' },
+        { id: 'promotores', titulo: '% para promotores', texto: 'Opcional: que te promocionen en redes', hecho: pct, ir: verPromotores ? '#vendedores' : null, opcional: true },
+      ];
+    });
+  }
+
+  /** La tarjeta (o null si ya está todo lo obligatorio). */
+  function tarjetaActivacion(pasos) {
+    if (!pasos || pasos.every(function (p) { return p.hecho || p.opcional; })) return null;
+    var hechos = pasos.filter(function (p) { return p.hecho; }).length;
+    var siguiente = pasos.filter(function (p) { return !p.hecho && !p.opcional; })[0] || pasos.filter(function (p) { return !p.hecho; })[0];
+    var lleno = h('span', { class: 'lleno' });
+    lleno.style.setProperty('width', Math.round((hechos / pasos.length) * 100) + '%');
+    var minuscula = function (t) { return t.charAt(0).toLowerCase() + t.slice(1); };
+    return h('section', { class: 'tarjeta activacion', id: 'activacion', 'aria-labelledby': 'activacion-titulo' },
+      h('div', { class: 'act-cab' }, h('h2', { id: 'activacion-titulo' }, 'Activa tu tienda en la app'), h('small', { class: 'cuenta' }, hechos + ' ', h('span', null, 'de'), ' ' + pasos.length)),
+      h('div', { class: 'barra-progreso', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(pasos.length), 'aria-valuenow': String(hechos), 'aria-label': 'Pasos listos' }, lleno),
+      h('ol', { class: 'pasos-act' }, pasos.map(function (p, i) {
+        var contenido = [h('span', { class: 'marca-paso', 'aria-hidden': 'true' }, p.hecho ? ico('check') : String(i + 1)),
+          h('span', { class: 'txt' }, h('b', null, p.titulo), h('small', null, p.texto)),
+          p.hecho ? h('span', { class: 'sr' }, 'Listo') : null];
+        return h('li', { class: p.hecho ? 'hecho' : 'falta', 'data-paso': p.id },
+          !p.hecho && p.ir ? h('a', { href: p.ir, class: 'paso-enlace' }, contenido, ico('adelante', 'ir')) : h('div', { class: 'paso-enlace' }, contenido));
+      })),
+      siguiente && siguiente.ir ? h('div', { class: 'botones' }, h('a', { class: 'btn', href: siguiente.ir, id: 'act-seguir' }, h('span', null, 'Seguir:'), h('span', null, minuscula(siguiente.titulo)))) : null,
+      h('p', { class: 'nota' }, '¿Prefieres que lo carguemos nosotros? ', h('a', { href: C.WHATSAPP, target: '_blank', rel: 'noopener noreferrer' }, 'Escríbenos por WhatsApp')));
+  }
+
+  function pintarHoy(ctx, v, d, cajaAct) {
     var nombre = String((ctx.cuenta && ctx.cuenta.nombre) || '').split(' ')[0];
     var deApp = C.esDeApp(ctx.tienda);
     var verPedidos = ctx.puede('pedidos') && deApp;
@@ -82,6 +144,7 @@
     }
     C.enContenido(v, [
       C.cabeceraDeSeccion(['Hola, ', dato('span', null, nombre)], [dato('span', null, ctx.tienda.nombre), ' · ', C.diaYFecha(new Date())]),
+      cajaAct || null,
       C.tarjetaPermisoDeAvisos(),
       h('div', { class: 'rejilla-hoy' },
         tarjetaDeuda(ctx, d.flota),
@@ -108,8 +171,19 @@
     id: 'hoy', titulo: 'Hoy', icono: 'hoy',
     visible: function () { return true; },
     mostrar: function (ctx, sub, v) {
+      // La lista de activación se calcula una vez por visita (no cada 30 s): la misma caja pasa de un repintado al otro.
+      var cajaAct = null;
+      if (ctx.esDueno && C.esDeApp(ctx.tienda)) {
+        cajaAct = h('div', { class: 'caja-activacion', hidden: true });
+        pasosDeActivacion(ctx).then(function (pasos) {
+          if (!v.viva()) return;
+          var t = tarjetaActivacion(pasos);
+          C.reemplazar(cajaAct, t);
+          cajaAct.hidden = !t;
+        }, function () { /* sin la lista: «Hoy» sigue igual */ });
+      }
       var cargar = function () {
-        C.pedir('GET', '/hoy?' + q(ctx)).then(function (d) { pintarHoy(ctx, v, d || {}); }, function (e) { C.falloEnVista(v, e); });
+        C.pedir('GET', '/hoy?' + q(ctx)).then(function (d) { pintarHoy(ctx, v, d || {}, cajaAct); }, function (e) { C.falloEnVista(v, e); });
       };
       cargar();
       this._recargar = cargar;
@@ -312,7 +386,7 @@
       h('b', { class: 'grande verde' }, C.dolares(g.usd)),
       g.abonada && g.bs != null ? h('p', { class: 'nota' }, 'Ya está en tu billetera: ', C.bolivares(g.bs)) : h('p', { class: 'nota' }, 'Se abona al entregarse.'),
       lineas.length ? h('dl', { class: 'desglose' }, lineas.map(function (l) {
-        return [h('dt', null, l.texto || ''), h('dd', { class: C.num(l.usd) < 0 ? 'resta' : '' }, C.conSigno(l.usd))];
+        return [h('dt', null, C.comoPromotor(l.texto || '')), h('dd', { class: C.num(l.usd) < 0 ? 'resta' : '' }, C.conSigno(l.usd))];
       })) : null,
       loQueSeDesconto(cobro));
   }
@@ -354,7 +428,7 @@
         h('div', { class: 'cab-pedido' },
           h('h1', null, 'Pedido #' + p.id),
           h('div', { class: 'chips' }, C.pill(est[0], est[1]), p.paraRecoger ? C.pill('Para recoger', 'azul') : null,
-            d.canalTexto ? h('span', { class: 'pill' }, d.canalTexto) : null),
+            d.canalTexto ? h('span', { class: 'pill' }, C.comoPromotor(d.canalTexto)) : null),
           h('p', { class: 'sub' }, C.fechaHora(p.creadoEn), p.cliente ? [' · ', dato('span', null, p.cliente)] : null)),
         cartel && enCurso ? h('div', { class: 'cartel tono-' + (cartel.tono || 'normal') }, ico('moto'), h('div', null, dato('b', null, cartel.titulo), cartel.linea ? dato('span', null, cartel.linea) : null)) : null,
         acciones ? h('div', { class: 'acciones-pedido' },

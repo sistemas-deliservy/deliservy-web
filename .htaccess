@@ -10,6 +10,8 @@
 # Las dos las pinta `tienda.php`, por dentro: le pide la página a la API (api.deliservy.site) y la devuelve tal cual,
 # así que la barra del navegador sigue en www.deliservy.com. Lo demás de la web, como siempre.
 #
+#   /promotores      (30-oct-2026) el enlace corto para registrarse como promotor → /vendedor/#registro
+#
 # ⚠️ Si en Ferozo ya hay un .htaccess, JUNTAR estas reglas con las suyas (no reemplazarlo sin mirarlo).
 
 <IfModule mod_rewrite.c>
@@ -19,6 +21,8 @@
   RewriteRule ^pedido/[A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43}/?$ tienda.php [L]
   RewriteRule ^p/[0-9]{1,10}/?$ tienda.php [L]
   RewriteRule ^t/[0-9]{1,10}/?$ tienda.php [L]
+  # NE: que el «#registro» no salga como «%23registro».
+  RewriteRule ^promotores/?$ /vendedor/#registro [R=302,NE,L]
 </IfModule>
 
 # Sin mod_rewrite, al menos que los enlaces lleguen a la tienda (en api.deliservy.site).
@@ -27,4 +31,6 @@
   RedirectMatch 302 ^/pedido/([A-Za-z0-9_-]{16,556}\.[A-Za-z0-9_-]{43})/?$ https://api.deliservy.site/api/compartir/pedido/$1
   RedirectMatch 302 ^/p/([0-9]{1,10})/?$ https://api.deliservy.site/api/compartir/p/$1
   RedirectMatch 302 ^/t/([0-9]{1,10})/?$ https://api.deliservy.site/api/compartir/t/$1
+  # (Sin mod_rewrite, a la página de los promotores: ahí está «Regístrate».)
+  RedirectMatch 302 ^/promotores/?$ /vendedor/
 </IfModule>

@@ -1,5 +1,5 @@
 /*
- * LA PÁGINA DEL VENDEDOR (www.deliservy.com/vendedor/, 24-oct-2026): Compra-Ventas Redes Sociales.
+ * LA PÁGINA DE LOS PROMOTORES (www.deliservy.com/vendedor/, 24-oct-2026; rediseño 30-oct-2026): Promotores Deliservy.
  * El estilo de la tienda web de Deliservy: Plus Jakarta Sans (servida desde aquí), el rojo #E41616, tarjetas de 14 px,
  * claro u oscuro según el teléfono; nada blanco sobre blanco ni negro sobre negro. Primero el teléfono; en tableta y
  * computadora, la barra arriba y el catálogo en rejilla. Sin estilos dentro del HTML (la página lleva CSP).
@@ -78,7 +78,7 @@ a { color: var(--rt); }
   position: sticky; top: 0; z-index: 30; background: var(--c); border-bottom: 1px solid var(--b);
   padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px; display: flex; align-items: center; gap: 10px;
 }
-.logo-d { width: 34px; height: 34px; border-radius: 10px; background: var(--r); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 17px; flex: 0 0 auto; }
+.logo-marca { width: 34px; height: 34px; object-fit: contain; flex: 0 0 auto; }
 .cabecera .titulo { flex: 1; min-width: 0; }
 .cabecera .titulo b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cabecera .titulo small { display: block; color: var(--m); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -214,6 +214,24 @@ button.enlace {
 .revision { max-width: 640px; margin: 0 auto; }
 .revision .tarjeta + .tarjeta { margin-top: 10px; }
 
+/* En revisión (P8) y «Empieza a ganar» */
+.aviso-revision { justify-content: flex-start; flex-wrap: nowrap; align-items: flex-start; }
+.aviso-revision .ico { width: 20px; height: 20px; margin-top: 1px; }
+.navegacion a.cerrada, .pestanas a.cerrada { opacity: .6; }
+.empieza { margin-bottom: 10px; }
+.empieza h2 { font-size: 17px; }
+.progreso { display: block; height: 8px; border-radius: 999px; background: var(--c2); overflow: hidden; margin: 10px 0 4px; }
+.progreso .lleno { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 999px; transition: width .3s ease; }
+.pasos { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.pasos li { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; color: var(--t); }
+.pasos li.hecho { color: var(--m); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.marca-paso { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--b); display: grid; place-items: center; flex: 0 0 auto; }
+.pasos li.hecho .marca-paso { background: var(--ok); border-color: var(--ok); color: #fff; }
+.marca-paso .ico { width: 14px; height: 14px; stroke-width: 3; }
+.separado.primero { margin-top: 0; margin-bottom: 4px; }
+.separado.primero .etq { margin-top: 4px; }
+p.aviso-datos { margin: 8px 0 0; }
+
 /* Pastillas */
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 4px 10px; background: var(--c2); color: var(--m); white-space: nowrap; }
 .pill.verde { background: var(--oks); color: var(--ok); }
@@ -225,36 +243,84 @@ button.enlace {
 /* Entrar */
 .entrar { max-width: 440px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top, 0px)) 16px 40px; }
 .entrar .marca { text-align: center; margin-bottom: 18px; }
-.entrar .marca .logo-d { width: 54px; height: 54px; border-radius: 16px; font-size: 26px; margin: 0 auto 12px; }
-.entrar .marca small { display: block; font-size: 11px; font-weight: 800; color: var(--rt); text-transform: uppercase; letter-spacing: .08em; }
+.entrar .marca .logo-marca.grande { width: 64px; height: 64px; margin: 0 auto 10px; }
+.ventajas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 14px; }
+.ventaja { background: var(--c); border: 1px solid var(--b); border-radius: var(--radio); padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.ventaja b { font-size: 12.5px; line-height: 1.3; font-weight: 800; overflow-wrap: anywhere; }
+.ventaja-ico { width: 38px; height: 38px; border-radius: 12px; background: var(--rs); color: var(--rt); display: grid; place-items: center; }
+.ventaja-ico .ico { width: 20px; height: 20px; }
+.fila-red { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 8px; }
 .entrar h1 { font-size: 24px; line-height: 1.2; margin: 6px 0 6px; font-weight: 800; letter-spacing: -.015em; }
 .entrar .marca p { color: var(--m); margin: 0; }
 .entrar .tarjeta { padding: 18px; }
 .entrar .pie-entrar { text-align: center; color: var(--m); font-size: 13px; margin-top: 16px; }
 .entrar .pie-idioma { display: flex; justify-content: center; margin-top: 14px; }
 
-/* Catálogo */
-.filtros { display: grid; gap: 8px; }
-.filtros .dos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
-.tienda-cab { display: flex; align-items: center; gap: 12px; margin: 18px 0 10px; }
+/* Catálogo (P2): buscador, rubros, pestañas, «Ganan más esta semana» y las filas */
+.buscador { position: relative; }
+.buscador > .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--m); pointer-events: none; }
+.buscador .campo { padding-left: 44px; }
+.rubros {
+  display: flex; gap: 8px; overflow-x: auto; margin: 12px -14px 0; padding: 2px 14px 6px; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.rubros::-webkit-scrollbar { display: none; }
+.rubro {
+  flex: 0 0 auto; min-height: 38px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--b); background: var(--c);
+  color: var(--t); font-weight: 700; font-size: 13.5px; white-space: nowrap;
+}
+.rubro[aria-pressed="true"] { background: var(--r); border-color: var(--r); color: #fff; }
+.segmentos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--c2); border: 1px solid var(--b); border-radius: 14px; padding: 4px; margin: 14px 0 12px; }
+.segmento { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--m); font-weight: 800; font-size: 14px; }
+.segmento[aria-selected="true"] { background: var(--c); color: var(--t); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.top .etq { margin-top: 16px; }
+.top-tarjetas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.top-tarjeta {
+  display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 8px; border-radius: var(--radio); border: 1px solid var(--b);
+  background: var(--c); color: var(--t); min-width: 0;
+}
+.top-tarjeta img, .top-tarjeta .sin-foto { width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; background: var(--c2); }
+.top-tarjeta .sin-foto { display: grid; place-items: center; color: var(--rt); background: var(--rs); font-weight: 800; font-size: 22px; }
+.top-tarjeta b { font-size: 12.5px; line-height: 1.25; font-weight: 800; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.top-tarjeta .gana { font-size: 12px; }
+.lista.filas { margin-top: 0; }
+.fila-tienda { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--b); text-decoration: none; color: var(--t); min-height: 72px; }
+.fila-tienda:last-child { border-bottom: 0; }
+.fila-tienda:active { background: var(--c2); }
+.fila-tienda .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fila-tienda .txt b { font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-tienda .txt small { color: var(--m); font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-tienda .gana { font-size: 13px; }
+.fila-tienda > .ico { color: var(--m); width: 20px; height: 20px; }
+.fila-tienda .pill .ico { width: 14px; height: 14px; stroke-width: 3; }
 .logo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; border: 1px solid var(--b); background: var(--c2); }
 .inicial { width: 44px; height: 44px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; background: var(--rs); color: var(--rt); font-weight: 800; }
+
+/* La tienda abierta (P3) y las filas de producto */
+.tienda-cab { display: flex; align-items: center; gap: 12px; margin: 2px 0 6px; }
 .tienda-cab .txt { flex: 1; min-width: 0; }
-.tienda-cab b { display: block; font-size: 16px; font-weight: 800; overflow-wrap: anywhere; }
+.tienda-cab b { display: block; font-size: 18px; font-weight: 800; overflow-wrap: anywhere; line-height: 1.2; }
 .tienda-cab small { color: var(--m); font-size: 12.5px; font-weight: 600; }
-.productos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.producto { background: var(--c); border: 1px solid var(--b); border-radius: var(--radio); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
-.producto .foto { aspect-ratio: 1 / 1; width: 100%; object-fit: cover; background: var(--c2); }
-.producto .sin-foto { aspect-ratio: 1 / 1; display: grid; place-items: center; background: linear-gradient(135deg, var(--c2), var(--b)); color: var(--m); font-weight: 800; font-size: 30px; }
-.producto .datos { padding: 10px 10px 0; flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.producto .datos b { font-size: 14px; line-height: 1.25; font-weight: 800; overflow-wrap: anywhere; }
-.producto .datos small { color: var(--m); font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
-.producto .precio { font-size: 15px; font-weight: 800; }
-.producto .gana { font-size: 13px; }
-.producto .pie-prod { padding: 10px; }
-.producto .pie-prod .btn { min-height: 40px; font-size: 14px; border-radius: 12px; }
-.producto.agotado .foto, .producto.agotado .sin-foto { opacity: .55; }
-.tamanos-lista { font-size: 12px; color: var(--m); margin: 2px 0 0; }
+.volver { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--t); border: 1.5px solid var(--b); background: var(--c); flex: 0 0 auto; }
+.ordenar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 12px 0 8px; }
+.ordenar label { color: var(--m); font-weight: 700; font-size: 13px; }
+.ordenar .con-flecha { flex: 0 1 200px; }
+.campo.chico { min-height: 40px; padding: 8px 36px 8px 12px; font-size: 14px; border-radius: 10px; }
+.fila-prod { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--b); }
+.fila-prod:last-child { border-bottom: 0; }
+.foto-fila { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; flex: 0 0 auto; background: var(--c2); }
+.foto-fila.sin-foto { display: grid; place-items: center; background: var(--rs); color: var(--rt); font-weight: 800; font-size: 20px; }
+.fila-prod .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; align-items: flex-start; }
+.fila-prod .txt b { font-size: 14.5px; line-height: 1.25; font-weight: 800; overflow-wrap: anywhere; }
+.fila-prod .txt small { color: var(--m); font-size: 12.5px; font-weight: 600; overflow-wrap: anywhere; }
+.fila-prod .gana { font-size: 13.5px; }
+.fila-prod .pill { margin-top: 3px; font-size: 11.5px; padding: 2px 8px; }
+.fila-prod.agotado .foto-fila, .fila-prod.agotado .txt b, .fila-prod.agotado .gana { opacity: .5; }
+.btn-cuadro {
+  width: 44px; height: 44px; flex: 0 0 auto; border-radius: 12px; border: 0; background: var(--rs); color: var(--rt); display: grid; place-items: center;
+}
+.btn-cuadro .ico { width: 20px; height: 20px; }
+.btn-cuadro[disabled] { opacity: .5; }
 
 /* Listas (ventas, enlaces, cobros) */
 .lista { background: var(--c); border: 1px solid var(--b); border-radius: var(--radio); overflow: hidden; }
@@ -277,6 +343,7 @@ button.enlace {
 .enlace-cab .txt b { display: block; font-size: 15px; font-weight: 800; overflow-wrap: anywhere; }
 .enlace-cab .txt small { display: block; color: var(--m); font-size: 12.5px; font-weight: 600; }
 .ya-tiene { color: var(--ok); font-size: 12px; font-weight: 800; }
+.ya-tiene[hidden] { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .vacio { text-align: center; color: var(--m); padding: 28px 16px; }
 .vacio b { display: block; color: var(--t); font-size: 16px; margin-bottom: 4px; }
@@ -293,23 +360,35 @@ button.enlace {
 .cupon-codigo { display: flex; align-items: center; gap: 10px; background: var(--c2); border: 1.5px dashed var(--b); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
 .cupon-codigo b { flex: 1; min-width: 0; font-size: 20px; letter-spacing: .06em; font-weight: 800; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-/* La hoja de «Mi enlace» */
+/* La hoja de compartir (P7) */
 .velo { position: fixed; inset: 0; background: var(--velo); z-index: 60; animation: aparece .15s ease-out; }
 @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
 .hoja {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; background: var(--c); border-radius: 20px 20px 0 0;
-  padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 88vh; overflow-y: auto; animation: sube .2s ease-out;
-  box-shadow: var(--sombra);
+  padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 92vh; max-height: 92dvh; overflow-y: auto; animation: sube .2s ease-out;
+  box-shadow: var(--sombra); overscroll-behavior: contain;
 }
 @keyframes sube { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .hoja .asa { width: 44px; height: 5px; border-radius: 3px; background: var(--b); margin: 0 auto 12px; }
-.hoja h2 { font-size: 18px; margin: 0 0 4px; font-weight: 800; }
-.hoja .compartir { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.hoja h2 { font-size: 20px; margin: 0 0 2px; font-weight: 800; color: var(--ok); }
+.hoja > .nota { color: var(--m); font-size: 13px; margin: 0; overflow-wrap: anywhere; }
+.aviso-hoja { background: var(--avs); color: var(--av); border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 700; margin: 10px 0 0; }
+.hoja-cuerpo { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; margin-top: 14px; align-items: start; }
+.previa { border-radius: 14px; overflow: hidden; border: 1px solid var(--b); background: var(--c2); aspect-ratio: 9 / 16; }
+.previa canvas.historia { display: block; width: 100%; height: 100%; }
+.hoja-acciones { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.hoja-acciones .btn { min-height: 46px; font-size: 14.5px; }
+.hoja-acciones .etq-campo { margin: 4px 2px 0; }
+.hoja-acciones .url { margin-top: 0; }
+.hoja .compartir { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .hoja .compartir a, .hoja .compartir button {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 72px;
-  border-radius: 14px; border: 1.5px solid var(--b); background: var(--c); color: var(--t); text-decoration: none; font-weight: 800; font-size: 13px; padding: 8px 4px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px;
+  border-radius: 14px; border: 1.5px solid var(--b); background: var(--c); color: var(--t); text-decoration: none; font-weight: 800; font-size: 12.5px; padding: 6px 4px; text-align: center;
 }
-.hoja .redes-copiar { margin-top: 12px; font-size: 13px; color: var(--m); background: var(--c2); border-radius: 12px; padding: 10px 12px; }
+.qr-caja { display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--c2); border-radius: 14px; padding: 12px; }
+.qr-caja .nota { margin: 0; text-align: center; font-size: 12.5px; color: var(--m); }
+.qr-lienzo { width: 180px; height: 180px; border-radius: 10px; }
+.hoja .redes-copiar { margin: 0; font-size: 12.5px; color: var(--m); background: var(--c2); border-radius: 12px; padding: 10px 12px; }
 
 /* El aviso de abajo («Copiado») */
 .aviso {
@@ -333,26 +412,28 @@ button.enlace {
   .contenido { padding: 16px 20px 40px; }
   .zona-aviso-datos { padding: 14px 20px 0; }
   .aviso { bottom: 28px; }
-  .productos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .lista.filas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .lista.filas > .fila-tienda, .lista.filas > .fila-prod { border-right: 1px solid var(--b); }
+  .lista.filas > :nth-child(2n) { border-right: 0; }
+  .lista.filas > :nth-last-child(2):nth-child(odd) { border-bottom: 0; }
+  .rubros { margin: 12px 0 0; padding: 2px 0 6px; flex-wrap: wrap; overflow: visible; }
+  .top-tarjetas { grid-template-columns: repeat(3, minmax(0, 220px)); }
+  .segmentos { max-width: 420px; }
+  .hoja-cuerpo { grid-template-columns: 200px minmax(0, 1fr); }
   .rejilla.dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
   .rejilla.dos > .tarjeta + .tarjeta { margin-top: 0; }
-  .filtros { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
-  .filtros .dos { display: contents; }
-  .hoja { left: 50%; right: auto; bottom: 50%; transform: translate(-50%, 50%); width: min(520px, calc(100vw - 32px)); border-radius: 20px; animation: aparece .15s ease-out; }
-  .hoja .compartir { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .hoja { left: 50%; right: auto; bottom: 50%; transform: translate(-50%, 50%); width: min(620px, calc(100vw - 32px)); border-radius: 20px; animation: aparece .15s ease-out; max-height: 90vh; }
   .hoja .asa { display: none; }
   h1.saludo { font-size: 26px; }
 }
-@media (min-width: 1024px) {
-  .productos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
 @media (max-width: 420px) {
-  .filtros .dos { grid-template-columns: minmax(0, 1fr); }
   .cabecera .yo { display: none; }
+  .cabecera .titulo b { font-size: 14px; }
 }
 @media (max-width: 360px) {
   .cifras { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .fila-doc { grid-template-columns: minmax(0, 1fr); }
   .codigo-6 .casillas { gap: 6px; }
-  .productos { gap: 8px; }
+  .hoja-cuerpo { grid-template-columns: 88px minmax(0, 1fr); }
+  .ventaja b { font-size: 11.5px; }
 }

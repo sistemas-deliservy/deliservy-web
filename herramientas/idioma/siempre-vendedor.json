@@ -61,5 +61,15 @@
 "Escribe un correo válido.",
 "Tu registro quedó guardado. Entra con tu WhatsApp para verlo.",
 "El código tiene 6 números.",
-"Falta correr las migraciones de Compra-Ventas en la base (2026-10-24_compra_ventas.sql y 2026-10-24_cv_vendedor_fiscal.sql)."
+"Falta correr las migraciones de Compra-Ventas en la base (2026-10-24_compra_ventas.sql y 2026-10-24_cv_vendedor_fiscal.sql).",
+"Tu cuenta de promotor está pausada. Si crees que es un error, escríbenos.",
+"Tu cuenta de promotor ya no está activa.",
+"Tu cuenta de promotor no está activa.",
+"Esa cédula o RIF ya es de otro promotor.",
+"Falta correr la migración de Promotores en la base (2026-10-24_compra_ventas.sql).",
+"Falta correr las migraciones de Promotores en la base (2026-10-24_compra_ventas.sql y 2026-10-24_cv_vendedor_fiscal.sql).",
+"Si ese número es de un promotor, te llegó un código por WhatsApp.",
+"Elige tu red: Instagram, TikTok, YouTube o Facebook.",
+"Escribe tu usuario de esa red, por ejemplo @tuusuario.",
+"hasta ⟦⟧"
 ]

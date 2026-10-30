@@ -14,7 +14,7 @@
 
   var C = raiz.Comercio;
   var h = C.h, dato = C.dato, ico = C.ico;
-  var filtro = { buscar: '', grupoId: '' };
+  var filtro = { buscar: '', ver: 'todos' };
 
   function q(ctx) { return 'storeId=' + encodeURIComponent(ctx.tienda.storeId); }
   function grupoDe(p) {
@@ -25,17 +25,26 @@
   }
 
   // ── La lista ───────────────────────────────────────────────────────────────
+  //
+  // C7 del rediseño (30-oct-2026): los grupos se pliegan (el primero abierto, los demás cerrados con su número),
+  // «Todos · n», «Agotados · n» y «Sin foto · n» arriba, y lo que cobra Deliservy ya no va en cada fila: UNA línea
+  // arriba remite a «Mi plan» (donde está el cobro por venta y el % de la app).
 
-  function filaDeProducto(ctx, p, plan) {
-    var foto = C.fotoSegura(p.imagen || p.image || (Array.isArray(p.images) ? p.images[0] : ''));
-    var disponible = p.disponible !== false && p.availability !== false;
+  function fotoDe(p) { return C.fotoSegura(p.imagen || p.image || (Array.isArray(p.images) ? p.images[0] : '')); }
+  function disponibleDe(p) { return p.disponible !== false && p.availability !== false; }
+
+  function filaDeProducto(ctx, p, alCambiar) {
+    var foto = fotoDe(p);
+    var disponible = disponibleDe(p);
     var precio = C.num(p.precio != null ? p.precio : p.price);
     var sw = C.interruptor('disp-' + p.id, disponible, null, function (on, input) {
       input.disabled = true;
       C.pedir('PATCH', '/productos/' + p.id, { disponible: on }).then(function () {
         input.disabled = false;
+        p.disponible = on;
         fila.classList.toggle('agotado', !on);
         C.avisar(on ? 'Disponible' : 'Marcado como agotado');
+        if (alCambiar) alCambiar();
       }, function (e) { input.disabled = false; input.checked = !on; C.avisar(e.message, 'mal'); });
     }, { clase: 'chico' });
     sw.input.setAttribute('aria-label', 'Disponible');
@@ -49,73 +58,100 @@
             h('span', { class: 'precio' }, C.dolares(precio)),
             precio <= 0 ? C.pill('No se vende', 'ambar') : null,
             !disponible ? C.pill('Agotado', 'gris') : null,
+            !foto ? C.pill('Sin foto', 'ambar') : null,
             C.num(p.stock) > 0 ? C.pill('Stock ' + Math.round(C.num(p.stock)), '') : null,
             p.encargo ? C.pill('Por encargo', 'azul') : null,
             p.tieneOpciones ? C.pill('Con opciones', '') : null,
-            cv && cv.pausadoPorAdmin ? C.pill('Pausado por Deliservy', 'ambar') : cv && cv.activo && C.num(cv.pct) > 0 ? C.pill(C.porcentaje(cv.pct) + ' vendedores', 'verde') : null),
-          plan && precio > 0 ? h('div', { class: 'chips cobro' }, h('span', { class: 'pill azul' }, h('span', null, C.cobro.textoPorVenta(precio, plan, p.cobroDeliservyUsd)),
-            C.cobro.textoApp(plan) ? [h('span', { 'aria-hidden': 'true' }, ' · '), h('span', null, C.cobro.textoApp(plan))] : null)) : null)),
+            cv && cv.pausadoPorAdmin ? C.pill('Pausado por Deliservy', 'ambar') : cv && cv.activo && C.num(cv.pct) > 0 ? C.pill(C.porcentaje(cv.pct) + ' promotores', 'verde') : null))),
       h('div', { class: 'fp-disp' }, sw.caja));
     if (!ctx.puede('productos')) sw.input.disabled = true;
     return fila;
   }
 
+  /** Lo que la persona abrió o cerró a mano (por tienda y grupo); sin tocar, el primero va abierto. */
+  var plegado = {};
+
   function lista(ctx, v) {
     var resultados = h('div', { class: 'productos-lista' }, C.cargando());
+    var chips = h('div', { class: 'chips-filtro', role: 'group', 'aria-label': 'Ver' });
     var grupos = [];
+    var todos = [];
     var buscar = h('input', { class: 'campo', type: 'search', id: 'buscar-producto', placeholder: 'Busca un producto', value: filtro.buscar, autocomplete: 'off', enterkeyhint: 'search', 'aria-label': 'Buscar' });
-    var selGrupo = h('select', { class: 'campo', 'aria-label': 'Grupo' }, h('option', { value: '' }, 'Todos los grupos'));
-    var plan = null;
+    var claveTienda = String(ctx.tienda.storeId);
+    var abierto = function (k, i) {
+      if (filtro.buscar || filtro.ver !== 'todos') return true; // buscando o filtrando, todo a la vista
+      var x = plegado[claveTienda + ':' + k];
+      return x == null ? i === 0 : !x;
+    };
+    var pintarChips = function () {
+      var n = { todos: todos.length, agotados: todos.filter(function (p) { return !disponibleDe(p); }).length, sinFoto: todos.filter(function (p) { return !fotoDe(p); }).length };
+      C.reemplazar(chips, [['todos', 'Todos'], ['agotados', 'Agotados'], ['sinFoto', 'Sin foto']].map(function (x) {
+        return h('button', { type: 'button', class: 'chip', 'data-ver': x[0], 'aria-pressed': String(filtro.ver === x[0]), onclick: function () { filtro.ver = x[0]; pintarLista(); } }, x[1] + ' · ' + n[x[0]]);
+      }));
+    };
+    var pintarLista = function () {
+      if (!v.viva()) return;
+      pintarChips();
+      var arr = todos.filter(function (p) { return filtro.ver === 'agotados' ? !disponibleDe(p) : filtro.ver === 'sinFoto' ? !fotoDe(p) : true; });
+      if (!arr.length) {
+        C.reemplazar(resultados, filtro.buscar || filtro.ver !== 'todos'
+          ? C.vacio(filtro.ver === 'agotados' && !filtro.buscar ? 'No tienes productos agotados' : filtro.ver === 'sinFoto' && !filtro.buscar ? 'Todos tus productos tienen foto' : 'No hay productos con ese filtro',
+            filtro.buscar ? 'Prueba con otra búsqueda o quita el filtro.' : null, null, filtro.buscar ? 'buscar' : 'check')
+          : C.vacio('Aún no tienes productos', 'Agrega el primero: nombre, precio y una foto.', h('div', { class: 'botones centro' }, h('a', { class: 'btn chico', href: '#productos/nuevo' }, ico('agregar'), 'Agregar producto')), 'productos'));
+        return;
+      }
+      // Por grupo, en el orden de los grupos de la tienda; sin grupo, al final.
+      var porGrupo = {};
+      var orden = [];
+      arr.forEach(function (p) {
+        var g = grupoDe(p);
+        var k = g.id != null ? 'g' + g.id : (g.nombre ? 'n' + g.nombre : 'sin');
+        if (!porGrupo[k]) { porGrupo[k] = { nombre: g.nombre, id: g.id, productos: [] }; orden.push(k); }
+        if (!porGrupo[k].nombre && g.id != null) { var gg = grupos.filter(function (x) { return Number(x.id) === g.id; })[0]; if (gg) porGrupo[k].nombre = gg.nombre || gg.name; }
+        porGrupo[k].productos.push(p);
+      });
+      orden.sort(function (a, b) {
+        var ia = grupos.findIndex(function (x) { return 'g' + x.id === a; }), ib = grupos.findIndex(function (x) { return 'g' + x.id === b; });
+        if (a === 'sin') return 1; if (b === 'sin') return -1;
+        return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+      });
+      C.reemplazar(resultados, orden.map(function (k, i) {
+        var g = porGrupo[k];
+        var id = 'gp-' + claveTienda + '-' + i;
+        var cuerpo = h('div', { class: 'lista', id: id }, g.productos.map(function (p) { return filaDeProducto(ctx, p, pintarChips); }));
+        var cab = h('button', { type: 'button', class: 'gp-cab', 'aria-controls': id },
+          g.nombre ? dato('span', { class: 'gp-nombre' }, g.nombre) : h('span', { class: 'gp-nombre' }, 'Sin grupo'),
+          h('span', { class: 'cuenta' }, String(g.productos.length)), ico('abajo', 'gp-flecha'));
+        var seccion = h('section', { class: 'grupo-productos' }, cab, cuerpo);
+        var poner = function (si) { cab.setAttribute('aria-expanded', String(si)); cuerpo.hidden = !si; seccion.classList.toggle('abierto', si); };
+        poner(abierto(k, i));
+        cab.addEventListener('click', function () { var si = cuerpo.hidden; plegado[claveTienda + ':' + k] = !si; poner(si); });
+        return seccion;
+      }));
+    };
     var cargar = function () {
-      var url = '/productos?' + q(ctx) + (filtro.buscar ? '&buscar=' + encodeURIComponent(filtro.buscar) : '') + (filtro.grupoId ? '&grupoId=' + encodeURIComponent(filtro.grupoId) : '');
-      Promise.all([C.pedir('GET', url), C.cobro ? C.cobro.planDe(ctx) : Promise.resolve(null)]).then(function (rr) {
-        var d = rr[0];
-        plan = rr[1];
+      var url = '/productos?' + q(ctx) + (filtro.buscar ? '&buscar=' + encodeURIComponent(filtro.buscar) : '');
+      C.pedir('GET', url).then(function (d) {
         if (!v.viva()) return;
-        var arr = Array.isArray(d) ? d : (d && Array.isArray(d.productos) ? d.productos : []);
-        if (!arr.length) {
-          C.reemplazar(resultados, filtro.buscar || filtro.grupoId
-            ? C.vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita el filtro.', null, 'buscar')
-            : C.vacio('Aún no tienes productos', 'Agrega el primero: nombre, precio y una foto.', h('div', { class: 'botones centro' }, h('a', { class: 'btn chico', href: '#productos/nuevo' }, ico('agregar'), 'Agregar producto')), 'productos'));
-          return;
-        }
-        // Por grupo, en el orden de los grupos de la tienda; sin grupo, al final.
-        var porGrupo = {};
-        var orden = [];
-        arr.forEach(function (p) {
-          var g = grupoDe(p);
-          var k = g.id != null ? 'g' + g.id : (g.nombre ? 'n' + g.nombre : 'sin');
-          if (!porGrupo[k]) { porGrupo[k] = { nombre: g.nombre, id: g.id, productos: [] }; orden.push(k); }
-          if (!porGrupo[k].nombre && g.id != null) { var gg = grupos.filter(function (x) { return Number(x.id) === g.id; })[0]; if (gg) porGrupo[k].nombre = gg.nombre; }
-          porGrupo[k].productos.push(p);
-        });
-        orden.sort(function (a, b) {
-          var ia = grupos.findIndex(function (x) { return 'g' + x.id === a; }), ib = grupos.findIndex(function (x) { return 'g' + x.id === b; });
-          if (a === 'sin') return 1; if (b === 'sin') return -1;
-          return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
-        });
-        C.reemplazar(resultados, orden.map(function (k) {
-          var g = porGrupo[k];
-          return h('section', { class: 'grupo-productos' },
-            h('div', { class: 'etq-fila' }, g.nombre ? dato('span', { class: 'etq' }, g.nombre) : h('span', { class: 'etq' }, 'Sin grupo'), h('span', { class: 'cuenta' }, C.plural(g.productos.length, 'producto', 'productos'))),
-            h('div', { class: 'lista' }, g.productos.map(function (p) { return filaDeProducto(ctx, p, plan); })));
-        }));
+        todos = Array.isArray(d) ? d : (d && Array.isArray(d.productos) ? d.productos : []);
+        pintarLista();
       }, function (e) { if (v.viva()) C.reemplazar(resultados, C.tarjetaError(e, cargar)); });
     };
     var reloj = null;
     buscar.addEventListener('input', function () { clearTimeout(reloj); reloj = setTimeout(function () { filtro.buscar = buscar.value.trim(); cargar(); }, 300); });
-    selGrupo.addEventListener('change', function () { filtro.grupoId = selGrupo.value; cargar(); });
     C.enContenido(v, [
       C.cabeceraDeSeccion('Productos', ['Lo que vendes en ', dato('span', null, ctx.tienda.nombre), '.'], [
         C.boton('Grupos', { class: 'btn borde chico', onclick: function () { abrirGrupos(ctx, cargar); } }, 'filtro'),
         h('a', { class: 'btn chico', href: '#productos/nuevo' }, ico('agregar'), 'Agregar producto'),
       ]),
-      h('div', { class: 'filtros' }, h('div', { class: 'con-icono' }, ico('buscar'), buscar), h('div', { class: 'con-flecha' }, selGrupo, ico('abajo'))),
+      h('div', { class: 'filtros una' }, h('div', { class: 'con-icono' }, ico('buscar'), buscar)),
+      chips,
+      // Solo el dueño ve «Mi plan»: al cajero no se le manda a una sección que no tiene.
+      ctx.esDueno ? h('p', { class: 'linea-plan' }, ico('info'), h('span', null, h('span', null, 'Lo que cobra Deliservy por venta y el % de la app se ven en'), ' ', h('a', { href: '#plan' }, '«Mi plan»'), '.')) : null,
       resultados,
     ]);
     C.pedir('GET', '/grupos?' + q(ctx)).then(function (gs) {
       grupos = Array.isArray(gs) ? gs : (gs && Array.isArray(gs.grupos) ? gs.grupos : []);
-      grupos.forEach(function (g) { var o = dato('option', { value: String(g.id) }, g.nombre || g.name); if (String(g.id) === String(filtro.grupoId)) o.selected = true; selGrupo.appendChild(o); });
       cargar();
     }, function () { cargar(); });
   }
@@ -397,7 +433,7 @@
       });
       C.trabajando(guardar, trabajo).then(function (r) {
         C.avisar((r && typeof r.aviso === 'string' && r.aviso) || 'Guardado');
-        filtro.buscar = ''; filtro.grupoId = '';
+        filtro.buscar = ''; filtro.ver = 'todos';
         C.ir('#productos');
       }, function (e) {
         C.reemplazar(errores, h('p', null, e.message));

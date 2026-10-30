@@ -15,7 +15,15 @@
  *   0412-555-0101  Ana Rodríguez, dueña de dos tiendas: «Arepera El Budare» (de la app, con pedidos, productos y
  *                  billetera) y «Boutique Valentina» (solo flota: debe, pedidos de flota y Alisa).
  *   0412-555-0102  Luis Pérez, cajero de Ana (ve pedidos y los marca listos; ve la flota).
+ *   0412-555-0103  Carmen Linares, dueña de «Bodega La Esquina»: una tienda de la app nueva, a medio activar (logo y
+ *                  portada sí; sin horario, 2 de 5 productos con foto, sin cuenta bancaria): sale «Activa tu tienda».
  *   0412-555-0199  un número sin tienda → 404.
+ *
+ * Afiliar un comercio por la web (contrato del rediseño §4, sin sesión; el código es el mismo 123456):
+ *   POST afiliacion/codigo   {telefono} → manda el código (mismos límites que `codigo`: 3 cada 10 min)
+ *   POST afiliacion          {telefono, codigo, quien, nombre, rubro, direccion, lat, lng, telefonoDueno} → {ok, mensaje}
+ *                            (400 `{message, campo}`; repetida: `{ok, mensaje, yaEnviada: true}`). Mismas frases que la
+ *                            API (`src/comercio-web/afiliacion.ts`). Guarda la solicitud; no crea la tienda.
  *
  * Para las pruebas (no existen en la API de verdad):
  *   POST /__simulado/reiniciar         vuelve a los datos del principio
@@ -24,6 +32,8 @@
  *   POST /__simulado/fallar-fotos      la próxima subida de foto falla (500)
  *   GET  /__simulado/ultima-foto       lo que llegó en la última foto (tipo, bytes, ancho y alto)
  *   GET  /__simulado/bitacora          lo último que se escribió (como `comercio_bitacora`)
+ *   GET  /__simulado/solicitudes       las solicitudes de afiliación que llegaron
+ *   POST /__simulado/fallar-promotor?producto=9003   el próximo `PUT vendedores-externos/productos/9003` falla (409)
  *
  * «Mi plan» (§7 del contrato, sin rutas en él: las de aquí son la propuesta de la web):
  *   GET  plan?storeId=               el plan que cuenta, la membresía, el cobro por producto, los ajustes y los pagos
@@ -162,6 +172,8 @@ const FOTOS = {
   'marcador-budare': ['#E41616', '#B00F0F', '🫓'], 'logo-valentina': ['#C2185B', '#F06292', '👗'],
   'banner-valentina': ['#F8BBD0', '#C2185B', '👗'], 'marcador-valentina': ['#C2185B', '#880E4F', '👗'],
   'repartidor-carlos': ['#BBDEFB', '#1565C0', '🏍️'], 'repartidor-jose': ['#C8E6C9', '#2E7D32', '🏍️'],
+  'logo-bodega': ['#2E7D32', '#81C784', '🛒'], 'banner-bodega': ['#C8E6C9', '#2E7D32', '🛒'],
+  'harina': ['#FFF3C4', '#E0B000', '🌽'], 'arroz': ['#FFFFFF', '#D7CCC8', '🍚'],
 };
 function svgDeFoto(clave) {
   const f = FOTOS[clave] || ['#DDDDDD', '#999999', '📦'];
@@ -178,6 +190,26 @@ let D; // todo el estado
 const SUBIDAS = new Map(); // id → Buffer (las fotos que subió la página)
 let ULTIMA_FOTO = null;
 let FALLAR_FOTOS = 0;
+/** Las frases de la afiliación: las MISMAS de la API (`afiliacion.ts` y `sesion-del-comercio.ts`). */
+const AF = {
+  quien: 'Dinos si eres el dueño o el encargado.',
+  nombre: 'Escribe el nombre del comercio.',
+  rubro: 'Elige qué tipo de comercio es.',
+  direccion: 'Escribe la dirección del comercio (calle, sector y ciudad).',
+  ubicacion: 'Marca en el mapa dónde queda el comercio.',
+  telefonoDueno: 'Escribe el WhatsApp del dueño, por ejemplo 0412-555-0198.',
+  yaEnviada: 'Ya recibimos la solicitud de este comercio. Te escribiremos por WhatsApp muy pronto.',
+  recibida: '¡Listo! Recibimos tu solicitud. Nuestro equipo te escribirá por WhatsApp para terminar la afiliación.',
+  DEMASIADOS_CODIGOS: 'Pediste muchos códigos. Espera unos minutos y vuelve a intentarlo.',
+  DEMASIADOS_INTENTOS: 'Demasiados intentos. Espera unos minutos y pide un código nuevo.',
+  CODIGO_ENVIADO: 'Te enviamos un código por WhatsApp.',
+  CODIGO_NO_VALE: 'Ese código no es correcto o ya venció.',
+  CODIGO_DE_SEIS: 'El código tiene 6 números.',
+  TELEFONO_NO_VALE: 'Escribe tu número de WhatsApp, por ejemplo 0412-555-0198.',
+};
+/** Como `textoLimpio` de la API: sin controles ni `<>`, espacios juntos. */
+function textoLimpio(v) { return String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim(); }
+const FALLAR_PROMOTOR = new Set(); // productId → el próximo PUT de promotores de ese producto falla
 
 function datosNuevos() {
   const azar = aleatorioCon(24102026);
@@ -190,7 +222,9 @@ function datosNuevos() {
     siguienteId: 5000,
     cuentas: {
       501: { userId: 501, nombre: 'Ana Rodríguez', telefono: '584125550101' },
+      502: { userId: 502, nombre: 'Carmen Linares', telefono: '584125550103' },
     },
+    solicitudes: [], // las afiliaciones que llegaron por la web
     trabajadores: [
       { id: 71, duenoUserId: 501, nombre: 'Luis Pérez', telefono: '584125550102', permisos: ['pedidos', 'pedidos_acciones', 'flota_ver'], activo: true, versionSesion: 1 },
       { id: 72, duenoUserId: 501, nombre: 'Daniela Suárez', telefono: '584245550177', permisos: ['pedidos', 'productos'], activo: true, versionSesion: 1 },
@@ -227,13 +261,26 @@ function datosNuevos() {
         ],
         pctTienda: 0,
       },
+      {
+        // Nueva y a medio activar (de la app, todavía sin verse): logo y portada, sin horario ni cuenta bancaria.
+        storeId: 77, companyId: 160, userId: 502, nombre: 'Bodega La Esquina', tipo: 'tienda', authorized: 2,
+        logo: foto('logo-bodega'), banner: foto('banner-bodega'), marcador: '',
+        direccion: 'Calle Páez cruce con Av. Cedeño, local 3, Valencia', telefono: '584125550103',
+        correo: '', rif: '', lat: 10.1781, lng: -68.0025,
+        categoria: { id: 33, nombre: 'Víveres' },
+        comisionPct: 10, comisionPromo: null, flota: null, cobroPorProducto: false,
+        horarios: [0, 1, 2, 3, 4, 5, 6].map((dia) => ({ dia, abre: '00:00', cierra: '00:00', cerrado: true })),
+        pctTienda: 0,
+      },
     ],
     categorias: [
       { id: 12, nombre: 'Comida venezolana' }, { id: 13, nombre: 'Pizzas' }, { id: 14, nombre: 'Hamburguesas' },
       { id: 15, nombre: 'Postres y café' }, { id: 30, nombre: 'Ropa y calzado' }, { id: 31, nombre: 'Tecnología' },
-      { id: 32, nombre: 'Farmacia' },
+      { id: 32, nombre: 'Farmacia' }, { id: 33, nombre: 'Víveres' },
     ],
     cuentaBancaria: { banco: 'Banco Nacional de Crédito (0191)', titular: 'Ana Rodríguez', cuentaParaVer: '0191 •••• •••• •••• 3456' },
+    cuentasBancarias: { 502: null }, // Carmen aún no tiene; las demás cuentas, la de Ana
+    billeteras: { 502: { disponibleBs: 0, retenidoBs: 0, liberaEn: null, retiroBloqueadoHasta: null } },
     ajustesCobro: Object.assign({}, AJUSTES),
     planes: {
       // La Arepera: Premium activa (la pagó dos veces); la boutique: Básica.
@@ -253,6 +300,7 @@ function datosNuevos() {
       { id: 403, companyId: 107, nombre: 'Postres' }, { id: 404, companyId: 107, nombre: 'Combos' },
       { id: 405, companyId: 107, nombre: 'Promociones' },
       { id: 410, companyId: 140, nombre: 'Vestidos' }, { id: 411, companyId: 140, nombre: 'Accesorios' },
+      { id: 420, companyId: 160, nombre: 'Víveres' }, { id: 421, companyId: 160, nombre: 'Bebidas' },
     ],
     productos: [],
     pedidos: [],
@@ -296,6 +344,10 @@ function datosNuevos() {
     P({ id: 9021, companyId: 140, grupoId: 410, nombre: 'Vestido largo floreado', precio: 28, descripcion: 'Tela fresca, tallas S, M y L.', images: [foto('vestido')] }),
     P({ id: 9022, companyId: 140, grupoId: 411, nombre: 'Bolso de cuero', precio: 35, images: [foto('bolso')], encargo: true, encargoDiasMin: 7, encargoDiasMax: 12 }),
     P({ id: 9023, companyId: 140, grupoId: 411, nombre: 'Correa tejida', precio: 9, images: [] }),
+    // La bodega nueva: 2 con foto y precio, 1 sin foto.
+    P({ id: 9031, companyId: 160, grupoId: 420, nombre: 'Harina PAN 1 kg', precio: 1.3, images: [foto('harina')] }),
+    P({ id: 9032, companyId: 160, grupoId: 420, nombre: 'Arroz Mary 1 kg', precio: 1.5, images: [foto('arroz')] }),
+    P({ id: 9033, companyId: 160, grupoId: 421, nombre: 'Refresco de 2 litros', precio: 2.2, images: [] }),
   );
 
   // Pedidos de la Arepera: 75 días hacia atrás.
@@ -518,6 +570,9 @@ function sesionDe(req) {
   return { sesion: s };
 }
 
+/** La cuenta bancaria y la billetera de cada dueño (Ana: las de siempre). */
+function cuentaDe(userId) { return Object.prototype.hasOwnProperty.call(D.cuentasBancarias, userId) ? D.cuentasBancarias[userId] : D.cuentaBancaria; }
+function billeteraDe(userId) { return D.billeteras[userId] || D.billetera; }
 function tiendasDeLaSesion(s) { return D.tiendas.filter((t) => t.userId === s.userId); }
 function laTienda(s, storeId) { return tiendasDeLaSesion(s).find((t) => t.storeId === Number(storeId)) || null; }
 function laEmpresa(s, companyId) { return tiendasDeLaSesion(s).find((t) => t.companyId === Number(companyId)) || null; }
@@ -855,6 +910,54 @@ async function api(req, res, url) {
     return { token, venceEn: iso(venceEn), cuenta: { nombre: w ? w.nombre : D.cuentas[quien.userId].nombre, rol: quien.rol, permisos: w ? w.permisos : PERMISOS } };
   }
 
+  // Afiliar un comercio por la web (sin sesión): como la API de verdad (`src/comercio-web/afiliacion.ts` y
+  // `afiliacion-del-comercio.service.ts`), con sus mismas frases. Errores del formulario: 400 `{ message, campo }`.
+  if (metodo === 'POST' && ruta === 'afiliacion/codigo') {
+    const t = telefonoNormal(body.telefono);
+    if (!t) throw new Fallo(400, AF.TELEFONO_NO_VALE);
+    const clave = 'af:' + t;
+    const lista = (D.frenos.get(clave) || []).filter((x) => x > ahora - 10 * 60000);
+    if (lista.length >= 3) throw new Fallo(429, AF.DEMASIADOS_CODIGOS);
+    lista.push(ahora); D.frenos.set(clave, lista);
+    D.codigos.set(clave, { codigo: CODIGO });
+    return { ok: true, mensaje: AF.CODIGO_ENVIADO };
+  }
+  if (metodo === 'POST' && ruta === 'afiliacion') {
+    // El formulario, en el orden en que se ve (sin gastar el código).
+    const t = telefonoNormal(body.telefono);
+    if (!t) throw new Fallo(400, AF.TELEFONO_NO_VALE, { campo: 'telefono' });
+    const codigo = String(body.codigo ?? '').replace(/[\s-]/g, '');
+    if (!/^\d{6}$/.test(codigo)) throw new Fallo(400, AF.CODIGO_DE_SEIS, { campo: 'codigo' });
+    const quien = String(body.quien ?? '').trim().toLowerCase();
+    if (!['dueno', 'encargado'].includes(quien)) throw new Fallo(400, AF.quien, { campo: 'quien' });
+    const nombre = textoLimpio(body.nombre);
+    if (nombre.length < 2 || nombre.length > 80 || /https?:|www\./i.test(nombre)) throw new Fallo(400, AF.nombre, { campo: 'nombre' });
+    const rubro = String(body.rubro ?? '').trim().toLowerCase();
+    if (!['restaurante', 'supermercado', 'distribuidora', 'farmacia', 'otro'].includes(rubro)) throw new Fallo(400, AF.rubro, { campo: 'rubro' });
+    const direccion = textoLimpio(body.direccion);
+    if (direccion.length < 10 || direccion.length > 300) throw new Fallo(400, AF.direccion, { campo: 'direccion' });
+    const lat = Number(body.lat), lng = Number(body.lng);
+    if (!isFinite(lat) || !isFinite(lng) || lat < 0 || lat > 13 || lng < -74 || lng > -59) throw new Fallo(400, AF.ubicacion, { campo: 'ubicacion' });
+    const vinoDueno = body.telefonoDueno != null && String(body.telefonoDueno).trim() !== '';
+    const dueno = vinoDueno ? telefonoNormal(body.telefonoDueno) : quien === 'dueno' ? t : null;
+    if (!dueno) throw new Fallo(400, AF.telefonoDueno, { campo: 'telefonoDueno' });
+    // El código: 6 fallos cada 15 minutos por teléfono.
+    const fallos = (D.frenos.get('af-fallos:' + t) || []).filter((x) => x > ahora - 15 * 60000);
+    if (fallos.length >= 6) throw new Fallo(429, AF.DEMASIADOS_INTENTOS);
+    const c = D.codigos.get('af:' + t);
+    if (!c || c.codigo !== codigo) { fallos.push(ahora); D.frenos.set('af-fallos:' + t, fallos); throw new Fallo(400, AF.CODIGO_NO_VALE, { campo: 'codigo' }); }
+    D.frenos.delete('af-fallos:' + t);
+    D.codigos.delete('af:' + t);
+    // Una abierta por WhatsApp y comercio (el nombre sin mayúsculas ni espacios de más): repetirla no crea otra.
+    const clave = nombre.trim().toLowerCase();
+    if (D.solicitudes.some((x) => x.telefono === t && x.nombre.trim().toLowerCase() === clave && (x.estado === 'nueva' || x.estado === 'contactada'))) {
+      return { ok: true, mensaje: AF.yaEnviada, yaEnviada: true };
+    }
+    D.solicitudes.push({ id: D.solicitudes.length + 1, telefono: t, quien, nombre, rubro, direccion, lat, lng, telefonoDueno: dueno, estado: 'nueva', creadoEn: iso(ahora) });
+    // (Como la API: `avisarAlAdmin`; el WhatsApp de confirmación al dueño queda PENDIENTE de la plantilla de Meta.)
+    return { ok: true, mensaje: AF.recibida };
+  }
+
   const r = sesionDe(req);
   if (r.error) throw new Fallo(401, r.error);
   const s = r.sesion;
@@ -887,7 +990,7 @@ async function api(req, res, url) {
     return {
       pedidosEnCurso: verPedidos ? D.pedidos.filter((p) => p.storeId === t.storeId && p.estado >= 1 && p.estado < 200).sort((a, b) => b.creado - a.creado).map(resumen) : [],
       ventasHoy: { pedidos: deHoy.length, ventasUsd: redondo(deHoy.reduce((x, p) => x + p.productosUsd, 0)), gananciaUsd: redondo(deHoy.reduce((x, p) => x + p.gananciaUsd, 0)) },
-      saldo: s.rol === 'dueno' && t.authorized !== 3 ? { disponibleBs: D.billetera.disponibleBs, retenidoBs: D.billetera.retenidoBs, liberaEn: D.billetera.liberaEn } : null,
+      saldo: s.rol === 'dueno' && t.authorized !== 3 ? { disponibleBs: billeteraDe(s.userId).disponibleBs, retenidoBs: billeteraDe(s.userId).retenidoBs, liberaEn: billeteraDe(s.userId).liberaEn } : null,
       flota: t.flota && s.permisos.includes('flota_ver') ? { debeUsd: D.flota.debeUsd, venceEn: D.flota.venceEn, pausado: D.flota.pausado } : null,
     };
   }
@@ -1196,7 +1299,7 @@ async function api(req, res, url) {
     if (metodo === 'GET' && ruta === 'vendedores-externos') {
       const t = laTienda(s, q.storeId);
       if (!t || t.authorized !== 1) throw noEncontrado();
-      const ventas = D.vendedorVentas.slice().sort((a, b) => Date.parse(b.fecha) - Date.parse(a.fecha));
+      const ventas = (t.companyId === 107 ? D.vendedorVentas : []).slice().sort((a, b) => Date.parse(b.fecha) - Date.parse(a.fecha));
       return {
         pctTienda: t.pctTienda, tope: 50,
         productos: D.productos.filter((p) => p.companyId === t.companyId && !p.borrado).map((p) => ({
@@ -1236,6 +1339,7 @@ async function api(req, res, url) {
       const t = p && laEmpresa(s, p.companyId);
       if (!t || t.authorized !== 1) throw noEncontrado();
       if (p.cv && p.cv.pausadoPorAdmin) throw new Fallo(409, 'Deliservy pausó este producto en el programa');
+      if (FALLAR_PROMOTOR.delete(p.id)) throw new Fallo(409, 'Este producto cambió mientras lo editabas. Recarga e intenta de nuevo.');
       const pct = Number(body.pct);
       if (!isFinite(pct) || pct < 0 || pct > 50) throw new Fallo(400, 'El % va de 0 a 50.');
       let precioRedes = null;
@@ -1266,11 +1370,11 @@ async function api(req, res, url) {
   if (partesRuta[0] === 'billetera' || ruta === 'facturas') {
     soloDueno(s);
     if (metodo === 'GET' && ruta === 'billetera') {
-      return Object.assign({}, D.billetera, { cuentaBancaria: D.cuentaBancaria, pagoAutomatico: 'todos los días a las 11 p. m.' });
+      return Object.assign({}, billeteraDe(s.userId), { cuentaBancaria: cuentaDe(s.userId), pagoAutomatico: 'todos los días a las 11 p. m.' });
     }
     if (metodo === 'GET' && ruta === 'billetera/movimientos') {
       const rr = rango(q, 400);
-      const lista = D.movimientos.filter((x) => Date.parse(x.fecha) >= rr.ini && Date.parse(x.fecha) < rr.fin);
+      const lista = (s.userId === 501 ? D.movimientos : []).filter((x) => Date.parse(x.fecha) >= rr.ini && Date.parse(x.fecha) < rr.fin);
       const pagina = Math.max(1, Number(q.pagina) || 1);
       return { movimientos: lista.slice((pagina - 1) * 50, pagina * 50), pagina, hayMas: pagina * 50 < lista.length };
     }
@@ -1294,7 +1398,7 @@ async function api(req, res, url) {
     }
     if (metodo === 'GET' && ruta === 'facturas') {
       const rr = q.desde || q.hasta ? rango(q, 800) : null;
-      return D.facturas.filter((f) => !rr || (Date.parse(f.fecha) >= rr.ini && Date.parse(f.fecha) < rr.fin));
+      return (s.userId === 501 ? D.facturas : []).filter((f) => !rr || (Date.parse(f.fecha) >= rr.ini && Date.parse(f.fecha) < rr.fin));
     }
     throw noEncontrado();
   }
@@ -1664,7 +1768,7 @@ function requisitos(t) {
   const conFoto = D.productos.filter((p) => p.companyId === t.companyId && !p.borrado && p.images.length && p.precio > 0).length;
   const r = {
     productos: conFoto >= 3, horario: t.horarios.some((h) => !h.cerrado), ubicacion: isFinite(t.lat) && isFinite(t.lng),
-    rif: /^[JGVE]\d{9}$/.test(t.rif || ''), cuenta: !!D.cuentaBancaria,
+    rif: /^[JGVE]\d{9}$/.test(t.rif || ''), cuenta: !!cuentaDe(t.userId),
   };
   const faltan = [];
   if (!r.productos) faltan.push('Agrega ' + (3 - conFoto) + (3 - conFoto === 1 ? ' producto' : ' productos') + ' con foto y precio (tienes ' + conFoto + ' de 3).');
@@ -1681,7 +1785,7 @@ function vistaTienda(t) {
     ubicacion: { lat: t.lat, lng: t.lng }, categoria: t.categoria, categorias: D.categorias,
     logo: t.logo, banner: t.banner, marcador: t.marcador,
     horarios: t.horarios.map((h) => Object.assign({}, h)),
-    comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto, cuentaBancaria: D.cuentaBancaria,
+    comisionPct: t.comisionPct, comisionPromo: t.comisionPromo, cobroPorProducto: !!t.cobroPorProducto, cuentaBancaria: cuentaDe(t.userId),
     visibleEnApp: t.authorized === 1, soloFlota: t.authorized === 3, tieneFlota: !!t.flota, requisitos: requisitos(t).r,
   };
 }
@@ -1737,7 +1841,7 @@ const servidor = http.createServer(async (req, res) => {
       return;
     }
     if (p.startsWith('/__simulado/')) {
-      if (req.method === 'POST' && p === '/__simulado/reiniciar') { D = datosNuevos(); FALLAR_FOTOS = 0; responder(res, 200, { ok: true }); return; }
+      if (req.method === 'POST' && p === '/__simulado/reiniciar') { D = datosNuevos(); FALLAR_FOTOS = 0; FALLAR_PROMOTOR.clear(); responder(res, 200, { ok: true }); return; }
       if (req.method === 'POST' && p === '/__simulado/pedido-nuevo') {
         const id = Math.max(...D.pedidos.map((x) => x.id)) + 1;
         const pr = D.productos.find((x) => x.id === 9002), pr2 = D.productos.find((x) => x.id === 9009);
@@ -1751,6 +1855,8 @@ const servidor = http.createServer(async (req, res) => {
       if (req.method === 'POST' && p === '/__simulado/fallar-fotos') { FALLAR_FOTOS = 1; responder(res, 200, { ok: true }); return; }
       if (p === '/__simulado/ultima-foto') { responder(res, 200, ULTIMA_FOTO || {}); return; }
       if (p === '/__simulado/bitacora') { responder(res, 200, D.bitacora.slice(0, 50)); return; }
+      if (p === '/__simulado/solicitudes') { responder(res, 200, D.solicitudes); return; }
+      if (req.method === 'POST' && p === '/__simulado/fallar-promotor') { FALLAR_PROMOTOR.add(Number(url.searchParams.get('producto'))); responder(res, 200, { ok: true }); return; }
       responder(res, 404, { message: 'No encontrado.' }); return;
     }
     const foto = /^\/simulado\/fotos\/([a-z0-9-]+)\.svg$/.exec(p);

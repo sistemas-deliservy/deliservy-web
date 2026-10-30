@@ -1035,3 +1035,130 @@ input[type="date"].campo, input[type="time"].campo { min-height: 44px; }
 @media (min-width: 768px) {
   .planes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* ── Rediseño promotores y comercios (30-oct-2026: C2 afiliar, C3 activación, C5 promotores, C7 productos) ── */
+
+/* Botones de filtro (grupos, «Todos · n», rubros): el elegido, relleno oscuro. */
+.chips-filtro { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.chips-filtro .chip { min-height: 36px; padding: 6px 13px; font-size: 13px; cursor: pointer; }
+.chips-filtro .chip[aria-pressed="true"], .chips-filtro .chip[aria-checked="true"] { background: var(--t); color: var(--c); border-color: var(--t); }
+.chips-filtro.mal .chip { border-color: var(--rt); }
+.segmentos.ancho { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
+.segmentos.ancho button { min-height: 40px; }
+.segmentos button[aria-checked="true"] { background: var(--c); color: var(--t); box-shadow: var(--sombra2); }
+@media (prefers-color-scheme: dark) { .segmentos button[aria-checked="true"] { background: #34343B; } }
+.btn.oscuro { background: var(--t); color: var(--c); }
+.btn.oscuro:hover { background: var(--t); opacity: .9; }
+.btn.oscuro.ocupado::after { border-color: rgba(127, 127, 127, .5); border-top-color: var(--c); }
+
+/* Productos: una línea a «Mi plan» y los grupos plegables */
+.filtros.una { grid-template-columns: minmax(0, 1fr); }
+.linea-plan { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; background: var(--azs); color: var(--az); font-size: 13px; font-weight: 600; line-height: 1.4; border: 1px solid var(--b); }
+.linea-plan .ico { width: 17px; height: 17px; margin-top: 1px; }
+.linea-plan a { color: inherit; font-weight: 800; }
+.productos-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.grupo-productos { background: var(--c); border: 1px solid var(--b); border-radius: var(--radio); overflow: hidden; }
+.grupo-productos .lista { border: 0; border-top: 1px solid var(--b); border-radius: 0; }
+.gp-cab { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 50px; padding: 8px 14px; border: 0; background: var(--c); color: var(--t); text-align: left; }
+.gp-cab:hover { background: var(--c2); }
+.gp-nombre { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; overflow-wrap: anywhere; }
+.gp-cab .cuenta { background: var(--c3); border-radius: 999px; padding: 2px 9px; }
+.gp-flecha { width: 18px; height: 18px; color: var(--m); transition: transform .15s ease; }
+.grupo-productos.abierto .gp-flecha { transform: rotate(180deg); }
+
+/* Promotores: la tabla */
+.panel-promotores { margin-top: 12px; }
+.pct-todos { padding: 12px 14px; }
+.pct-todos-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pct-todos-txt { flex: 1 1 0; min-width: 0; font-weight: 800; font-size: 14px; line-height: 1.3; }
+.pct-todos-fila .con-sufijo { flex: 0 0 80px; }
+.activacion #act-seguir { gap: 5px; }
+.pct-todos-fila .campo { min-height: 42px; font-weight: 800; text-align: center; padding: 8px 28px 8px 10px; }
+.pct-todos .ayuda { margin-top: 6px; }
+.tabla-promotores { margin-top: 12px; background: var(--c); border: 1px solid var(--b); border-radius: var(--radio); overflow: hidden; }
+.tp-fila { display: grid; grid-template-columns: minmax(0, 1fr) 70px 88px; gap: 4px 8px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--b); transition: background .15s ease; }
+.tp-fila:last-child { border-bottom: 0; }
+.tp-cab { padding-top: 8px; padding-bottom: 8px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--m); background: var(--c2); }
+.tp-app, .tp-col-estado, .tp-foto { display: none !important; }
+.tp-producto { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tp-producto .txt { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tp-producto .txt b { font-size: 13.5px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.tp-nota, .tp-aviso { font-size: 12px; font-weight: 600; color: var(--m); }
+.tp-aviso { color: var(--av); font-weight: 700; }
+.tp-fila .campo.tp-campo { min-height: 40px; font-size: 14.5px; font-weight: 800; padding: 7px 22px 7px 8px; text-align: right; background: var(--c2); }
+.tp-fila .con-sufijo > span { right: 8px; font-size: 13px; }
+.tp-fila .campo.tp-campo.cambiado { border-color: var(--av); background: var(--c); }
+.tp-talla { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 8px; align-items: center; padding-left: 12px; border-left: 2px solid var(--b); }
+.tp-talla small { font-size: 12px; font-weight: 700; color: var(--m); overflow-wrap: anywhere; }
+.tp-fila .nota.pausa, .tp-fila .tp-error { grid-column: 1 / -1; margin: 2px 0 0; font-size: 12.5px; }
+.tp-fila.pausado { background: var(--avs); }
+.tp-fila.cambiada { background: var(--avs); box-shadow: inset 3px 0 0 var(--av); }
+.tp-fila.con-error { box-shadow: inset 3px 0 0 var(--rt); }
+.tp-fila[hidden] { display: none !important; }
+.tp-estado { display: inline-flex; }
+.barra-cambios {
+  position: sticky; bottom: calc(var(--barra) + env(safe-area-inset-bottom, 0px)); z-index: 25; margin: 14px -14px 0; padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #16161A; color: #fff; box-shadow: 0 -6px 18px rgba(0, 0, 0, .14);
+}
+.bc-texto { flex: 1 1 0; min-width: 0; font-weight: 800; font-size: 13.5px; line-height: 1.25; }
+.bc-botones { display: flex; gap: 8px; flex: 0 0 auto; }
+@media (max-width: 420px) { .barra-cambios .btn.chico { padding: 0 12px; } .barra-cambios { flex-wrap: nowrap; } }
+.barra-cambios .btn { min-height: 44px; }
+@media (prefers-color-scheme: dark) { .barra-cambios { background: #26262B; border-top: 1px solid var(--b); } }
+
+/* «Hoy»: activa tu tienda */
+.caja-activacion { margin-bottom: 12px; }
+.activacion { display: flex; flex-direction: column; gap: 10px; }
+.act-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.act-cab h2 { margin: 0; }
+.barra-progreso { display: block; height: 8px; border-radius: 999px; background: var(--c3); overflow: hidden; }
+.barra-progreso .lleno { display: block; height: 100%; width: 0; background: var(--okf); border-radius: 999px; transition: width .3s ease; }
+.pasos-act { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.paso-enlace { display: flex; align-items: center; gap: 12px; padding: 7px 4px; border-radius: 10px; text-decoration: none; color: var(--t); min-width: 0; }
+a.paso-enlace:hover { background: var(--c2); }
+.paso-enlace .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.paso-enlace .txt b { font-size: 14px; font-weight: 800; }
+.paso-enlace .txt small { font-size: 12.5px; color: var(--m); font-weight: 600; }
+.paso-enlace .ir { width: 16px; height: 16px; color: var(--m); }
+.marca-paso { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; font-size: 12.5px; font-weight: 800; border: 2px solid var(--b); color: var(--m); background: var(--c); }
+.marca-paso .ico { width: 16px; height: 16px; stroke-width: 3; }
+.pasos-act li.hecho .marca-paso { background: var(--okf); border-color: var(--okf); color: #fff; }
+.pasos-act li.hecho .txt b { color: var(--m); }
+.activacion .botones { margin-top: 2px; }
+.activacion .nota { margin: 0; }
+.activacion .nota a { font-weight: 800; }
+
+/* Afiliar */
+.entrar.afiliar { max-width: 520px; }
+.marca-fila { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.logo-afiliar { width: 46px; height: 46px; flex: 0 0 auto; }
+.marca-fila small { display: block; font-size: 11px; font-weight: 800; color: var(--rt); text-transform: uppercase; letter-spacing: .08em; }
+.marca-fila h1 { margin: 2px 0 0; font-size: 24px; }
+.intro-afiliar { color: var(--m); margin: 0 2px 14px; font-size: 14.5px; }
+.form-afiliar .etq-campo.primero { margin-top: 0; }
+.form-afiliar .chips-filtro { margin-top: 0; }
+.form-afiliar .buscador-dir { margin-bottom: 8px; }
+.marco-mapa { position: relative; border-radius: var(--radio); }
+.marco-mapa.mal .mapa { border-color: var(--rt); }
+.mapa-afiliar { height: 210px; }
+.usar-ubicacion { position: absolute; right: 8px; bottom: 8px; z-index: 3; box-shadow: var(--sombra2); }
+.form-afiliar > .nota { font-size: 12.5px; }
+.gracias-afiliar .resultado-bien { padding: 12px 0 4px; }
+.gracias-afiliar .resultado-bien > b { font-size: 20px; }
+.gracias-afiliar .nombre-comercio { color: var(--t); font-weight: 800; }
+.gracias-afiliar .botones .btn { flex: 1 1 200px; }
+
+@media (min-width: 1024px) {
+  .tp-fila { grid-template-columns: minmax(0, 1fr) 110px 170px 96px 120px; padding: 10px 16px; gap: 4px 14px; }
+  .tp-app, .tp-col-estado { display: block !important; }
+  .tp-foto { display: grid !important; width: 42px; height: 42px; border-radius: 10px; }
+  img.tp-foto { display: block !important; }
+  .tp-app { font-weight: 800; font-size: 14px; text-align: right; }
+  .tp-cab .tp-app { text-align: right; font-size: 11px; }
+  .tp-talla { grid-column: 2 / -1; grid-template-columns: minmax(0, 1fr) 120px; }
+  .tp-fila .nota.pausa, .tp-fila .tp-error { grid-column: 1 / -1; }
+  .barra-cambios { bottom: 0; margin: 16px -28px 0; padding: 12px 28px; }
+  .pasos-act { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+  .activacion .botones .btn { flex: 0 0 auto; }
+  .mapa-afiliar { height: 240px; }
+}

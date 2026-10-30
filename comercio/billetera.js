@@ -12,7 +12,7 @@
   var C = raiz.Comercio;
   var h = C.h, dato = C.dato, ico = C.ico;
   var rango = { modo: '30', desde: null, hasta: null };
-  var TIPOS = { MANAGER: 'Comisión', FLOTA: 'Flota', VENDEDOR: 'Vendedores', MEMBRESIA: 'Membresía' };
+  var TIPOS = { MANAGER: 'Comisión', FLOTA: 'Flota', VENDEDOR: 'Promotores', MEMBRESIA: 'Membresía' };
 
   function rangoDelModo(modo) {
     var hoy = C.diaCaracas();
@@ -27,7 +27,7 @@
     var retenido = m.retenido === true || m.tipo === 'retenido';
     return h('div', { class: 'renglon' },
       h('div', { class: 'icono-mov ' + (retenido ? 'ambar' : monto >= 0 ? 'verde' : 'roja') }, ico(retenido ? 'reloj' : monto >= 0 ? 'agregar' : 'subir')),
-      h('div', { class: 'txt' }, h('b', null, m.descripcion || m.texto || m.description || ''), h('small', null, C.fechaHora(m.fecha || m.createdAt),
+      h('div', { class: 'txt' }, h('b', null, C.comoPromotor(m.descripcion || m.texto || m.description || '')), h('small', null, C.fechaHora(m.fecha || m.createdAt),
         retenido && m.liberaEn ? [' · se libera ', C.fechaHora(m.liberaEn)] : null)),
       h('div', { class: 'monto' }, h('b', { class: retenido ? 'ambar' : monto >= 0 ? 'verde' : '' }, C.conSigno(monto, C.bolivares)), retenido ? C.pill('Retenido', 'ambar') : null));
   }
@@ -109,7 +109,7 @@
       var filas = [['Fecha', 'Hora', 'Movimiento', 'Monto (Bs)', 'Retenido']];
       lista.forEach(function (m) {
         var f = C.fechaParaCsv(m.fecha || m.createdAt);
-        filas.push([f[0], f[1], m.descripcion || m.texto || '', C.num(m.montoBs != null ? m.montoBs : m.amount), m.retenido ? 'Sí' : '']);
+        filas.push([f[0], f[1], C.comoPromotor(m.descripcion || m.texto || ''), C.num(m.montoBs != null ? m.montoBs : m.amount), m.retenido ? 'Sí' : '']);
       });
       C.descargarCsv('billetera-' + r.desde + '-a-' + r.hasta + '.csv', filas);
       C.avisar('Listo: revisa tus descargas');

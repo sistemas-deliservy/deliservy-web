@@ -2,7 +2,8 @@
  * EL PANEL DEL COMERCIO (www.deliservy.com/comercio/, 24-oct-2026) — la base que usan todas las secciones.
  *
  * Gilberth: un panel web para cada comercio, hermano de la página del vendedor. Entra con su WhatsApp (código en 6
- * casillas) y ve su tienda: pedidos, productos, vendedores externos, billetera, flota, estadísticas y «Mi tienda».
+ * casillas) y ve su tienda: pedidos, productos, promotores (antes «vendedores externos»), billetera, flota,
+ * estadísticas y «Mi tienda». Quien aún no vende con Deliservy puede afiliar su comercio desde la entrada (#afiliar).
  * Habla SOLO con la API de Deliservy (`https://api.deliservy.site/api/comercio/*`; en localhost, en relativo para las
  * pruebas), con un token en la cabecera `Authorization`.
  *
@@ -134,6 +135,16 @@
     return /^[24]\d{9}$/.test(d);
   }
   function inicial(t) { var s = String(t == null ? '' : t).trim(); return s ? s.charAt(0).toUpperCase() : 'D'; }
+  /**
+   * Un texto de la API con «vendedor» → «promotor» (30-oct-2026: la gente ve «promotor», nunca «vendedor»; la API puede
+   * seguir mandando «Vendedor #12», «Vendedor externo» o «· vendedor −0,50 $» hasta que cambie). Solo para etiquetas
+   * de canal, líneas de ganancia y movimientos: los textos de comisión NO pasan por aquí.
+   */
+  function comoPromotor(t) {
+    return String(t == null ? '' : t)
+      .replace(/\b([Vv])endedor(es)? extern[oa]s?\b/g, function (_, v, es) { return (v === 'V' ? 'P' : 'p') + 'romotor' + (es || ''); })
+      .replace(/\b([Vv])endedor(es)?\b/g, function (_, v, es) { return (v === 'V' ? 'P' : 'p') + 'romotor' + (es || ''); });
+  }
   function sinTildes(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 
   // ── Lo que entra en un atributo, revisado ──────────────────────────────────
@@ -632,7 +643,7 @@
     sumarDias: sumarDias, lunesDe: lunesDe, diaDeLaSemana: diaDeLaSemana, primeroDelMes: primeroDelMes, ultimoDelMes: ultimoDelMes,
     sumarMeses: sumarMeses, diaCorto: diaCorto, nombreDelMes: nombreDelMes, rangoDe: rangoDe, textoDelRango: textoDelRango,
     MESES: MESES, MESES_CORTOS: MESES_CORTOS, DIAS: DIAS, CARACAS_MS: CARACAS_MS,
-    telefonoParaVer: telefonoParaVer, telefonoValido: telefonoValido, inicial: inicial, sinTildes: sinTildes,
+    telefonoParaVer: telefonoParaVer, telefonoValido: telefonoValido, inicial: inicial, sinTildes: sinTildes, comoPromotor: comoPromotor,
     fotoSegura: fotoSegura, hrefSeguro: hrefSeguro,
     h: h, poner: poner, dato: dato, vaciar: vaciar, reemplazar: reemplazar, unidos: unidos, ico: ico, svg: svg, NS: NS,
     almacen: almacen, sesion: sesion, pedir: pedir, mensajeDe: mensajeDe, guardarArchivo: guardarArchivo,

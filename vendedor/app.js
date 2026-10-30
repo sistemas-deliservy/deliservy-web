@@ -1,7 +1,14 @@
 /*
- * LA PÁGINA DEL VENDEDOR (www.deliservy.com/vendedor/, 24-oct-2026): Compra-Ventas Redes Sociales.
+ * LA PÁGINA DE LOS PROMOTORES (www.deliservy.com/vendedor/, 24-oct-2026; rediseño 30-oct-2026): «Promotores Deliservy».
  *
- * Gilberth: «para el lado de los influencers, youtubers… todo completo en www.deliservy.com». El vendedor entra con su
+ * Rediseño del 30-oct-2026 (CONTRATO-rediseno.md §1–3, pantallas P2, P3, P5, P7, P8): todo lo que se VE dice
+ * «promotor/promotores» (los nombres internos —`vendedor`, `/api/vendedor/*`, esta carpeta— se quedan para no romper
+ * nada); catálogo por tiendas (`GET catalogo/tiendas`) con rubros en botones, «Ganan más esta semana» y la tienda
+ * abierta con «Ordenar» y «Ver más» (`orden`, `pagina`); compartir con la imagen para historia (lienzo 1080 × 1920 con
+ * el QR del enlace, `vendor/qrcode.js`, MIT) y el texto con el enlace; registro en 2 pasos (WhatsApp + código → nombre y
+ * red principal: los datos fiscales se piden al cobrar) y el promotor `pendiente` ya navega (Inicio, Catálogo, Enlaces).
+ *
+ * Gilberth: «para el lado de los influencers, youtubers… todo completo en www.deliservy.com». El promotor entra con su
  * WhatsApp (código por WhatsApp) y ve su saldo, el catálogo del programa con lo que gana por unidad, sus enlaces
  * (`https://www.deliservy.com/v/<codigo>`, uno por producto o tienda, sin vencimiento) con las visitas por red, sus
  * ventas y sus cobros. Habla con la API de Deliservy (`https://api.deliservy.site/api/vendedor/*`): al entrar, la API
@@ -26,7 +33,14 @@
   var CLAVE_SESION = 'deliservy_vendedor_sesion';
   var CLAVE_IDIOMA = 'deliservy_idioma';
   var NOTA_PAGO = 'Se te paga solo cada noche a las 11:00 p. m. si tienes cuenta bancaria y saldo disponible.';
+  /** Lo que dice la API (403) a un `pendiente` en Ventas y Cobros. */
   var EN_REVISION = 'Tu cuenta está en revisión. Te avisaremos por WhatsApp cuando esté lista.';
+  /** El aviso amarillo de arriba mientras su cuenta está en revisión (P8): ya navega y prepara enlaces. */
+  var AVISO_REVISION = 'Tu cuenta está en revisión. Ya puedes preparar tus enlaces: se activan cuando te aprobemos, y te avisamos por WhatsApp.';
+  /** «Ordenar» del catálogo (`orden` de `GET catalogo`, contrato §1). */
+  var ORDENES = [['ganancia', 'Mayor ganancia'], ['vendidos', 'Más vendidos'], ['precio', 'Precio'], ['nombre', 'A–Z']];
+  /** El logo de Deliservy (de la web: 'self'). */
+  var LOGO_DELISERVY = '/assets/logo-icon.png';
   /** El WhatsApp de Deliservy (0414-495-7006): para cambiar la cédula o el RIF de una cuenta ya aprobada. */
   var WHATSAPP_DELISERVY = 'https://wa.me/584144957006';
   /** Registro propio y datos para facturar (24-oct-2026): los tipos de documento del contrato (§1). */
@@ -58,19 +72,54 @@
       return d.toLocaleString('es-VE', { timeZone: 'America/Caracas', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
     } catch (_) { return d.toLocaleString(); }
   }
-  function textoDeCompartir(titulo) { return String(titulo || 'Esto') + ' en Deliservy'; }
-  /** Los enlaces directos para compartir (sin scripts de esas redes: solo abrir su página). */
-  function enlacesParaCompartir(url, titulo) {
+  /** El precio para enseñar: «5,50 $» o «Desde 5,50 $» (con tamaños). */
+  function precioParaVer(p) { return p == null || p.venta == null ? '' : (p.desde ? 'Desde ' : '') + dolares(p.venta); }
+  /**
+   * El texto que se copia y se manda (P7): «<Producto> de <Tienda>, <precio>. Pídelo aquí: <enlace>». De una tienda:
+   * «<Tienda> en Deliservy. Pídelo aquí: <enlace>». Va siempre en español: lo leen los clientes de Valencia.
+   */
+  function textoParaCompartir(info) {
+    var i = info || {};
+    var u = urlSegura(i.url);
+    var nombre = String(i.nombre || '').trim();
+    var tienda = String(i.tienda || '').trim();
+    var cabeza;
+    if (i.tipo === 't') cabeza = (tienda || nombre || 'Esta tienda') + ' en Deliservy';
+    else {
+      cabeza = (nombre || 'Esto') + (tienda ? ' de ' + tienda : '');
+      if (i.venta != null && num(i.venta) > 0) cabeza += ', ' + (i.desde ? 'desde ' : '') + dolares(i.venta);
+    }
+    return cabeza + '. Pídelo aquí: ' + u;
+  }
+  /** WhatsApp con el texto ya escrito (sin scripts de esa red: solo abrir su página). */
+  function enlacesParaCompartir(url, texto) {
     var u = urlSegura(url);
     if (!u) return null;
-    var t = textoDeCompartir(titulo);
-    return {
-      whatsapp: 'https://wa.me/?text=' + encodeURIComponent(t + ' ' + u),
-      facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(u),
-      x: 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(u) + '&text=' + encodeURIComponent(t),
-    };
+    return { whatsapp: 'https://wa.me/?text=' + encodeURIComponent(texto || u) };
+  }
+  /**
+   * Lo que manda el servidor todavía dice «vendedor» o «Compra-Ventas» en algunas frases (y la plantilla de WhatsApp no
+   * se toca: necesita a Meta). En la página se ve «promotor».
+   */
+  function comoPromotor(t) {
+    return String(t == null ? '' : t)
+      .replace(/\bvendedores\b/g, 'promotores').replace(/\bVendedores\b/g, 'Promotores')
+      .replace(/\bvendedor\b/g, 'promotor').replace(/\bVendedor\b/g, 'Promotor')
+      .replace(/Compra-Ventas(?: Redes Sociales)?/g, 'Promotores');
   }
   function plural(n, uno, varios) { return Math.round(num(n)) + ' ' + (Math.round(num(n)) === 1 ? uno : varios); }
+  /** «Ganas 0,46 $» o, con tamaños de precio distinto, «Ganas 0,30–0,50 $». */
+  function textoGanas(p) {
+    var a = num(p && p.ganas);
+    var b = num(p && p.ganasHasta);
+    if (b > a + 0.004) return 'Ganas ' + (Math.round(a * 100) / 100).toFixed(2).replace('.', ',') + '–' + dolares(b);
+    return 'Ganas ' + dolares(a);
+  }
+  /** Un nombre para el archivo de la imagen: «deliservy-arepa-reina-pepiada.png». */
+  function nombreDeArchivo(t) {
+    var s = String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    return 'deliservy-' + (s || 'enlace') + '.png';
+  }
 
   // ── Los datos para facturar (puros: los mismos que mira la API, §1 del contrato) ──
 
@@ -170,7 +219,7 @@
   // ── Armar la página (el texto entra SIEMPRE como texto) ─────────────────────
 
   /** Un enlace solo a lo nuestro, a https o a un ancla; lo demás no se pone. */
-  function hrefSeguro(v) { var s = String(v); return /^(https:\/\/[^\s"'<>]+|#[\w-]*|\/(?!\/)[^\s"'<>]*)$/.test(s) ? s : null; }
+  function hrefSeguro(v) { var s = String(v); return /^(https:\/\/[^\s"'<>]+|#[\w-]*(?:\/\d{1,10})?|\/(?!\/)[^\s"'<>]*)$/.test(s) ? s : null; }
 
   function h(tag, props) {
     var el = documento.createElement(tag);
@@ -213,6 +262,18 @@
     x: [['path', { d: 'M4 4l16 16M20 4 4 20' }]],
     reloj: [['circle', { cx: 12, cy: 12, r: 9 }], ['path', { d: 'M12 7v5l3 2' }]],
     abajo: [['path', { d: 'm6 9 6 6 6-6' }]],
+    derecha: [['path', { d: 'm9 6 6 6-6 6' }]],
+    volver: [['path', { d: 'M15 6 9 12l6 6' }]],
+    buscar: [['circle', { cx: 11, cy: 11, r: 7 }], ['path', { d: 'm20 20-3.5-3.5' }]],
+    qr: [['rect', { x: 3, y: 3, width: 7, height: 7, rx: 1 }], ['rect', { x: 14, y: 3, width: 7, height: 7, rx: 1 }], ['rect', { x: 3, y: 14, width: 7, height: 7, rx: 1 }], ['path', { d: 'M14 14h3v3M21 14v.01M14 21h3M21 17v4' }]],
+    descargar: [['path', { d: 'M12 3v12' }], ['path', { d: 'm7 10 5 5 5-5' }], ['path', { d: 'M5 21h14' }]],
+    mas: [['circle', { cx: 5, cy: 12, r: 1.4 }], ['circle', { cx: 12, cy: 12, r: 1.4 }], ['circle', { cx: 19, cy: 12, r: 1.4 }]],
+    tienda: [['path', { d: 'M4 9.5 5.5 4h13L20 9.5' }], ['path', { d: 'M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0' }], ['path', { d: 'M5.5 12v8h13v-8' }]],
+    caja: [['path', { d: 'M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z' }], ['path', { d: 'm3 7.5 9 4.5 9-4.5M12 12v9' }]],
+    luna: [['path', { d: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z' }]],
+    infinito: [['path', { d: 'M7.5 15.5a3.5 3.5 0 1 1 0-7c3.5 0 5.5 7 9 7a3.5 3.5 0 1 0 0-7c-3.5 0-5.5 7-9 7z' }]],
+    check: [['path', { d: 'm5 12.5 4.5 4.5L19 7.5' }]],
+    candado: [['rect', { x: 5, y: 11, width: 14, height: 10, rx: 2 }], ['path', { d: 'M8 11V8a4 4 0 0 1 8 0v3' }]],
   };
   function ico(nombre) {
     var svg = documento.createElementNS(NS, 'svg');
@@ -257,28 +318,43 @@
 
   var SECCIONES = [['inicio', 'Inicio'], ['catalogo', 'Catálogo'], ['enlaces', 'Enlaces'], ['ventas', 'Ventas'], ['cobros', 'Cobros']];
 
-  function navegacion(clase, seccion) {
+  function navegacion(clase, seccion, enRevision) {
     return h('nav', { class: clase, 'aria-label': 'Secciones' }, SECCIONES.map(function (s) {
-      return h('a', { href: '#' + s[0], 'aria-current': s[0] === seccion ? 'page' : null }, ico(s[0]), h('span', null, s[1]));
+      // En revisión, Ventas y Cobros se ven con candado (se abren al aprobar).
+      var cerrada = enRevision && (s[0] === 'ventas' || s[0] === 'cobros');
+      return h('a', { href: '#' + s[0], class: cerrada ? 'cerrada' : null, 'aria-current': s[0] === seccion ? 'page' : null }, ico(cerrada ? 'candado' : s[0]), h('span', null, s[1]));
     }));
+  }
+
+  /** El logo de Deliservy (la imagen de la web, no un cuadro con «D»). */
+  function logoDeliservy(clase) {
+    // (Una ruta nuestra: `h()` solo pone fotos https en `src`, así que este se pone aparte.)
+    var img = h('img', { class: 'logo-marca' + (clase ? ' ' + clase : ''), alt: '', width: '34', height: '34' });
+    img.setAttribute('src', LOGO_DELISERVY);
+    return img;
   }
 
   function cabecera(yo, conSalir) {
     return h('header', { class: 'cabecera' },
-      h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
-      h('div', { class: 'titulo' }, h('b', null, 'Compra-Ventas'), dato('small', null, (yo && yo.nombre) || '')),
+      logoDeliservy(),
+      h('div', { class: 'titulo' }, h('b', null, 'Promotores Deliservy'), dato('small', null, (yo && yo.nombre) || '')),
       yo ? dato('div', { class: 'yo', 'aria-hidden': 'true' }, inicial(yo.nombre)) : null,
       botonIdioma(),
       conSalir ? h('button', { class: 'salir', type: 'button', onclick: salir }, 'Salir') : null);
   }
 
+  function enRevision() { return !!(estado.yo && estado.yo.estado === 'pendiente'); }
+
   function marco(seccion, yo, contenido) {
     var main = h('main', { class: 'contenido', id: 'contenido' }, h('div', { class: 'vista' }, contenido));
-    // Arriba de cada sección, si le faltan datos para facturar: «Completa tus datos para tus facturas: …».
-    var aviso = h('div', { class: 'zona-aviso-datos', id: 'aviso-datos' }, avisoDatos());
+    var revisando = enRevision();
+    // Arriba de cada sección: en revisión, el aviso amarillo (P8); si le faltan datos para facturar, «Completa tus datos…».
+    var aviso = h('div', { class: 'zona-aviso-datos', id: 'aviso-datos' },
+      revisando ? h('div', { class: 'aviso-datos aviso-revision', role: 'status', id: 'aviso-revision' }, ico('reloj'), h('p', null, AVISO_REVISION)) : null,
+      revisando ? null : avisoDatos());
     aviso.hidden = !aviso.firstChild;
     var f = documento.createDocumentFragment();
-    poner(f, [cabecera(yo, true), navegacion('pestanas', seccion), aviso, main, navegacion('navegacion', seccion)]);
+    poner(f, [cabecera(yo, true), navegacion('pestanas', seccion, revisando), aviso, main, navegacion('navegacion', seccion, revisando)]);
     return f;
   }
 
@@ -320,14 +396,23 @@
     return { caja: h('div', { class: 'codigo-6' }, casillas, input), valor: function () { return String(input.value || '').replace(/\D/g, ''); } };
   }
 
+  /** Los tres recuadros de la portada del registro (P5). */
+  function ventajas() {
+    var una = function (icono, titulo) { return h('div', { class: 'ventaja' }, h('span', { class: 'ventaja-ico' }, ico(icono)), h('b', null, titulo)); };
+    return h('div', { class: 'ventajas' },
+      una('caja', 'Sin inventario ni inversión'),
+      una('luna', 'Cobro automático cada noche'),
+      una('infinito', 'Enlaces que no vencen'));
+  }
+
   /** El marco de las pantallas sin sesión (entrar y registrarse): la marca, la tarjeta y el pie. */
-  function sinSesion(texto, cuerpo, pie) {
+  function sinSesion(texto, cuerpo, pie, conVentajas) {
     return h('div', { class: 'entrar vista' },
       h('div', { class: 'marca' },
-        h('div', { class: 'logo-d', 'aria-hidden': 'true' }, 'D'),
-        h('small', null, 'Deliservy · Vendedores'),
-        h('h1', null, 'Compra-Ventas Redes Sociales'),
+        logoDeliservy('grande'),
+        h('h1', null, 'Promotores Deliservy'),
         h('p', null, texto)),
+      conVentajas ? ventajas() : null,
       h('div', { class: 'tarjeta' }, cuerpo),
       pie,
       h('div', { class: 'pie-idioma' }, botonIdioma()));
@@ -348,7 +433,7 @@
           verificar(cod, ev.target.querySelector('button[type="submit"]'));
         },
       },
-      h('p', { class: 'bien' }, d.mensaje || 'Si ese número es de un vendedor, te llegó un código por WhatsApp.'),
+      h('p', { class: 'bien' }, comoPromotor(d.mensaje || 'Si ese número es de un promotor, te llegó un código por WhatsApp.')),
       h('label', { class: 'etq-campo', for: 'codigo' }, 'Código de 6 números'),
       casillas.caja,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
@@ -377,10 +462,10 @@
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp. Sin contraseñas.'));
     }
     return sinSesion('Entra con tu WhatsApp. Aquí ves el catálogo, tus enlaces, tus ventas y tus cobros.', cuerpo,
-      h('p', { class: 'pie-entrar' }, '¿Quieres vender con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: irARegistro }, 'Regístrate')));
+      h('p', { class: 'pie-entrar' }, '¿Quieres ser promotor? ', h('button', { class: 'enlace', type: 'button', onclick: irARegistro }, 'Regístrate')));
   }
 
-  // ── El registro propio (24-oct-2026): WhatsApp → código → datos para facturar → «en revisión» ──
+  // ── El registro en 2 pasos (30-oct-2026): WhatsApp + código → nombre y red → al catálogo ──
 
   /** Un campo con su rótulo, su ayuda y su error debajo (el campo, en rojo). */
   function grupoDeCampo(id, rotulo, control, error, ayuda, marcado) {
@@ -416,6 +501,10 @@
   /** «Razón social (opcional)», u obligatoria con J o G. */
   function rotuloDeRazon(tipo) { return tipo === 'J' || tipo === 'G' ? 'Razón social' : 'Razón social (opcional)'; }
 
+  /**
+   * El registro en 2 pasos (30-oct-2026, contrato §3, P5). Paso 1: WhatsApp → código (las 6 casillas, en la misma
+   * tarjeta). Paso 2: nombre y su red principal → «Crear mi cuenta». Los datos fiscales se piden después, al cobrar.
+   */
   function registro(paso, d) {
     d = d || {};
     var cuerpo;
@@ -437,12 +526,12 @@
           codigoDeRegistro(cod);
         },
       },
-      h('p', { class: 'paso' }, 'Paso 2 de 3'),
+      h('p', { class: 'paso' }, 'Paso 1 de 2'),
       h('p', { class: 'bien' }, 'Te enviamos un código por WhatsApp al ', dato('span', { class: 'sin-cortes' }, telefonoParaVer(reg.telefono)), '.'),
       h('label', { class: 'etq-campo', for: 'r-codigo' }, 'Código de 6 números'),
       casillas.caja,
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
-      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, reg.listo ? 'Enviar' : 'Seguir')),
+      h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, reg.listo ? 'Crear mi cuenta' : 'Seguir')),
       h('div', { class: 'botones' },
         h('button', { class: 'btn borde chico', type: 'button', onclick: function () { clearInterval(entrada.espera); pintar(registro('telefono', { telefono: reg.telefono })); } }, 'Cambiar número'),
         reenviar));
@@ -462,78 +551,67 @@
           pedirCodigoDeRegistro(tel, ev.target.querySelector('button[type="submit"]'), false);
         },
       },
-      h('p', { class: 'paso' }, 'Paso 1 de 3'),
+      h('p', { class: 'paso' }, 'Paso 1 de 2'),
       h('label', { class: 'etq-campo', for: 'r-telefono' }, 'Tu número de WhatsApp'),
       h('div', { class: 'prefijo' }, h('span', null, '+58'), telefono),
       d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'submit' }, 'Enviarme el código')),
       h('p', { class: 'ayuda' }, 'Te mandamos un código por WhatsApp para confirmarlo.'));
     }
-    return sinSesion('Regístrate y gana en cada venta que hagas con tus enlaces.', cuerpo,
-      h('p', { class: 'pie-entrar' }, '¿Ya vendes con Deliservy? ', h('button', { class: 'enlace', type: 'button', onclick: function () { irAEntrar(reg.telefono); } }, 'Entrar')));
+    return sinSesion('Gana en cada venta con tus enlaces', cuerpo,
+      h('p', { class: 'pie-entrar' }, '¿Ya eres promotor? ', h('button', { class: 'enlace', type: 'button', onclick: function () { irAEntrar(reg.telefono); } }, 'Entrar')),
+      paso !== 'datos' && paso !== 'ya');
   }
 
-  /** Paso 3: los datos para facturar. Lo escrito vive en `reg.escrito` (así un error no borra nada). */
+  /** Paso 2: su nombre y su red principal. Lo escrito vive en `reg.escrito` (así un error no borra nada). */
   function formularioDeRegistro(d) {
     var v = reg.escrito || {};
     var e = d.errores || {};
-    var redes = v.redes || {};
     var nombre = h('input', { class: 'campo', id: 'r-nombre', name: 'nombre', autocomplete: 'name', maxlength: '60', placeholder: 'María Pérez', value: v.nombre || '' });
-    var etqRazon = h('span', null, rotuloDeRazon(v.tipoDocumento || 'V'));
-    var razon = h('input', { class: 'campo', id: 'r-razon', name: 'razonSocial', autocomplete: 'organization', maxlength: '150', placeholder: 'Solo si es una empresa', value: v.razonSocial || '' });
-    var doc = campoDeDocumento('r', v.tipoDocumento || 'V', v.numero || '', function (t) { etqRazon.textContent = rotuloDeRazon(t); });
-    var correo = h('input', { class: 'campo', id: 'r-correo', name: 'correo', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '120', placeholder: 'tucorreo@gmail.com', value: v.correo || '' });
-    var direccion = h('textarea', { class: 'campo', id: 'r-direccion', name: 'direccion', rows: '2', maxlength: '300', autocomplete: 'street-address', placeholder: segunIdioma('Calle, sector y ciudad', 'Street, area and city') });
-    direccion.value = v.direccion || '';
-    // Cada red con su nombre delante (como el +58 del WhatsApp): escrito, se sigue sabiendo cuál es cuál.
-    var campoRed = function (r) {
-      return h('div', { class: 'prefijo red' }, h('span', { 'aria-hidden': 'true' }, r[1]),
-        h('input', { class: 'campo', name: 'red-' + r[0], maxlength: '120', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false', placeholder: '@usuario', 'aria-label': r[1], value: redes[r[0]] || '' }));
-    };
-    var boton = h('button', { class: 'btn', type: 'submit' }, 'Enviar');
+    var tipoRed = h('select', { class: 'campo', id: 'r-red', name: 'redTipo', 'aria-label': 'Red' },
+      REDES_DEL_REGISTRO.map(function (r) { var o = h('option', { value: r[0] }, r[1]); if (r[0] === (v.redTipo || 'instagram')) o.selected = true; return o; }));
+    var usuario = h('input', {
+      class: 'campo', id: 'r-usuario', name: 'redUsuario', maxlength: '120', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false',
+      placeholder: '@usuario', 'aria-label': 'Tu usuario', value: v.redUsuario || '',
+    });
+    var boton = h('button', { class: 'btn', type: 'submit' }, 'Crear mi cuenta');
     return h('form', {
       novalidate: true, class: 'form-datos',
       onsubmit: function (ev) {
         ev.preventDefault();
-        var f = ev.target;
-        var escrito = {
-          nombre: f.elements.nombre.value, razonSocial: f.elements.razonSocial.value, tipoDocumento: f.elements.tipoDocumento.value,
-          numero: f.elements.documento.value, correo: f.elements.correo.value, direccion: f.elements.direccion.value, redes: {},
-        };
-        REDES_DEL_REGISTRO.forEach(function (r) { escrito.redes[r[0]] = f.elements['red-' + r[0]].value; });
+        var escrito = { nombre: nombre.value, redTipo: tipoRed.value, redUsuario: usuario.value };
         reg.escrito = escrito;
-        var r = revisarDatos(escrito, { conNombre: true, conDocumento: true });
-        if (r.hayErrores) { pintar(registro('datos', { errores: r.errores })); enfocarError(r.errores, 'r'); return; }
+        var errores = {};
+        var n = nombreValido(escrito.nombre);
+        if (!n) errores.nombre = 'Escribe tu nombre y apellido.';
+        var u = textoLimpio(escrito.redUsuario).slice(0, 120);
+        if (!u) errores.red = 'Escribe tu usuario en esa red.';
+        if (Object.keys(errores).length) { pintar(registro('datos', { errores: errores })); enfocar(errores.nombre ? 'r-nombre' : 'r-usuario'); return; }
         reg.listo = true;
-        reg.paraEnviar = r.datos;
+        reg.paraEnviar = { nombre: n, red: { tipo: escrito.redTipo, usuario: u } };
         enviarRegistro(boton);
       },
     },
-    h('p', { class: 'paso' }, 'Paso 3 de 3'),
-    h('h2', null, 'Tus datos para facturar'),
-    h('p', { class: 'nota' }, 'Con ellos te llega tu factura cada semana.'),
+    h('p', { class: 'paso' }, 'Paso 2 de 2'),
+    h('h2', null, 'Tus datos'),
     grupoDeCampo('r-nombre', 'Nombre y apellido', nombre, e.nombre),
-    grupoDeCampo('r-razon', etqRazon, razon, e.razonSocial),
-    grupoDeCampo('r-documento', 'Cédula, RIF o pasaporte', doc.fila, e.documento, null, doc.input),
-    grupoDeCampo('r-correo', 'Correo', correo, e.correo, 'Ahí te llega tu factura.'),
-    grupoDeCampo('r-direccion', 'Dirección', direccion, e.direccion),
-    h('div', { class: 'grupo-campo' },
-      h('span', { class: 'etq-campo' }, 'Tus redes (opcional)'),
-      h('div', { class: 'redes-campos' }, REDES_DEL_REGISTRO.map(campoRed))),
+    grupoDeCampo('r-usuario', 'Tu red principal', h('div', { class: 'fila-red' }, h('div', { class: 'con-flecha' }, tipoRed, ico('abajo')), usuario), e.red, null, usuario),
     d.error ? h('p', { class: 'error', role: 'alert' }, d.error) : null,
     h('div', { class: 'botones' }, boton),
-    h('p', { class: 'ayuda' }, 'Al enviar, tu cuenta queda en revisión. Te avisamos por WhatsApp.'));
+    h('p', { class: 'ayuda' }, 'Entras de una vez al catálogo y preparas tus enlaces. Tu cédula o RIF, tu dirección y tu cuenta bancaria se piden al cobrar por primera vez.'));
   }
 
-  function revision(yo) {
-    var f = documento.createDocumentFragment();
-    poner(f, [cabecera(yo, true), h('main', { class: 'contenido' }, h('div', { class: 'vista revision' },
-      h('div', { class: 'tarjeta vacio' }, ico('reloj'), h('b', null, 'Tu cuenta está en revisión'),
-        h('p', { class: 'nota' }, 'Te avisaremos por WhatsApp cuando esté lista. Después podrás entrar aquí con tu número.')),
-      estado.datos ? tarjetaMisDatos() : null))]);
-    return f;
+  /** Ventas o Cobros mientras su cuenta está en revisión (P8): se abren al aprobar. */
+  function seccionCerrada(s) {
+    return [
+      h('h1', { class: 'saludo' }, s === 'ventas' ? 'Mis ventas' : 'Cobros'),
+      h('div', { class: 'tarjeta vacio' }, ico('candado'),
+        h('b', null, s === 'ventas' ? 'Tus ventas se abren al aprobar tu cuenta' : 'Tus cobros se abren al aprobar tu cuenta'),
+        h('p', { class: 'nota' }, 'Mientras tanto, prepara tus enlaces en el catálogo. Te avisamos por WhatsApp.'),
+        botonIr('#catalogo', 'Ir al catálogo')),
+      s === 'cobros' && estado.datos ? h('div', { class: 'separado' }, tarjetaMisDatos()) : null,
+    ];
   }
-
   // ── Mis datos (los de su factura semanal) ──────────────────────────────────
 
   /** El aviso de arriba si le faltan datos para facturar (`faltanDatos` de la API). */
@@ -689,13 +767,40 @@
       h('div', { class: 'monto' }, (cuenta ? '+' + dolares(v.netoUsd) : dolares(0)), h('br'), h('span', { class: 'pill ' + tono }, v.estadoTexto || '')));
   }
 
-  function inicio(d) {
+  /**
+   * «Empieza a ganar · n de 4» (P8): mientras no tenga ventas. Los pasos salen de lo que ya hay: sus enlaces (`GET
+   * enlaces`), si alguno tuvo visitas, y si ya tiene sus datos para facturar y su cuenta bancaria.
+   */
+  function tarjetaEmpieza(d, misEnlaces) {
+    var lista = misEnlaces || [];
+    var tieneEnlace = lista.length > 0;
+    var compartido = lista.some(function (e) { return num(e.visitas) > 0; });
+    var datosListos = !(estado.faltan || []).length && !!(d.saldo && d.saldo.cuenta);
+    var pasos = [[true, 'Cuenta creada'], [tieneEnlace, 'Crea tu primer enlace'], [compartido, 'Compártelo'], [datosListos, 'Agrega tus datos para cobrar']];
+    var hechos = pasos.filter(function (p) { return p[0]; }).length;
+    var lleno = h('span', { class: 'lleno' });
+    lleno.style.width = Math.round(hechos * 100 / pasos.length) + '%';
+    var boton = !tieneEnlace ? h('a', { class: 'btn', href: '#catalogo' }, 'Elegir mi primer producto')
+      : !datosListos ? h('button', { class: 'btn', type: 'button', onclick: completarDatos }, 'Agregar mis datos')
+        : h('a', { class: 'btn', href: '#catalogo' }, 'Ir al catálogo');
+    return h('section', { class: 'tarjeta empieza', id: 'empieza', 'aria-labelledby': 'empieza-titulo' },
+      h('h2', { id: 'empieza-titulo' }, 'Empieza a ganar · ' + hechos + ' de 4'),
+      h('span', { class: 'progreso', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '4', 'aria-valuenow': String(hechos) }, lleno),
+      h('ol', { class: 'pasos' }, pasos.map(function (p) {
+        return h('li', { class: p[0] ? 'hecho' : null }, h('span', { class: 'marca-paso', 'aria-hidden': 'true' }, p[0] ? ico('check') : null), h('span', null, p[1]));
+      })),
+      h('div', { class: 'botones' }, boton));
+  }
+
+  function inicio(d, misEnlaces) {
     var r = d.resumen || {};
     var lista = d.ventas || [];
     var nombre = String((d.vendedor && d.vendedor.nombre) || '').split(' ')[0];
+    var sinVentas = !Math.round(num(r.ventas)) && !lista.length;
     return [
       h('h1', { class: 'saludo' }, 'Hola, ', dato('span', null, nombre)),
-      h('p', { class: 'sub' }, 'Así van tus ventas.'),
+      h('p', { class: 'sub' }, sinVentas ? 'Elige un producto, comparte tu enlace y gana en cada venta.' : 'Así van tus ventas.'),
+      sinVentas ? tarjetaEmpieza(d, misEnlaces) : null,
       h('div', { class: 'rejilla dos' },
         h('div', null, tarjetaSaldo(d.saldo, d.avisoSaldo),
           h('div', { class: 'cifras' },
@@ -703,10 +808,9 @@
             h('div', { class: 'cifra verde' }, h('small', null, 'Ganado este mes'), h('b', null, dolares(r.netoMes))),
             h('div', { class: 'cifra ambar' }, h('small', null, 'Pendiente'), h('b', null, dolares(r.pendienteUsd))))),
         h('div', null, tarjetaCupon(d.cupon), tarjetaVisitas(d.visitas))),
-      h('span', { class: 'etq' }, 'Ventas recientes'),
-      lista.length
-        ? [h('div', { class: 'lista' }, lista.map(venta)), botonIr('#ventas', 'Ver todas', 'borde')]
-        : vacio('Aún no tienes ventas', 'Comparte tus enlaces o tu cupón. Cada venta te llega aquí y por WhatsApp.', botonIr('#catalogo', 'Ir al catálogo')),
+      sinVentas ? null : [
+        h('span', { class: 'etq' }, 'Ventas recientes'),
+        h('div', { class: 'lista' }, lista.map(venta)), botonIr('#ventas', 'Ver todas', 'borde')],
     ];
   }
 
@@ -715,92 +819,209 @@
     return f ? h('img', { class: 'logo', src: f, alt: '', loading: 'lazy' }) : dato('span', { class: 'inicial', 'aria-hidden': 'true' }, inicial(nombre));
   }
 
-  function producto(p) {
-    var f = fotoSegura(p.foto);
-    var boton = h('button', { class: 'btn' + (p.codigo ? ' suave' : ''), type: 'button' }, ico('enlaces'), 'Mi enlace');
-    boton.addEventListener('click', function () {
-      if (p.url) abrirHoja({ url: p.url, titulo: p.nombre });
-      else miEnlace({ tipo: 'p', productId: p.id }, p.nombre, boton, function (e) { p.codigo = e.codigo; p.url = e.url; boton.classList.add('suave'); });
-    });
-    return h('article', { class: 'producto' + (p.disponible === false ? ' agotado' : '') },
-      f ? h('img', { class: 'foto', src: f, alt: '', loading: 'lazy' }) : dato('div', { class: 'sin-foto', 'aria-hidden': 'true' }, inicial(p.nombre)),
-      h('div', { class: 'datos' },
-        dato('b', null, p.nombre), dato('small', null, p.tienda),
-        h('span', { class: 'precio' }, (p.desde ? 'Desde ' : '') + dolares(p.venta)),
-        (p.tamanos || []).length ? h('p', { class: 'tamanos-lista' }, p.tamanos.map(function (t, i) {
-          return [i ? ' · ' : '', dato('span', null, t.titulo), ' ' + dolares(t.venta)];
-        })) : null,
-        h('small', null, 'Paga el ' + porcentaje(p.pct)),
-        h('span', { class: 'gana' }, (p.desde ? 'Ganas desde ' : 'Ganas ') + dolares(p.ganas) + ' por unidad'),
-        p.disponible === false ? h('span', null, h('span', { class: 'pill' }, 'Agotado por ahora')) : null,
-        p.codigo ? h('span', { class: 'ya-tiene' }, '✓ Ya tienes tu enlace') : null),
-      h('div', { class: 'pie-prod' }, boton));
-  }
+  // ── El catálogo (P2, P3) ───────────────────────────────────────────────────
 
-  function resultadosDelCatalogo(d) {
-    var productos = d.productos || [];
-    if (!productos.length) return [h('span', { class: 'etq' }, 'Productos'), vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita los filtros.')];
-    var grupos = [];
-    var porId = {};
-    productos.forEach(function (p) {
-      var k = String(p.companyId);
-      if (!porId[k]) { porId[k] = { id: p.companyId, nombre: p.tienda, logo: p.logo, productos: [] }; grupos.push(porId[k]); }
-      porId[k].productos.push(p);
-    });
-    var tiendas = {};
-    (d.tiendas || []).forEach(function (t) { tiendas[String(t.id)] = t; });
-    return grupos.map(function (g) {
-      var t = tiendas[String(g.id)] || { id: g.id, nombre: g.nombre };
-      var rotulo = h('span', null, t.codigo ? 'Ver enlace de la tienda' : 'Enlace de la tienda');
-      var boton = h('button', { class: 'btn chico suave', type: 'button' }, ico('enlaces'), rotulo);
-      boton.addEventListener('click', function () {
-        var titulo = 'Tienda ' + (t.nombre || g.nombre || '');
-        if (t.url) abrirHoja({ url: t.url, titulo: titulo });
-        else miEnlace({ tipo: 't', companyId: g.id }, titulo, boton, function (e) { t.codigo = e.codigo; t.url = e.url; rotulo.textContent = 'Ver enlace de la tienda'; });
-      });
-      return [
-        h('div', { class: 'tienda-cab' }, logo(g.logo, g.nombre),
-          h('div', { class: 'txt' }, dato('b', null, g.nombre), h('small', null, plural(g.productos.length, 'producto', 'productos'))), boton),
-        h('div', { class: 'productos' }, g.productos.map(producto)),
-      ];
-    });
-  }
-
-  function filtrosDelCatalogo(d, f) {
-    var opcion = function (valor, texto, elegido, esDato) {
-      var o = esDato ? dato('option', { value: String(valor) }, texto) : h('option', { value: String(valor) }, texto);
-      if (String(elegido) === String(valor)) o.selected = true;
-      return o;
+  /** Lo que se necesita para compartir un producto (la hoja y la imagen para historia). */
+  function infoDeProducto(p) {
+    return {
+      tipo: 'p', id: p.id, nombre: p.nombre, tienda: p.tienda, foto: p.foto, venta: p.venta, desde: !!p.desde,
+      ganas: p.ganas, ganasHasta: p.ganasHasta, url: p.url, codigo: p.codigo,
     };
-    var buscar = h('input', { class: 'campo', type: 'search', id: 'buscar', placeholder: 'Busca un producto o una tienda', value: f.q || '', autocomplete: 'off', enterkeyhint: 'search', 'aria-label': 'Buscar' });
-    var tienda = h('select', { class: 'campo', id: 'f-tienda', 'aria-label': 'Tienda' }, opcion('', 'Todas las tiendas', f.tienda || ''),
-      (d.tiendas || []).map(function (t) { return opcion(Math.round(num(t.id)), t.nombre, f.tienda, true); }));
-    var categoria = h('select', { class: 'campo', id: 'f-categoria', 'aria-label': 'Categoría' }, opcion('', 'Todas las categorías', f.categoria || ''),
-      (d.categorias || []).map(function (c) { return opcion(Math.round(num(c.id)), c.nombre, f.categoria, true); }));
+  }
+  function infoDeTienda(t) {
+    return { tipo: 't', id: t.id, nombre: t.nombre, tienda: t.nombre, foto: t.logo, ganasHasta: t.ganasHasta, url: t.url, codigo: t.codigo, rubro: t.categoria };
+  }
+
+  /**
+   * Un producto en FILA compacta (P3): foto de 60 px, nombre, «5,50 $ · comisión 10 %», «Ganas 0,46 $», «✓ Enlace listo
+   * · 41 visitas» si ya lo tiene, atenuado si está agotado, y el botón cuadrado de compartir. `conTienda`: en la
+   * pestaña «Productos» (todo el catálogo) se dice de qué tienda es.
+   */
+  function filaProducto(p, conTienda) {
+    var f = fotoSegura(p.foto);
+    var agotado = p.disponible === false;
+    var listo = h('span', { class: 'ya-tiene' });
+    var pintarListo = function () {
+      vaciar(listo);
+      listo.hidden = !p.codigo;
+      if (!p.codigo) return;
+      var v = estado.cat && estado.cat.visitas ? estado.cat.visitas[p.codigo] : undefined;
+      listo.textContent = '✓ Enlace listo' + (v != null ? ' · ' + plural(v, 'visita', 'visitas') : '');
+    };
+    pintarListo();
+    var boton = h('button', { class: 'btn-cuadro', type: 'button', 'aria-label': 'Compartir', title: 'Compartir' }, ico('compartir'));
+    boton.addEventListener('click', function () {
+      compartir(infoDeProducto(p), { tipo: 'p', productId: p.id }, boton, function (e) {
+        p.codigo = e.codigo; p.url = e.url;
+        if (estado.cat && estado.cat.visitas && estado.cat.visitas[e.codigo] == null) estado.cat.visitas[e.codigo] = 0;
+        pintarListo();
+      });
+    });
+    return h('div', { class: 'fila-prod' + (agotado ? ' agotado' : '') },
+      f ? h('img', { class: 'foto-fila', src: f, alt: '', loading: 'lazy' }) : dato('span', { class: 'foto-fila sin-foto', 'aria-hidden': 'true' }, inicial(p.nombre)),
+      h('div', { class: 'txt' },
+        dato('b', null, p.nombre),
+        conTienda && p.tienda ? dato('small', { class: 'de-tienda' }, p.tienda) : null,
+        h('small', null, precioParaVer(p) + ' · comisión ' + porcentaje(p.pct)),
+        h('span', { class: 'gana' }, textoGanas(p)),
+        agotado ? h('span', { class: 'pill' }, 'Agotado por ahora') : null,
+        listo),
+      boton);
+  }
+
+  /** Una tienda en fila (P2): logo redondo, nombre, «8 productos · rubro», «hasta 2,27 $» en verde y la flecha. */
+  function filaTienda(t) {
+    return h('a', { class: 'fila-tienda', href: '#catalogo/' + Math.round(num(t.id)) },
+      logo(t.logo, t.nombre),
+      h('span', { class: 'txt' },
+        dato('b', null, t.nombre),
+        h('small', null, plural(t.productos, 'producto', 'productos'), t.categoria ? [' · ', dato('span', null, t.categoria)] : null),
+        num(t.ganasHasta) > 0 ? h('span', { class: 'gana' }, 'hasta ' + dolares(t.ganasHasta)) : null),
+      t.codigo ? h('span', { class: 'pill verde', title: 'Enlace listo' }, ico('check')) : null,
+      ico('derecha'));
+  }
+
+  /** «Ganan más esta semana»: 3 tarjetas pequeñas (de `top`). */
+  function gananMas(top) {
+    var tres = (top || []).slice(0, 3);
+    if (!tres.length) return null;
+    return h('section', { class: 'top', 'aria-labelledby': 'top-titulo' },
+      h('span', { class: 'etq', id: 'top-titulo' }, 'Ganan más esta semana'),
+      h('div', { class: 'top-tarjetas' }, tres.map(function (p) {
+        var f = fotoSegura(p.foto);
+        var b = h('button', { class: 'top-tarjeta', type: 'button' },
+          f ? h('img', { src: f, alt: '', loading: 'lazy' }) : dato('span', { class: 'sin-foto', 'aria-hidden': 'true' }, inicial(p.nombre)),
+          dato('b', null, p.nombre),
+          h('span', { class: 'gana' }, textoGanas(p)));
+        b.addEventListener('click', function () {
+          compartir(infoDeProducto(p), { tipo: 'p', productId: p.id }, b, function (e) { p.codigo = e.codigo; p.url = e.url; });
+        });
+        return b;
+      })));
+  }
+
+  /** «Ordenar: Mayor ganancia / Más vendidos / Precio / A–Z». */
+  function selectorDeOrden(id, valor, alCambiar) {
+    var s = h('select', { class: 'campo chico', id: id }, ORDENES.map(function (o) {
+      var op = h('option', { value: o[0] }, o[1]);
+      if (o[0] === valor) op.selected = true;
+      return op;
+    }));
+    s.addEventListener('change', function () { alCambiar(s.value); });
+    return h('div', { class: 'ordenar' }, h('label', { for: id }, 'Ordenar:'), h('div', { class: 'con-flecha' }, s, ico('abajo')));
+  }
+
+  /** La lista de productos con «Ver más» (`pagina`, `hayMas`). `cargarMas()` devuelve una promesa con la página siguiente. */
+  function listaDeProductos(datos, conTienda, cargarMas) {
+    var lista = datos.productos || [];
+    if (!lista.length) return vacio('No hay productos con ese filtro', 'Prueba con otra búsqueda o quita los filtros.');
+    var caja = h('div', { class: 'lista filas', id: 'lista-productos' }, lista.map(function (p) { return filaProducto(p, conTienda); }));
+    var mas = h('button', { class: 'btn borde', type: 'button', id: 'ver-mas' }, 'Ver más');
+    var zona = h('div', { class: 'botones' }, mas);
+    zona.hidden = !datos.hayMas;
+    mas.addEventListener('click', function () {
+      mas.disabled = true;
+      cargarMas().then(function (d) {
+        mas.disabled = false;
+        poner(caja, (d.productos || []).map(function (p) { return filaProducto(p, conTienda); }));
+        zona.hidden = !d.hayMas;
+      }, function (e) { mas.disabled = false; if (e.status === 401) { fallo(e); return; } avisar(e.message); });
+    });
+    return [caja, zona];
+  }
+
+  /** P2: el cuerpo del catálogo (lo que cambia al buscar, al elegir rubro o al cambiar de pestaña). */
+  function cuerpoDelCatalogo(c) {
+    var t = c.tiendas || {};
+    var tiendas = t.tiendas || [];
+    var totalProductos = c.productos && c.productos.total != null ? Math.round(num(c.productos.total))
+      : tiendas.reduce(function (a, x) { return a + Math.round(num(x.productos)); }, 0);
+    var pestana = function (clave, texto, n) {
+      return h('button', {
+        class: 'segmento', type: 'button', role: 'tab', id: 'pestana-' + clave, 'aria-selected': c.pestana === clave ? 'true' : 'false',
+        onclick: function () { if (c.pestana !== clave) { c.pestana = clave; pintarCuerpoDelCatalogo(); } },
+      }, texto + ' · ' + n);
+    };
+    var lista;
+    if (c.pestana === 'productos') {
+      lista = [
+        selectorDeOrden('orden-catalogo', c.orden, function (v) { c.orden = v; recargarProductos(); }),
+        c.productos ? listaDeProductos(c.productos, true, masProductosDelCatalogo) : cargando(),
+      ];
+    } else {
+      lista = tiendas.length
+        ? h('div', { class: 'lista filas' }, tiendas.map(filaTienda))
+        : vacio('No hay tiendas con ese filtro', 'Prueba con otra búsqueda o quita los filtros.');
+    }
+    return [
+      c.q ? null : gananMas(t.top),
+      h('div', { class: 'segmentos', role: 'tablist', 'aria-label': 'Ver' },
+        pestana('tiendas', 'Tiendas', tiendas.length), pestana('productos', 'Productos', totalProductos)),
+      lista,
+    ];
+  }
+
+  /** Los rubros en botones redondos con desplazamiento horizontal. */
+  function rubros(c) {
+    var cats = (c.tiendas && c.tiendas.categorias) || [];
+    if (!cats.length) return null;
+    var boton = function (valor, texto, esDato) {
+      var b = (esDato ? dato : h)('button', { class: 'rubro', type: 'button', 'aria-pressed': String(c.categoria) === String(valor) ? 'true' : 'false' }, texto);
+      b.addEventListener('click', function () {
+        if (String(c.categoria) === String(valor)) return;
+        c.categoria = String(valor);
+        var todos = b.parentNode ? b.parentNode.querySelectorAll('.rubro') : [];
+        for (var i = 0; i < todos.length; i++) todos[i].setAttribute('aria-pressed', todos[i] === b ? 'true' : 'false');
+        recargarCatalogo();
+      });
+      return b;
+    };
+    return h('div', { class: 'rubros', role: 'group', 'aria-label': 'Rubro' }, boton('', 'Todos'),
+      cats.map(function (x) { return boton(Math.round(num(x.id)), x.nombre, true); }));
+  }
+
+  function catalogo(c) {
+    var buscar = h('input', { class: 'campo', type: 'search', id: 'buscar', placeholder: 'Busca un producto o una tienda', value: c.q || '', autocomplete: 'off', enterkeyhint: 'search', 'aria-label': 'Buscar' });
     var reloj = null;
     buscar.addEventListener('input', function () {
       clearTimeout(reloj);
-      reloj = setTimeout(function () { estado.filtros.q = buscar.value; recargarCatalogo(); }, 320);
+      reloj = setTimeout(function () { c.q = buscar.value.trim(); recargarCatalogo(); }, 320);
     });
-    var alCambiar = function () { estado.filtros.tienda = tienda.value; estado.filtros.categoria = categoria.value; recargarCatalogo(); };
-    tienda.addEventListener('change', alCambiar);
-    categoria.addEventListener('change', alCambiar);
-    return h('div', { class: 'filtros' }, buscar, h('div', { class: 'dos' }, tienda, categoria));
-  }
-
-  function catalogo(d, f) {
     return [
       h('h1', { class: 'saludo' }, 'Catálogo'),
       h('p', { class: 'sub' }, 'Escoge qué promocionar. Ganas en cada unidad que se venda con tu enlace o tu cupón.'),
-      filtrosDelCatalogo(d, f || {}),
-      h('div', { id: 'resultados' }, resultadosDelCatalogo(d)),
+      h('div', { class: 'buscador' }, ico('buscar'), buscar),
+      h('div', { id: 'zona-rubros' }, rubros(c)),
+      h('div', { id: 'cuerpo-catalogo' }, cuerpoDelCatalogo(c)),
+    ];
+  }
+
+  /** P3: la tienda abierta. */
+  function tiendaAbierta(c) {
+    var ta = c.tienda;
+    var t = ta.info || {};
+    var rotulo = h('span', null, 'Enlace de toda la tienda');
+    var botonTienda = h('button', { class: 'btn suave', type: 'button', id: 'enlace-tienda' }, ico(t.codigo ? 'check' : 'enlaces'), rotulo);
+    botonTienda.addEventListener('click', function () {
+      compartir(infoDeTienda(t), { tipo: 't', companyId: t.id }, botonTienda, function (e) { t.codigo = e.codigo; t.url = e.url; });
+    });
+    var total = ta.datos && ta.datos.total != null ? ta.datos.total : t.productos;
+    return [
+      h('div', { class: 'tienda-cab' },
+        h('a', { class: 'volver', href: '#catalogo', 'aria-label': 'Volver', title: 'Volver' }, ico('volver')),
+        logo(t.logo, t.nombre),
+        h('div', { class: 'txt' }, dato('b', null, t.nombre || ''),
+          h('small', null, plural(total, 'producto', 'productos'), t.categoria ? [' · ', dato('span', null, t.categoria)] : null))),
+      h('div', { class: 'botones' }, botonTienda),
+      selectorDeOrden('orden-tienda', ta.orden, function (v) { ta.orden = v; recargarTienda(); }),
+      h('div', { id: 'productos-tienda' }, ta.datos ? listaDeProductos(ta.datos, false, masProductosDeLaTienda) : cargando()),
     ];
   }
 
   function enlaces(d) {
     var lista = d.enlaces || [];
     var cab = [h('h1', { class: 'saludo' }, 'Mis enlaces'), h('p', { class: 'sub' }, 'Cada enlace es tuyo y no vence. Siempre abre la tienda web de Deliservy.')];
-    if (!lista.length) return cab.concat([vacio('Aún no tienes enlaces', 'Ve al catálogo y toca «Mi enlace» en lo que quieras promocionar.', botonIr('#catalogo', 'Ir al catálogo'))]);
+    if (!lista.length) return cab.concat([vacio('Aún no tienes enlaces', 'Ve al catálogo y toca el botón de compartir en lo que quieras promocionar.', botonIr('#catalogo', 'Ir al catálogo'))]);
     return cab.concat([h('div', { class: 'rejilla' }, lista.map(function (e) {
       var url = urlSegura(e.url);
       var esProducto = e.tipo === 'p';
@@ -817,7 +1038,9 @@
           h('div', { class: 'url completa' }, dato('code', null, url.replace(/^https?:\/\//, ''))),
           h('div', { class: 'botones' },
             h('button', { class: 'btn chico suave', type: 'button', onclick: function () { copiar(url); } }, ico('copiar'), 'Copiar'),
-            h('button', { class: 'btn chico', type: 'button', onclick: function () { abrirHoja({ url: url, titulo: titulo }); } }, ico('compartir'), 'Compartir')),
+            h('button', { class: 'btn chico', type: 'button', onclick: function () {
+              abrirHoja({ tipo: esProducto ? 'p' : 't', nombre: esProducto ? e.producto : e.tienda, tienda: e.tienda, foto: esProducto ? e.foto : e.logo, url: url, codigo: e.codigo });
+            } }, ico('compartir'), 'Compartir')),
         ] : null,
         h('div', { class: 'chips' }, redes.length ? redes : h('span', { class: 'pill' }, 'Sin visitas todavía')),
         h('p', { class: 'nota' }, plural(e.visitas, 'visita', 'visitas') + ' · ' + plural(e.ventas, 'venta', 'ventas') + ' · ganaste ' + dolares(e.netoUsd)));
@@ -915,14 +1138,26 @@
       cuenta ? h('button', { class: 'btn borde', type: 'button', onclick: function () { pintarCobros(false); } }, 'Cancelar') : null));
 
     var retiros = (s && s.retiros) || [];
+    // Registro en 2 pasos (30-oct-2026, contrato §3): los datos fiscales se piden al cobrar. Sin ellos, el pago de cada
+    // noche no sale: primero «Mis datos» (abierto) y después la cuenta bancaria.
+    var faltanDatos = !!(estado.datos && (estado.faltan || []).length);
+    if (faltanDatos && !cuenta) {
+      formulario.hidden = true;
+      if (!estado.editarDatos) { estado.editarDatos = true; estado.datosEscritos = null; }
+    }
+    var primeroDatos = faltanDatos && !cuenta
+      ? h('p', { class: 'aviso-datos', role: 'status' }, 'Antes de tu cuenta bancaria, completa tus datos para facturar (arriba). Sin ellos no se te puede pagar.')
+      : null;
     return [
       h('h1', { class: 'saludo' }, 'Cobros'), h('p', { class: 'sub' }, 'Te pagamos en tu cuenta bancaria.'),
+      faltanDatos ? h('div', { class: 'separado primero' }, h('span', { class: 'etq' }, 'Paso 1 · Tus datos para cobrar'), tarjetaMisDatos()) : null,
+      faltanDatos ? h('span', { class: 'etq' }, 'Paso 2 · Tu cuenta bancaria') : null,
       h('div', { class: 'rejilla dos' },
         h('div', null, tarjetaSaldo(s, d.avisoSaldo)),
-        h('div', { class: 'tarjeta' }, h('h2', null, 'Tu cuenta bancaria'), cuentaHtml,
+        h('div', { class: 'tarjeta' }, h('h2', null, 'Tu cuenta bancaria'), primeroDatos || cuentaHtml,
           cuenta && !editar ? h('div', { class: 'botones' }, h('button', { class: 'btn borde chico', type: 'button', onclick: function () { pintarCobros(true); } }, 'Cambiar cuenta')) : null,
           formulario, s ? null : h('p', { class: 'nota' }, NOTA_PAGO))),
-      estado.datos ? h('div', { class: 'separado' }, tarjetaMisDatos()) : null,
+      estado.datos && !faltanDatos ? h('div', { class: 'separado' }, tarjetaMisDatos()) : null,
       h('span', { class: 'etq' }, 'Tus cobros'),
       retiros.length ? h('div', { class: 'lista' }, retiros.map(function (r) {
         var e = ESTADO_DEL_COBRO[r.estado] || [r.estado || '—', ''];
@@ -932,36 +1167,253 @@
     ];
   }
 
-  function hoja(e, compartirNativo) {
-    var url = urlSegura(e && e.url);
-    var titulo = (e && e.titulo) || '';
-    var red = enlacesParaCompartir(url, titulo) || {};
+  // ── Compartir (P7): la hoja, la imagen para historia y el QR ─────────────────
+
+  var HISTORIA = { ancho: 1080, alto: 1920 };
+  var LETRA_LIENZO = '"Plus Jakarta Sans", -apple-system, "Segoe UI", Roboto, sans-serif';
+
+  /** Una imagen para el lienzo. `cruzada`: con `crossOrigin='anonymous'` (las fotos del almacén); si no carga, null. */
+  function cargarImagen(src, cruzada) {
+    return new Promise(function (listo) {
+      if (!src) { listo(null); return; }
+      var img = new raiz.Image();
+      var hecho = false;
+      var fin = function (v) { if (!hecho) { hecho = true; listo(v); } };
+      if (cruzada) img.crossOrigin = 'anonymous';
+      img.onload = function () { fin(img.naturalWidth ? img : null); };
+      img.onerror = function () { fin(null); };
+      setTimeout(function () { fin(null); }, 8000);
+      img.src = src;
+    });
+  }
+
+  /** La matriz del QR (con `vendor/qrcode.js`), o null si no está o el texto no cabe. */
+  function matrizQR(texto) {
+    var gen = raiz.qrcode;
+    if (typeof gen !== 'function' || !texto) return null;
+    try {
+      var q = gen(0, 'M');
+      q.addData(String(texto));
+      q.make();
+      var n = q.getModuleCount();
+      return { n: n, oscuro: function (f, c) { return q.isDark(f, c); } };
+    } catch (_) { return null; }
+  }
+
+  /** El QR en un lienzo (`x`, `y`, `lado` con el margen blanco ya dentro). */
+  function dibujarQR(ctx, texto, x, y, lado) {
+    var m = matrizQR(texto);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(x, y, lado, lado);
+    if (!m) return false;
+    var celda = Math.floor(lado / (m.n + 4));
+    var inicio = Math.floor((lado - celda * m.n) / 2);
+    ctx.fillStyle = '#111114';
+    for (var f = 0; f < m.n; f++) for (var c = 0; c < m.n; c++) if (m.oscuro(f, c)) ctx.fillRect(x + inicio + c * celda, y + inicio + f * celda, celda, celda);
+    return true;
+  }
+
+  function rectanguloRedondo(ctx, x, y, w, alto, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + alto, r);
+    ctx.arcTo(x + w, y + alto, x, y + alto, r);
+    ctx.arcTo(x, y + alto, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /** Parte un texto en renglones de `ancho` como mucho; el último, con «…» si sobra. */
+  function renglones(ctx, texto, ancho, max) {
+    var palabras = String(texto || '').split(/\s+/).filter(Boolean);
+    var out = [];
+    var actual = '';
+    for (var i = 0; i < palabras.length; i++) {
+      var prueba = actual ? actual + ' ' + palabras[i] : palabras[i];
+      if (ctx.measureText(prueba).width <= ancho || !actual) actual = prueba;
+      else { out.push(actual); actual = palabras[i]; }
+    }
+    if (actual) out.push(actual);
+    if (out.length > max) {
+      out = out.slice(0, max);
+      var u = out[max - 1];
+      while (u.length > 1 && ctx.measureText(u + '…').width > ancho) u = u.slice(0, -1);
+      out[max - 1] = u.replace(/\s+$/, '') + '…';
+    }
+    return out.map(function (r) {
+      var t = r;
+      while (t.length > 1 && ctx.measureText(t).width > ancho) t = t.slice(0, -2) + '…';
+      return t;
+    });
+  }
+
+  /**
+   * La imagen para historia (1080 × 1920): la foto del producto, su nombre, la tienda, el precio, el QR del enlace, el
+   * logo y «Pídelo en Deliservy». Sin foto (o si su almacén no deja dibujarla: CORS), un bloque de color con la inicial.
+   */
+  function dibujarHistoria(lienzo, info, foto, logoImg) {
+    var W = HISTORIA.ancho, H = HISTORIA.alto;
+    lienzo.width = W; lienzo.height = H;
+    var ctx = lienzo.getContext('2d');
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#E41616'); g.addColorStop(1, '#A80E18');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.textBaseline = 'alphabetic';
+
+    // Arriba: el logo y «Deliservy».
+    ctx.fillStyle = '#FFFFFF';
+    rectanguloRedondo(ctx, W / 2 - 66, 84, 132, 132, 36); ctx.fill();
+    if (logoImg) ctx.drawImage(logoImg, W / 2 - 52, 98, 104, 104);
+    ctx.font = '800 56px ' + LETRA_LIENZO; ctx.textAlign = 'center';
+    ctx.fillText('Deliservy', W / 2, 296);
+
+    // La tarjeta blanca con la foto.
+    var cx = 90, cy = 350, cw = W - 180, ch = 1150;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
+    ctx.fillStyle = '#FFFFFF'; rectanguloRedondo(ctx, cx, cy, cw, ch, 48); ctx.fill(); ctx.restore();
+    var lado = 760, fx = (W - lado) / 2, fy = cy + 50;
+    ctx.save(); rectanguloRedondo(ctx, fx, fy, lado, lado, 36); ctx.clip();
+    if (foto) {
+      var s = Math.max(lado / foto.naturalWidth, lado / foto.naturalHeight);
+      var dw = foto.naturalWidth * s, dh = foto.naturalHeight * s;
+      ctx.drawImage(foto, fx + (lado - dw) / 2, fy + (lado - dh) / 2, dw, dh);
+    } else {
+      ctx.fillStyle = '#FDECEE'; ctx.fillRect(fx, fy, lado, lado);
+      ctx.fillStyle = '#C8141F'; ctx.font = '800 340px ' + LETRA_LIENZO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(inicial(info.nombre), W / 2, fy + lado / 2 + 10);
+      ctx.textBaseline = 'alphabetic';
+    }
+    ctx.restore();
+
+    // Nombre, tienda y precio.
+    var y = fy + lado + 92;
+    ctx.textAlign = 'center'; ctx.fillStyle = '#16161A'; ctx.font = '800 62px ' + LETRA_LIENZO;
+    renglones(ctx, info.nombre || '', cw - 100, 2).forEach(function (r) { ctx.fillText(r, W / 2, y); y += 72; });
+    ctx.fillStyle = '#62626E'; ctx.font = '600 40px ' + LETRA_LIENZO;
+    var sub = info.tipo === 't' ? 'Tienda en Deliservy' : (info.tienda || '');
+    if (sub) { ctx.fillText(renglones(ctx, sub, cw - 100, 1)[0] || '', W / 2, y); y += 70; }
+    var precio = info.tipo === 't' ? '' : precioParaVer(info).replace(NBSP, ' ');
+    if (precio) {
+      ctx.font = '800 56px ' + LETRA_LIENZO;
+      var pw = ctx.measureText(precio).width + 64;
+      ctx.fillStyle = '#FDECEE'; rectanguloRedondo(ctx, (W - pw) / 2, y - 52, pw, 78, 39); ctx.fill();
+      ctx.fillStyle = '#C8141F'; ctx.fillText(precio, W / 2, y + 6);
+    }
+
+    // Abajo: el QR del enlace y «Pídelo en Deliservy».
+    var url = urlSegura(info.url);
+    var qx = 90, qy = 1550, ql = 300;
+    ctx.fillStyle = '#FFFFFF'; rectanguloRedondo(ctx, qx - 6, qy - 6, ql + 12, ql + 12, 28); ctx.fill();
+    dibujarQR(ctx, url, qx, qy, ql);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 58px ' + LETRA_LIENZO;
+    ctx.fillText('Pídelo en', qx + ql + 50, qy + 92);
+    ctx.fillText('Deliservy', qx + ql + 50, qy + 160);
+    ctx.font = '600 32px ' + LETRA_LIENZO; ctx.fillStyle = 'rgba(255,255,255,.88)';
+    var corto = url.replace(/^https?:\/\/(www\.)?/, '');
+    ctx.fillText(renglones(ctx, corto, W - (qx + ql + 50) - 60, 1)[0] || '', qx + ql + 50, qy + 226);
+    return lienzo;
+  }
+
+  /** Dibuja la historia con la foto; si el navegador no deja leer el lienzo (CORS), la vuelve a dibujar sin ella. */
+  function historiaLista(lienzo, info) {
+    var fuentes = documento.fonts && documento.fonts.load
+      ? Promise.all([documento.fonts.load('800 62px "Plus Jakarta Sans"'), documento.fonts.load('600 40px "Plus Jakarta Sans"')]).catch(function () { return null; })
+      : Promise.resolve();
+    return Promise.all([cargarImagen(fotoSegura(info.foto), true), cargarImagen(LOGO_DELISERVY, false), fuentes]).then(function (r) {
+      dibujarHistoria(lienzo, info, r[0], r[1]);
+      try { lienzo.getContext('2d').getImageData(0, 0, 1, 1); } catch (_) { dibujarHistoria(lienzo, info, null, r[1]); }
+      return lienzo;
+    });
+  }
+
+  function descargarLienzo(lienzo, nombre) {
+    return new Promise(function (listo, mal) {
+      var bajar = function (blob) {
+        if (!blob) { mal(new Error('sin imagen')); return; }
+        var u = raiz.URL.createObjectURL(blob);
+        var a = documento.createElement('a');
+        a.href = u; a.download = nombre; a.rel = 'noopener';
+        documento.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { raiz.URL.revokeObjectURL(u); }, 4000);
+        listo();
+      };
+      try { lienzo.toBlob(bajar, 'image/png'); } catch (e) { mal(e); }
+    });
+  }
+
+  function hoja(info, compartirNativo) {
+    var i = info || {};
+    var url = urlSegura(i.url);
+    var texto = textoParaCompartir(i);
+    var red = enlacesParaCompartir(url, texto) || {};
+    var gana = num(i.ganasHasta) > num(i.ganas) ? num(i.ganasHasta) : num(i.ganas);
+    var titulo = gana > 0 ? (i.tipo === 't' ? 'Comparte y gana hasta ' : 'Comparte y gana ') + dolares(gana) : 'Comparte tu enlace';
     var listo = h('button', { class: 'btn borde', type: 'button', onclick: cerrarHoja }, 'Listo');
+
+    // La vista previa de la imagen para historia (el mismo lienzo que se descarga).
+    var lienzo = h('canvas', { class: 'historia', 'aria-label': 'Vista previa de la imagen para historia', role: 'img' });
+    var preparada = historiaLista(lienzo, i);
+    var descargar = h('button', { class: 'btn', type: 'button', id: 'descargar-historia' }, ico('descargar'), 'Descargar imagen para historia');
+    descargar.addEventListener('click', function () {
+      descargar.disabled = true;
+      preparada.then(function () { return descargarLienzo(lienzo, nombreDeArchivo(i.nombre)); }).then(function () {
+        descargar.disabled = false; avisar('Imagen descargada');
+      }, function () { descargar.disabled = false; avisar('No se pudo preparar la imagen. Intenta de nuevo.'); });
+    });
+
+    var qr = h('div', { class: 'qr-caja', id: 'qr-caja', hidden: true });
+    var botonQR = h('button', { type: 'button', 'aria-expanded': 'false' }, ico('qr'), 'Código QR');
+    botonQR.addEventListener('click', function () {
+      if (!qr.firstChild) {
+        var c = h('canvas', { class: 'qr-lienzo', role: 'img', 'aria-label': 'Código QR de tu enlace' });
+        c.width = 360; c.height = 360;
+        dibujarQR(c.getContext('2d'), url, 0, 0, 360);
+        var bajarQR = h('button', { class: 'btn chico suave', type: 'button' }, ico('descargar'), 'Descargar QR');
+        bajarQR.addEventListener('click', function () { descargarLienzo(c, nombreDeArchivo('qr ' + (i.nombre || ''))).then(function () { avisar('Imagen descargada'); }, function () { avisar('No se pudo preparar la imagen. Intenta de nuevo.'); }); });
+        poner(qr, [c, h('p', { class: 'nota' }, 'Ponlo en tu video o en tu historia: al escanearlo se abre tu enlace.'), bajarQR]);
+      }
+      qr.hidden = !qr.hidden;
+      botonQR.setAttribute('aria-expanded', qr.hidden ? 'false' : 'true');
+    });
+    var mas = h('button', { type: 'button' }, ico('mas'), 'Más…');
+    mas.addEventListener('click', function () {
+      if (compartirNativo && raiz.navigator.share) raiz.navigator.share({ title: i.nombre || 'Deliservy', text: texto }).catch(function () { return null; });
+      else copiar(texto);
+    });
+
     var capa = h('div', { id: 'capa-hoja' },
       h('div', { class: 'velo', onclick: cerrarHoja }),
       h('div', { class: 'hoja', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'hoja-titulo' },
         h('div', { class: 'asa' }),
-        h('h2', { id: 'hoja-titulo' }, 'Tu enlace'),
-        dato('p', { class: 'nota' }, titulo),
-        h('div', { class: 'url' }, dato('code', null, url.replace(/^https?:\/\//, '')),
-          h('button', { class: 'btn chico suave', type: 'button', onclick: function () { copiar(url); } }, 'Copiar')),
-        h('div', { class: 'compartir' },
-          compartirNativo ? h('button', { type: 'button', onclick: function () {
-            if (url && raiz.navigator.share) raiz.navigator.share({ title: titulo, text: textoDeCompartir(titulo), url: url }).catch(function () { return null; });
-          } }, ico('compartir'), 'Compartir') : null,
-          h('a', { href: red.whatsapp || '#', target: '_blank', rel: 'noopener noreferrer' }, ico('whatsapp'), 'WhatsApp'),
-          h('a', { href: red.facebook || '#', target: '_blank', rel: 'noopener noreferrer' }, ico('facebook'), 'Facebook'),
-          h('a', { href: red.x || '#', target: '_blank', rel: 'noopener noreferrer' }, ico('x'), 'X'),
-          compartirNativo ? null : h('button', { type: 'button', onclick: function () { copiar(url); } }, ico('copiar'), 'Copiar')),
-        h('p', { class: 'redes-copiar' }, h('b', null, 'Instagram y TikTok:'), ' copia el enlace y pégalo en tu bio, en tu historia o en la descripción del video.'),
+        h('h2', { id: 'hoja-titulo' }, titulo),
+        dato('p', { class: 'nota' }, i.tipo === 't' ? (i.nombre || '') : [i.nombre || '', i.tienda ? ' · ' + i.tienda : ''].join('')),
+        enRevision() ? h('p', { class: 'aviso-hoja' }, 'Tu enlace ya está listo: empieza a vender cuando te aprobemos.') : null,
+        h('div', { class: 'hoja-cuerpo' },
+          h('div', { class: 'previa' }, lienzo),
+          h('div', { class: 'hoja-acciones' },
+            descargar,
+            h('button', { class: 'btn suave', type: 'button', id: 'copiar-texto', onclick: function () { copiar(texto); } }, ico('copiar'), 'Copiar texto con enlace'),
+            h('span', { class: 'etq-campo' }, 'Tu enlace'),
+            h('div', { class: 'url' }, dato('code', null, url.replace(/^https?:\/\//, '')),
+              h('button', { class: 'btn chico suave', type: 'button', onclick: function () { copiar(url); } }, 'Copiar')),
+            h('div', { class: 'compartir' },
+              h('a', { href: red.whatsapp || '#', target: '_blank', rel: 'noopener noreferrer' }, ico('whatsapp'), 'WhatsApp'),
+              botonQR,
+              mas),
+            qr,
+            h('p', { class: 'redes-copiar' },
+              h('b', null, 'Historia de Instagram:'), ' sube la imagen y ponle el sticker de enlace con tu dirección. ',
+              h('b', null, 'TikTok:'), ' el QR en el video y la dirección en la descripción.'))),
         h('div', { class: 'botones' }, listo)));
-    return { capa: capa, listo: listo };
+    return { capa: capa, listo: listo, preparada: preparada };
   }
 
   // Para las pruebas (en una caja de node, sin página): lo puro y las pantallas.
   raiz.VendedorPagina = {
     baseDeLaApi: baseDeLaApi, dolares: dolares, bolivares: bolivares, porcentaje: porcentaje, sinCortes: sinCortes,
     fotoSegura: fotoSegura, urlSegura: urlSegura, hrefSeguro: hrefSeguro, enlacesParaCompartir: enlacesParaCompartir,
+    textoParaCompartir: textoParaCompartir, textoGanas: textoGanas, comoPromotor: comoPromotor, nombreDeArchivo: nombreDeArchivo,
     verificadorDelRif: verificadorDelRif, documentoNormalizado: documentoNormalizado, documentoParaVer: documentoParaVer,
     numeroDelDocumento: numeroDelDocumento, nombreValido: nombreValido, correoValido: correoValido, revisarDatos: revisarDatos,
     telefonoParaVer: telefonoParaVer,
@@ -991,7 +1443,9 @@
 
   var app = documento.getElementById('app');
   var estado = {
-    yo: null, seccion: 'inicio', filtros: { q: '', tienda: '', categoria: '' }, catalogo: null, ventas: null, cobros: null,
+    yo: null, seccion: 'inicio', ventas: null, cobros: null,
+    // El catálogo (P2/P3): búsqueda, rubro, pestaña, orden, lo cargado y la tienda abierta. `visitas`: código → visitas.
+    cat: null,
     // Sus datos para facturar (`GET /yo`: `datos` y `faltanDatos`) y si «Mis datos» está abierto para cambiarlos.
     datos: null, faltan: [], editarDatos: false, datosEscritos: null, irAMisDatos: false,
   };
@@ -1011,7 +1465,8 @@
         if (r.ok) return j;
         var m = j && j.message;
         if (r.status === 429 && (!m || /Throttler|Too Many/i.test(String(m)))) m = 'Hiciste muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.';
-        var e = new Error(Array.isArray(m) ? m.join(' ') : (m ? String(m) : 'Algo salió mal. Intenta de nuevo.'));
+        var e = new Error(comoPromotor(Array.isArray(m) ? m.join(' ') : (m ? String(m) : 'Algo salió mal. Intenta de nuevo.')));
+        e.original = Array.isArray(m) ? m.join(' ') : String(m || '');
         e.status = r.status;
         // El registro y «Mis datos»: el servidor dice qué casilla está mal (`campo`) o si ese número ya vende.
         e.campo = j && typeof j.campo === 'string' ? j.campo : null;
@@ -1062,7 +1517,12 @@
   /** Lo que el servidor dice al fallar: sesión que terminó → entrar; cuenta en revisión → su pantalla; lo demás, en la vista. */
   function fallo(e, enLaVista) {
     if (e && e.status === 401) { sesion.borrar(); estado.yo = null; entrada.paso = 'telefono'; pintar(entrar('telefono', { error: e.message })); return; }
-    if (e && e.status === 403 && e.message === EN_REVISION) { pintar(revision(estado.yo)); return; }
+    // Una sección que la API aún no abre a una cuenta en revisión: la página lo dice en su sitio (P8), sin salir.
+    if (e && e.status === 403 && e.original === EN_REVISION && estado.yo) {
+      estado.yo.estado = 'pendiente';
+      var s = estado.seccion;
+      if (s === 'ventas' || s === 'cobros') { pintar(marco(s, estado.yo, seccionCerrada(s))); return; }
+    }
     var tarjeta = h('div', { class: 'tarjeta vacio' }, h('b', null, 'No se pudo cargar'), h('p', { class: 'nota' }, (e && e.message) || ''),
       h('div', { class: 'botones' }, h('button', { class: 'btn', type: 'button', onclick: function () { if (estado.yo) mostrar(); else arrancar(); } }, 'Reintentar')));
     if (enLaVista) enContenido(tarjeta); else pintar(tarjeta);
@@ -1072,42 +1532,161 @@
 
   // ── Las secciones ──────────────────────────────────────────────────────────
 
-  function seccionDelHash() {
+  /** «#catalogo/107» → la tienda 107 abierta; lo demás, la sección (o Inicio). */
+  function rutaDelHash() {
     var s = String(raiz.location.hash || '').replace('#', '');
-    return SECCIONES.some(function (x) { return x[0] === s; }) ? s : 'inicio';
+    var m = /^catalogo\/(\d{1,10})$/.exec(s);
+    if (m) return { seccion: 'catalogo', tienda: Number(m[1]) };
+    return { seccion: SECCIONES.some(function (x) { return x[0] === s; }) ? s : 'inicio', tienda: null };
+  }
+
+  function catalogoNuevo() {
+    return { q: '', categoria: '', pestana: 'tiendas', orden: 'ganancia', tiendas: null, productos: null, visitas: null, tienda: null, pedido: 0 };
   }
 
   function mostrar() {
     if (!estado.yo) return;
     cerrarHoja();
-    if (estado.yo.estado === 'pendiente') { pintar(revision(estado.yo)); return; }
-    var s = estado.seccion = seccionDelHash();
+    var ruta = rutaDelHash();
+    var s = estado.seccion = ruta.seccion;
+    var revisando = enRevision();
     pintar(marco(s, estado.yo, cargando()));
     var mal = function (e) { fallo(e, true); };
-    if (s === 'inicio') pedir('GET', '/inicio').then(function (d) { enContenido(inicio(d)); }, mal);
-    else if (s === 'catalogo') pedir('GET', '/catalogo' + consultaDelCatalogo()).then(function (d) { estado.catalogo = d; enContenido(catalogo(d, estado.filtros)); }, mal);
+    if (revisando && (s === 'ventas' || s === 'cobros')) { enContenido(seccionCerrada(s)); irAMisDatosSiToca(); raiz.scrollTo(0, 0); return; }
+    if (s === 'inicio') {
+      Promise.all([pedir('GET', '/inicio'), pedir('GET', '/enlaces').catch(function () { return { enlaces: [] }; })]).then(function (r) {
+        enContenido(inicio(r[0], r[1].enlaces || []));
+        // Mientras no tenga ventas, la tarjeta «Empieza a ganar» ya dice lo de sus datos: sin el aviso de arriba.
+        if (documento.getElementById('empieza')) { var z = documento.getElementById('aviso-datos'); if (z && !revisando) z.hidden = true; }
+      }, mal);
+    } else if (s === 'catalogo') mostrarCatalogo(ruta.tienda);
     else if (s === 'enlaces') pedir('GET', '/enlaces').then(function (d) { enContenido(enlaces(d)); }, mal);
     else if (s === 'ventas') pedir('GET', '/ventas?pagina=1').then(function (d) { estado.ventas = d; enContenido(ventas(d)); }, mal);
     else if (s === 'cobros') pedir('GET', '/cobros').then(function (d) { estado.cobros = d; enContenido(cobros(d, false)); irAMisDatosSiToca(); }, mal);
     raiz.scrollTo(0, 0);
   }
 
-  function consultaDelCatalogo() {
-    var f = estado.filtros;
-    return '?q=' + encodeURIComponent(f.q || '') + '&tienda=' + encodeURIComponent(f.tienda || '') + '&categoria=' + encodeURIComponent(f.categoria || '');
+  function consulta(o) {
+    var partes = [];
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k) && o[k] !== '' && o[k] != null) partes.push(k + '=' + encodeURIComponent(String(o[k])));
+    return partes.length ? '?' + partes.join('&') : '';
   }
-  /** Al buscar o filtrar: solo cambian los resultados (el buscador sigue con su foco). */
+
+  /** Las visitas de cada enlace suyo (para «✓ Enlace listo · 41 visitas»). */
+  function cargarVisitas(c) {
+    return pedir('GET', '/enlaces').then(function (d) {
+      var v = {};
+      (d.enlaces || []).forEach(function (e) { if (e && e.codigo) v[e.codigo] = Math.round(num(e.visitas)); });
+      c.visitas = v;
+    }, function () { c.visitas = c.visitas || {}; });
+  }
+
+  /** El catálogo: la lista de tiendas (P2) o, con `tiendaId`, esa tienda abierta (P3). Lo cargado se guarda en `estado.cat`. */
+  function mostrarCatalogo(tiendaId) {
+    var c = estado.cat || (estado.cat = catalogoNuevo());
+    var visitas = c.visitas ? Promise.resolve() : cargarVisitas(c);
+    if (tiendaId) {
+      if (!c.tienda || c.tienda.id !== tiendaId) c.tienda = { id: tiendaId, orden: 'ganancia', datos: null, info: null };
+      var info = c.tiendas && (c.tiendas.tiendas || []).filter(function (t) { return Math.round(num(t.id)) === tiendaId; })[0];
+      var buscarInfo = info ? Promise.resolve(info)
+        : pedir('GET', '/catalogo/tiendas').then(function (d) { return (d.tiendas || []).filter(function (t) { return Math.round(num(t.id)) === tiendaId; })[0] || null; }, function () { return null; });
+      Promise.all([buscarInfo, cargarTienda(c.tienda, 1), visitas]).then(function (r) {
+        var ta = c.tienda;
+        var p0 = (ta.datos && ta.datos.productos || [])[0] || {};
+        ta.info = r[0] || ta.info || { id: tiendaId, nombre: p0.tienda || '', logo: p0.logo || '', productos: ta.datos ? ta.datos.total : 0 };
+        if (estado.seccion !== 'catalogo') return;
+        enContenido(tiendaAbierta(c));
+      }, function (e) { fallo(e, true); });
+      return;
+    }
+    c.tienda = null;
+    if (c.tiendas) { enContenido(catalogo(c)); if (c.pestana === 'productos' && !c.productos) recargarProductos(); return; }
+    Promise.all([pedir('GET', '/catalogo/tiendas' + consulta({ categoria: c.categoria, q: c.q })), visitas]).then(function (r) {
+      c.tiendas = r[0];
+      if (estado.seccion !== 'catalogo') return;
+      enContenido(catalogo(c));
+      if (c.pestana === 'productos') recargarProductos();
+    }, function (e) { fallo(e, true); });
+  }
+
+  function pintarCuerpoDelCatalogo() {
+    var c = estado.cat;
+    var z = documento.getElementById('cuerpo-catalogo');
+    if (!c || !z) return;
+    vaciar(z);
+    poner(z, cuerpoDelCatalogo(c));
+    if (c.pestana === 'productos' && !c.productos) recargarProductos();
+  }
+
+  /** Al buscar o elegir rubro: solo cambian los resultados (el buscador sigue con su foco). */
   function recargarCatalogo() {
-    pedir('GET', '/catalogo' + consultaDelCatalogo()).then(function (d) {
-      estado.catalogo = d;
-      var r = documento.getElementById('resultados');
-      if (!r) return;
-      vaciar(r);
-      poner(r, resultadosDelCatalogo(d));
+    var c = estado.cat;
+    if (!c) return;
+    var n = ++c.pedido;
+    c.productos = null;
+    pedir('GET', '/catalogo/tiendas' + consulta({ categoria: c.categoria, q: c.q })).then(function (d) {
+      if (n !== c.pedido) return; // llegó una búsqueda más nueva
+      c.tiendas = d;
+      var r = documento.getElementById('zona-rubros');
+      if (r && !r.firstChild) poner(r, rubros(c));
+      pintarCuerpoDelCatalogo();
     }, function (e) {
-      if (e.status === 401 || e.status === 403) { fallo(e); return; }
+      if (e.status === 401) { fallo(e); return; }
       avisar(e.message);
     });
+  }
+
+  function consultaDeProductos(c, pagina) { return '/catalogo' + consulta({ q: c.q, categoria: c.categoria, orden: c.orden, pagina: pagina }); }
+
+  /** La pestaña «Productos»: la primera página con el orden elegido. */
+  function recargarProductos() {
+    var c = estado.cat;
+    if (!c) return;
+    var n = ++c.pedido;
+    c.productos = null;
+    pedir('GET', consultaDeProductos(c, 1)).then(function (d) {
+      if (n !== c.pedido) return;
+      c.productos = { productos: d.productos || [], total: d.total != null ? d.total : (d.productos || []).length, pagina: d.pagina || 1, hayMas: !!d.hayMas };
+      pintarCuerpoDelCatalogo();
+    }, function (e) {
+      if (e.status === 401) { fallo(e); return; }
+      avisar(e.message);
+    });
+  }
+  function masProductosDelCatalogo() {
+    var c = estado.cat;
+    var sig = ((c.productos && c.productos.pagina) || 1) + 1;
+    return pedir('GET', consultaDeProductos(c, sig)).then(function (d) {
+      c.productos.productos = c.productos.productos.concat(d.productos || []);
+      c.productos.pagina = d.pagina || sig;
+      c.productos.hayMas = !!d.hayMas;
+      return d;
+    });
+  }
+
+  /** Los productos de la tienda abierta (página `pagina`, con su orden). */
+  function cargarTienda(ta, pagina) {
+    return pedir('GET', '/catalogo' + consulta({ tienda: ta.id, orden: ta.orden, pagina: pagina })).then(function (d) {
+      var lista = d.productos || [];
+      if (pagina === 1 || !ta.datos) ta.datos = { productos: lista, total: d.total != null ? d.total : lista.length, pagina: d.pagina || pagina, hayMas: !!d.hayMas };
+      else { ta.datos.productos = ta.datos.productos.concat(lista); ta.datos.pagina = d.pagina || pagina; ta.datos.hayMas = !!d.hayMas; }
+      return d;
+    });
+  }
+  function recargarTienda() {
+    var c = estado.cat;
+    if (!c || !c.tienda) return;
+    var ta = c.tienda;
+    var z = documento.getElementById('productos-tienda');
+    cargarTienda(ta, 1).then(function () {
+      if (!z || !z.isConnected) return;
+      vaciar(z);
+      poner(z, listaDeProductos(ta.datos, false, masProductosDeLaTienda));
+    }, function (e) { if (e.status === 401) { fallo(e); return; } avisar(e.message); });
+  }
+  function masProductosDeLaTienda() {
+    var ta = estado.cat.tienda;
+    return cargarTienda(ta, ((ta.datos && ta.datos.pagina) || 1) + 1);
   }
 
   function masVentas(ev) {
@@ -1124,6 +1703,8 @@
 
   function arrancar() {
     if (!sesion.leer()) { if (raiz.location.hash === '#registro') mostrarRegistro(); else pintar(entrar('telefono')); return; }
+    // Un promotor ya dentro que abre el enlace del registro: a su página.
+    if (raiz.location.hash === '#registro') { try { raiz.history.replaceState(null, '', raiz.location.pathname + '#inicio'); } catch (_) { raiz.location.hash = '#inicio'; } }
     pedir('GET', '/yo').then(function (r) {
       estado.yo = r.vendedor || {};
       estado.yo.cupon = r.cupon;
@@ -1140,7 +1721,7 @@
   function salir() {
     pedir('POST', '/acceso/salir').catch(function () { return null; }).then(function () {
       sesion.borrar();
-      estado.yo = null; entrada.paso = 'telefono';
+      estado.yo = null; entrada.paso = 'telefono'; estado.cat = null;
       estado.datos = null; estado.faltan = []; estado.editarDatos = false; estado.datosEscritos = null;
       reg = registroNuevo();
       try { raiz.history.replaceState(null, '', raiz.location.pathname); } catch (_) { raiz.location.hash = ''; }
@@ -1248,7 +1829,7 @@
     });
   }
 
-  /** Paso 2: el código escrito. Si ya llenó sus datos (el código había fallado), se manda todo otra vez. */
+  /** El código escrito → el paso 2. Si ya lo había llenado (el código había fallado), se manda todo otra vez. */
   function codigoDeRegistro(codigo) {
     reg.codigo = codigo;
     if (reg.listo && reg.paraEnviar) { enviarRegistro(documento.querySelector('#app button[type="submit"]')); return; }
@@ -1257,7 +1838,8 @@
   }
 
   /**
-   * Paso 3: «Enviar» → `POST /registro`. Bien: su sesión y «Tu cuenta está en revisión». Un error con `campo`: debajo de
+   * Paso 2: «Crear mi cuenta» → `POST /registro` (`{ telefono, codigo, nombre, red: { tipo, usuario } }`, contrato §3).
+   * Bien: su sesión y al catálogo (en revisión, con el aviso amarillo). Un error con `campo`: debajo de
    * esa casilla (el del código, de vuelta a las casillas: al escribirlo otra vez se manda solo).
    */
   function enviarRegistro(boton) {
@@ -1276,7 +1858,8 @@
       clearInterval(entrada.espera);
       sesion.guardar(r.token);
       reg = registroNuevo();
-      try { raiz.history.replaceState(null, '', raiz.location.pathname + '#inicio'); } catch (_) { raiz.location.hash = '#inicio'; }
+      // «Entras de una vez al catálogo y preparas tus enlaces» (P5).
+      try { raiz.history.replaceState(null, '', raiz.location.pathname + '#catalogo'); } catch (_) { raiz.location.hash = '#catalogo'; }
       arrancar();
     }, function (e) {
       reg.enviando = false;
@@ -1289,12 +1872,12 @@
         cuentaAtras();
         return;
       }
-      // Un 409 sin casilla es la cédula o el RIF de otro vendedor.
-      var campo = e.campo || (e.status === 409 && /c[ée]dula|RIF|pasaporte|documento/i.test(e.message) ? 'documento' : null);
+      // En el paso 2 solo están el nombre y la red: un error de otra casilla va arriba del botón.
+      var campo = e.campo === 'nombre' ? 'nombre' : /^red/.test(String(e.campo || '')) ? 'red' : null;
       var errores = {};
       if (campo) errores[campo] = e.message;
       pintar(registro('datos', { errores: errores, error: campo ? null : e.message }));
-      if (campo) enfocarError(errores, 'r');
+      if (campo) enfocar(campo === 'nombre' ? 'r-nombre' : 'r-usuario');
     });
   }
 
@@ -1306,7 +1889,7 @@
   }
   function pintarAvisoDatos() {
     var z = documento.getElementById('aviso-datos');
-    if (!z) return;
+    if (!z || enRevision()) return;
     vaciar(z);
     var a = avisoDatos();
     if (a) z.appendChild(a);
@@ -1337,7 +1920,8 @@
       if (r && Array.isArray(r.faltanDatos)) estado.faltan = r.faltanDatos.filter(function (x) { return typeof x === 'string'; });
       estado.editarDatos = false;
       estado.datosEscritos = null;
-      pintarMisDatos();
+      // En Cobros, con los datos completos se abre la cuenta bancaria.
+      if (estado.seccion === 'cobros' && estado.cobros && !enRevision()) pintarCobros(false); else pintarMisDatos();
       pintarAvisoDatos();
       avisar('Datos guardados');
     }, function (e) {
@@ -1353,24 +1937,30 @@
 
   // ── Mi enlace ──────────────────────────────────────────────────────────────
 
-  function abrirHoja(e) {
+  function abrirHoja(info) {
     cerrarHoja();
-    var x = hoja(e, typeof raiz.navigator.share === 'function');
+    var x = hoja(info, typeof raiz.navigator.share === 'function');
     documento.body.appendChild(x.capa);
-    x.listo.focus();
+    x.listo.focus({ preventScroll: true });
   }
   function cerrarHoja() { var c = documento.getElementById('capa-hoja'); if (c) c.remove(); }
 
-  function miEnlace(cuerpo, titulo, boton, alTenerlo) {
+  /**
+   * Compartir un producto o una tienda: si ya tiene su enlace, la hoja; si no, `POST enlaces` (también en revisión,
+   * contrato §2) y después la hoja. `alTenerlo(enlace)`: para marcar la fila con «✓ Enlace listo».
+   */
+  function compartir(info, cuerpo, boton, alTenerlo) {
+    if (urlSegura(info.url)) { abrirHoja(info); return; }
     if (boton) boton.disabled = true;
     pedir('POST', '/enlaces', cuerpo).then(function (r) {
       if (boton) boton.disabled = false;
       var e = (r && r.enlace) || {};
       if (alTenerlo) alTenerlo(e);
-      abrirHoja({ url: e.url, titulo: titulo });
+      info.url = e.url; info.codigo = e.codigo;
+      abrirHoja(info);
     }, function (err) {
       if (boton) boton.disabled = false;
-      if (err.status === 401 || err.status === 403) { fallo(err); return; }
+      if (err.status === 401) { fallo(err); return; }
       avisar(err.message);
     });
   }

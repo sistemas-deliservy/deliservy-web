@@ -127,8 +127,278 @@
         h('h1', null, 'Panel del comercio'),
         h('p', null, 'Entra con tu WhatsApp. Aquí ves tus pedidos, tus productos y tu dinero.')),
       h('div', { class: 'tarjeta' }, cuerpo),
-      h('p', { class: 'pie-entrar' }, '¿Aún no vendes con Deliservy? ', h('a', { href: C.WHATSAPP, target: '_blank', rel: 'noopener noreferrer' }, 'Escríbenos')),
+      h('p', { class: 'pie-entrar' }, '¿Aún no vendes con Deliservy? ', h('a', { href: '#afiliar', id: 'ir-afiliar' }, 'Afilia tu comercio')),
       h('div', { class: 'pie-idioma' }, botonIdioma()));
+  }
+
+  // ── Afiliar un comercio por la web (C2 del rediseño, 30-oct-2026) ──────────
+  //
+  // `#afiliar`, sin sesión: quién lo llena (el dueño o un encargado), el nombre del comercio, el rubro, dónde está (el
+  // mapa y el buscador del panel, o «Usar mi ubicación»), el WhatsApp del dueño y, si es un encargado, también el suyo.
+  // Al que lo llena le llega un código por WhatsApp (6 casillas, como al entrar) y con él se manda la solicitud:
+  // `POST afiliacion/codigo {telefono}` y `POST afiliacion {telefono, codigo, quien, nombre, rubro, direccion, lat, lng,
+  // telefonoDueno}` (contrato del rediseño §4). La API no crea la tienda: guarda la solicitud y avisa al equipo.
+
+  var RUBROS = [['restaurante', 'Restaurante'], ['supermercado', 'Supermercado'], ['distribuidora', 'Distribuidora'], ['farmacia', 'Farmacia'], ['otro', 'Otro']];
+  var afiliar = { abierto: false, quien: 'dueno', nombre: '', rubro: '', direccion: '', direccionAuto: '', punto: null, telDueno: '', telMio: '', espera: null, enviando: false };
+  function esAfiliar() { return /^#afiliar(\/|$)/.test(String(raiz.location.hash || '')); }
+
+  /** Botones de una sola elección con rol de radio (quién lo llena). */
+  function eleccion(nombre, opciones, elegido, alCambiar) {
+    var caja = h('div', { class: 'segmentos ancho', role: 'radiogroup', 'aria-label': nombre });
+    opciones.forEach(function (op) {
+      var b = h('button', { type: 'button', role: 'radio', 'aria-checked': String(op[0] === elegido), 'data-valor': op[0] }, op[1]);
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(caja.children, function (x) { x.setAttribute('aria-checked', String(x === b)); });
+        alCambiar(op[0]);
+      });
+      caja.appendChild(b);
+    });
+    return caja;
+  }
+  function campoTelefono(id, valor) {
+    return h('input', { class: 'campo', id: id, name: id, type: 'tel', inputmode: 'tel', autocomplete: id === 'af-tel-mio' ? 'tel-national' : 'off', placeholder: '412 555 0198', value: valor || '', maxlength: '20' });
+  }
+  function grupoCon(id, rotulo, control, ayuda) {
+    return h('div', { class: 'grupo-campo' },
+      rotulo ? (id ? h('label', { class: 'etq-campo', for: id }, rotulo) : h('span', { class: 'etq-campo' }, rotulo)) : null,
+      control, ayuda || null, h('p', { class: 'error-campo', role: 'alert', hidden: true }));
+  }
+
+  function mostrarAfiliar() {
+    afiliar.abierto = true;
+    clearInterval(afiliar.espera);
+    var v = C.nuevaVista();
+    pintar(pantallaAfiliar(v));
+    raiz.scrollTo(0, 0);
+  }
+  function salirDeAfiliar() {
+    afiliar.abierto = false;
+    clearInterval(afiliar.espera);
+    if (ctx.cuenta) { pintarMarco(); mostrar(); return; }
+    C.nuevaVista();
+    if (C.sesion.leer()) { arrancar(); return; }
+    pintar(pantallaEntrar('telefono', { telefono: entrada.telefono }));
+    enfocar('telefono');
+  }
+
+  function cabeceraAfiliar() {
+    return h('div', { class: 'marca-fila' }, logo('logo-afiliar'),
+      h('div', null, h('small', null, 'Deliservy · Comercios'), h('h1', null, 'Afilia tu comercio')));
+  }
+
+  function pantallaAfiliar(v) {
+    // ── Los campos ──
+    var nombre = C.entrada({ id: 'af-nombre', value: afiliar.nombre, maxlength: '80', placeholder: 'Ej.: Arepera Margarita', autocomplete: 'organization' });
+    nombre.addEventListener('input', function () { afiliar.nombre = nombre.value; C.errorEnCampo(nombre, ''); });
+    var rubros = h('div', { class: 'chips-filtro', role: 'radiogroup', 'aria-label': 'Rubro', id: 'af-rubro' }, RUBROS.map(function (r) {
+      return h('button', { type: 'button', class: 'chip', role: 'radio', 'data-rubro': r[0], 'aria-checked': String(afiliar.rubro === r[0]), onclick: function (ev) {
+        afiliar.rubro = r[0];
+        Array.prototype.forEach.call(rubros.children, function (b) { b.setAttribute('aria-checked', String(b === ev.currentTarget)); });
+        C.errorEnCampo(rubros, '');
+      } }, r[1]);
+    }));
+    var direccion = C.entrada({ id: 'af-direccion', value: afiliar.direccion, maxlength: '300', placeholder: 'Calle, edificio o local y la zona', autocomplete: 'street-address' });
+    direccion.addEventListener('input', function () { afiliar.direccion = direccion.value; C.errorEnCampo(direccion, ''); });
+    var textoUbic = h('p', { class: 'ayuda', id: 'af-ubic-texto' }, afiliar.punto ? 'Ubicación marcada. Arrastra el pin si hace falta.' : 'Busca la dirección, toca el mapa o usa tu ubicación.');
+    var mapaCaja = h('div', { class: 'mapa mapa-afiliar' });
+    var usar = C.boton('Usar mi ubicación', { class: 'btn chico borde usar-ubicacion', id: 'af-usar-ubicacion' }, 'ubicacion');
+    var marcoMapa = h('div', { class: 'marco-mapa', id: 'af-mapa' }, mapaCaja, usar);
+    var m = null;
+    var marcar = function (lat, lng, buscarDireccion, texto) {
+      afiliar.punto = { lat: Number(Number(lat).toFixed(6)), lng: Number(Number(lng).toFixed(6)) };
+      if (m) m.marcador('tienda', 'tienda', afiliar.punto, { arrastrable: true, alSoltar: function (a, b) { marcar(a, b, true); } });
+      textoUbic.textContent = 'Ubicación marcada. Arrastra el pin si hace falta.';
+      C.errorEnCampo(marcoMapa, '');
+      // La dirección se llena sola si está vacía o si la puso el mapa (lo que escribió la persona no se pisa).
+      var libre = !direccion.value.trim() || direccion.value === afiliar.direccionAuto;
+      var poner = function (t) {
+        if (!t || !libre || (direccion.value.trim() && direccion.value !== afiliar.direccionAuto)) return;
+        direccion.value = t; afiliar.direccion = t; afiliar.direccionAuto = t; C.errorEnCampo(direccion, '');
+      };
+      if (texto) poner(texto);
+      else if (buscarDireccion && C.mapa) C.mapa.donde(afiliar.punto.lat, afiliar.punto.lng).then(poner);
+    };
+    var buscador = C.mapa.buscador({ id: 'af-buscar', cerca: function () { return afiliar.punto; }, alElegir: function (p) { marcar(p.lat, p.lng, false, p.direccion); if (m) m.irA(p, 17); } });
+    usar.addEventListener('click', function () {
+      var geo = raiz.navigator && raiz.navigator.geolocation;
+      if (!geo) { textoUbic.textContent = 'Tu navegador no comparte la ubicación. Busca la dirección o toca el mapa.'; return; }
+      C.trabajando(usar, new Promise(function (ok, mal) { geo.getCurrentPosition(ok, mal, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }); })).then(function (pos) {
+        var c = pos && pos.coords;
+        if (!c || !C.mapa.valido({ lat: c.latitude, lng: c.longitude })) throw new Error('sin punto');
+        marcar(c.latitude, c.longitude, true);
+        if (m) m.irA({ lat: c.latitude, lng: c.longitude }, 17);
+      }).catch(function () { textoUbic.textContent = 'No pudimos saber dónde estás. Busca la dirección o toca el mapa.'; });
+    });
+
+    var telDueno = campoTelefono('af-tel-dueno', afiliar.telDueno);
+    var telMio = campoTelefono('af-tel-mio', afiliar.telMio);
+    telDueno.addEventListener('input', function () { afiliar.telDueno = telDueno.value; C.errorEnCampo(telDueno, ''); });
+    telMio.addEventListener('input', function () { afiliar.telMio = telMio.value; C.errorEnCampo(telMio, ''); });
+    var ayudaDueno = h('p', { class: 'ayuda' });
+    var grupoDueno = grupoCon('af-tel-dueno', 'WhatsApp del dueño', h('div', { class: 'prefijo' }, h('span', null, '+58'), telDueno), ayudaDueno);
+    var grupoMio = grupoCon('af-tel-mio', 'Tu WhatsApp', h('div', { class: 'prefijo' }, h('span', null, '+58'), telMio), h('p', { class: 'ayuda' }, 'Te mandamos un código a este número.'));
+    var ponerQuien = function (q) {
+      afiliar.quien = q;
+      grupoMio.hidden = q !== 'encargado';
+      ayudaDueno.textContent = q === 'encargado' ? 'Lo usamos para confirmar con el dueño.' : 'Te mandamos un código a este número.';
+      ayudaDueno.hidden = false;
+    };
+    var quien = eleccion('¿Quién llena esto?', [['dueno', 'Soy el dueño'], ['encargado', 'Soy encargado']], afiliar.quien, ponerQuien);
+    ponerQuien(afiliar.quien);
+
+    var errorGeneral = h('p', { class: 'error', role: 'alert', hidden: true });
+    var enviar = h('button', { class: 'btn', type: 'submit', id: 'af-enviar' }, 'Enviar solicitud');
+    var formulario = h('form', { class: 'tarjeta form-afiliar', novalidate: true, id: 'af-form' },
+      h('div', { class: 'grupo-campo' }, h('span', { class: 'etq-campo primero' }, '¿Quién llena esto?'), quien, h('p', { class: 'error-campo', role: 'alert', hidden: true })),
+      grupoCon('af-nombre', 'Nombre del comercio', nombre),
+      grupoCon(null, 'Rubro', rubros),
+      h('div', { class: 'grupo-campo' }, h('span', { class: 'etq-campo' }, 'Ubicación'), buscador.caja,
+        h('div', { class: 'grupo-campo' }, marcoMapa, textoUbic, h('p', { class: 'error-campo', role: 'alert', hidden: true }))),
+      grupoCon('af-direccion', 'Dirección', direccion),
+      grupoDueno, grupoMio,
+      errorGeneral,
+      h('div', { class: 'botones' }, enviar),
+      h('p', { class: 'nota' }, 'Si lo llena el encargado, el equipo de Deliservy confirma con el dueño antes de activar el comercio.'));
+    var codigoCaja = h('div', { class: 'tarjeta', id: 'af-codigo-caja', hidden: true });
+
+    /** Revisa todo; marca en rojo lo que falta. Devuelve el cuerpo (sin el código) o null. */
+    var revisar = function () {
+      var mal = [];
+      var n = nombre.value.trim();
+      // Las mismas reglas y frases de la API (`src/comercio-web/afiliacion.ts`): el error sale igual aquí que de vuelta.
+      var nombreMal = n.length < 2 || n.length > 80 || /https?:|www\./i.test(n);
+      C.errorEnCampo(nombre, nombreMal ? 'Escribe el nombre del comercio.' : ''); if (nombreMal) mal.push(nombre);
+      C.errorEnCampo(rubros, afiliar.rubro ? '' : 'Elige qué tipo de comercio es.'); if (!afiliar.rubro) mal.push(rubros.firstChild);
+      C.errorEnCampo(marcoMapa, afiliar.punto ? '' : 'Marca en el mapa dónde queda el comercio.'); if (!afiliar.punto) mal.push(buscador.input);
+      var dir = direccion.value.trim();
+      var dirMal = dir.length < 10 || dir.length > 300;
+      C.errorEnCampo(direccion, dirMal ? 'Escribe la dirección del comercio (calle, sector y ciudad).' : ''); if (dirMal) mal.push(direccion);
+      var tDueno = telDueno.value.trim(), tMio = telMio.value.trim();
+      var esEncargado = afiliar.quien === 'encargado';
+      C.errorEnCampo(telDueno, C.telefonoValido(tDueno) ? '' : 'Escribe el WhatsApp del dueño, por ejemplo 0412-555-0198.'); if (!C.telefonoValido(tDueno)) mal.push(telDueno);
+      if (esEncargado) { C.errorEnCampo(telMio, C.telefonoValido(tMio) ? '' : 'Escribe tu WhatsApp, por ejemplo 0412-555-0198.'); if (!C.telefonoValido(tMio)) mal.push(telMio); }
+      if (mal.length) { try { mal[0].focus(); } catch (_) { /* nada */ } if (mal[0].scrollIntoView) mal[0].scrollIntoView({ block: 'center' }); return null; }
+      return { telefono: esEncargado ? tMio : tDueno, quien: afiliar.quien, nombre: n, rubro: afiliar.rubro, direccion: dir, lat: afiliar.punto.lat, lng: afiliar.punto.lng, telefonoDueno: tDueno };
+    };
+
+    var pedirCodigoAfiliar = function (cuerpo, boton, reenvio) {
+      errorGeneral.hidden = true;
+      return C.trabajando(boton, C.pedir('POST', '/afiliacion/codigo', { telefono: cuerpo.telefono }, { sinSesion: true })).then(function () {
+        pasoCodigo(cuerpo);
+        if (reenvio) C.avisar('Te enviamos otro código');
+      }, function (e) {
+        if (reenvio) { C.avisar(e.message, 'mal'); return; }
+        errorGeneral.textContent = e.message; errorGeneral.hidden = false;
+      });
+    };
+
+    var pasoCodigo = function (cuerpo) {
+      var error = h('p', { class: 'error', role: 'alert', hidden: true });
+      var confirmar = h('button', { class: 'btn', type: 'submit' }, 'Confirmar y enviar');
+      var reenviar = h('button', { class: 'btn borde chico', type: 'button', id: 'af-reenviar', disabled: true }, 'Reenviar código');
+      var mandar = function (codigo) {
+        if (afiliar.enviando) return;
+        if (String(codigo || '').length !== 6) { error.textContent = 'El código tiene 6 números.'; error.hidden = false; return; }
+        afiliar.enviando = true;
+        error.hidden = true;
+        C.trabajando(confirmar, C.pedir('POST', '/afiliacion', Object.assign({ codigo: String(codigo) }, cuerpo), { sinSesion: true })).then(function (r) {
+          afiliar.enviando = false;
+          clearInterval(afiliar.espera);
+          gracias(r, cuerpo);
+        }, function (e) {
+          afiliar.enviando = false;
+          var campo = e.datos && typeof e.datos.campo === 'string' ? e.datos.campo : '';
+          // Los campos de la API: telefono|codigo|quien|nombre|rubro|direccion|ubicacion|telefonoDueno. `codigo` se queda
+          // en este paso (debajo de las casillas); los demás vuelven al formulario, debajo de su campo.
+          var control = { quien: quien, nombre: nombre, rubro: rubros, direccion: direccion, ubicacion: marcoMapa, telefonoDueno: telDueno, telefono: afiliar.quien === 'encargado' ? telMio : telDueno }[campo];
+          if (control) {
+            // Un dato que la API no aceptó: de vuelta al formulario, con la frase debajo de ese campo.
+            volverAlFormulario();
+            C.errorEnCampo(control, e.message);
+            var foco = control === marcoMapa ? buscador.input : control === rubros ? rubros.firstChild : control === quien ? quien.firstChild : control;
+            try { foco.focus(); } catch (_) { /* nada */ }
+            if (control.scrollIntoView) control.scrollIntoView({ block: 'center' });
+            return;
+          }
+          error.textContent = e.message; error.hidden = false;
+          casillas.limpiar();
+          try { casillas.input.focus(); } catch (_) { /* nada */ }
+        });
+      };
+      var casillas = C.casillasDeCodigo('af-codigo', mandar);
+      reenviar.addEventListener('click', function () { pedirCodigoAfiliar(cuerpo, reenviar, true).then(function () { /* el paso se vuelve a pintar */ }); });
+      var cambiar = h('button', { class: 'btn borde chico', type: 'button', onclick: function () { volverAlFormulario(); } }, 'Cambiar datos');
+      C.reemplazar(codigoCaja, h('form', { novalidate: true, onsubmit: function (ev) { ev.preventDefault(); mandar(casillas.valor()); } },
+        h('h2', null, 'Confirma tu WhatsApp'),
+        h('p', { class: 'bien' }, 'Te enviamos un código por WhatsApp al ', dato('span', { class: 'sin-cortes' }, C.telefonoParaVer(cuerpo.telefono)), '.'),
+        h('label', { class: 'etq-campo', for: 'af-codigo' }, 'Código de 6 números'),
+        casillas.caja, error,
+        h('div', { class: 'botones' }, confirmar),
+        h('div', { class: 'botones' }, cambiar, reenviar)));
+      formulario.hidden = true;
+      codigoCaja.hidden = false;
+      raiz.scrollTo(0, 0);
+      enfocar('af-codigo');
+      // «Reenviar» después de 60 s, como al entrar.
+      clearInterval(afiliar.espera);
+      var falta = 60;
+      var contar = function () { reenviar.disabled = falta > 0; reenviar.textContent = falta > 0 ? 'Reenviar en ' + falta + ' s' : 'Reenviar código'; };
+      contar();
+      afiliar.espera = setInterval(function () { falta -= 1; contar(); if (falta <= 0 || !documento.body.contains(reenviar)) clearInterval(afiliar.espera); }, 1000);
+    };
+    var volverAlFormulario = function () {
+      clearInterval(afiliar.espera);
+      codigoCaja.hidden = true;
+      formulario.hidden = false;
+    };
+
+    var gracias = function (r, cuerpo) {
+      if (v.viva && !v.viva()) return;
+      var mensaje = r && typeof r.mensaje === 'string' && r.mensaje.trim() ? r.mensaje.trim() : '';
+      // `yaEnviada`: la misma solicitud (mismo WhatsApp y comercio) ya había llegado: también es un «gracias».
+      var repetida = !!(r && r.yaEnviada === true);
+      afiliar.nombre = ''; afiliar.rubro = ''; afiliar.direccion = ''; afiliar.direccionAuto = ''; afiliar.punto = null; afiliar.telDueno = ''; afiliar.telMio = '';
+      C.nuevaVista(); // el mapa ya no hace falta
+      pintar(h('div', { class: 'entrar afiliar' }, cabeceraAfiliar(),
+        h('div', { class: 'tarjeta gracias-afiliar', id: 'af-gracias' },
+          h('div', { class: 'resultado-bien' + (repetida ? ' ya-enviada' : '') }, ico('check'),
+            h('b', null, repetida ? 'Tu solicitud ya está con nosotros' : '¡Gracias! Recibimos tu solicitud'),
+            dato('p', { class: 'nombre-comercio' }, cuerpo.nombre),
+            h('p', null, mensaje || 'Nuestro equipo te escribirá por WhatsApp para terminar la afiliación.')),
+          h('div', { class: 'botones' },
+            h('a', { class: 'btn borde', href: '#entrar' }, 'Volver a la entrada'),
+            h('a', { class: 'btn', href: C.WHATSAPP, target: '_blank', rel: 'noopener noreferrer' }, ico('whatsapp'), 'Escríbenos por WhatsApp'))),
+        h('div', { class: 'pie-idioma' }, botonIdioma())));
+      raiz.scrollTo(0, 0);
+    };
+
+    formulario.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var cuerpo = revisar();
+      if (!cuerpo) return;
+      pedirCodigoAfiliar(cuerpo, enviar, false);
+    });
+
+    var pagina = h('div', { class: 'entrar afiliar' },
+      cabeceraAfiliar(),
+      h('p', { class: 'intro-afiliar' }, 'Un minuto. Te escribimos por WhatsApp y cargamos tu catálogo contigo, sin costo.'),
+      formulario, codigoCaja,
+      h('p', { class: 'pie-entrar' }, '¿Ya vendes con Deliservy? ', h('a', { href: '#entrar' }, 'Entra a tu panel')),
+      h('div', { class: 'pie-idioma' }, botonIdioma()));
+
+    // El mapa, cuando la página ya está puesta (el de «Mi tienda»: tocar para marcar, el pin se arrastra).
+    setTimeout(function () {
+      if (!v.viva() || !documento.body.contains(mapaCaja)) return;
+      C.mapa.crear(mapaCaja, { centro: afiliar.punto, zoom: afiliar.punto ? 16 : 12 }).then(function (mm) {
+        if (!v.viva()) { mm.quitar(); return; }
+        m = mm;
+        v.alSalir(function () { mm.quitar(); m = null; });
+        if (afiliar.punto) mm.marcador('tienda', 'tienda', afiliar.punto, { arrastrable: true, alSoltar: function (a, b) { marcar(a, b, true); } });
+        mm.alTocar(function (lat, lng) { marcar(lat, lng, true); });
+      }, function () { if (!afiliar.punto) textoUbic.textContent = 'El mapa no cargó: busca la dirección o usa tu ubicación.'; });
+    }, 0);
+    return pagina;
   }
 
   function enfocar(id) {
@@ -546,8 +816,10 @@
   // ── Arranque ───────────────────────────────────────────────────────────────
 
   raiz.addEventListener('hashchange', function () {
+    if (esAfiliar()) { if (!afiliar.abierto || !documento.getElementById('af-form')) mostrarAfiliar(); return; }
+    if (afiliar.abierto || !ctx.cuenta && documento.getElementById('af-gracias')) { salirDeAfiliar(); return; }
     if (ctx.cuenta) { mostrar(); return; }
   });
   documento.title = C.traducir(TITULO);
-  arrancar();
+  if (esAfiliar()) mostrarAfiliar(); else arrancar();
 })(window);
