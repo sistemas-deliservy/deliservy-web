@@ -1205,8 +1205,8 @@
     pedir('POST', '/viaje').then(function (d) {
       vaciar(estado);
       vaciar(servicios);
-      (d.servicios || []).forEach(function (s) {
-        if (!s || s.pct == null || s.pct === '' || !s.nombre) return;
+      (Array.isArray(d.servicios) ? d.servicios : []).forEach(function (s) {
+        if (!s || s.pct == null || s.pct === '' || !isFinite(Number(s.pct)) || !s.nombre) return;
         servicios.appendChild(h('div', { class: 'servicio-viaje' },
           h('span', null, s.nombre),
           dato('b', null, porcentaje(s.pct))));
@@ -1214,8 +1214,9 @@
       estado.appendChild(document.createTextNode('Tu enlace: '));
       estado.appendChild(dato('b', null, d.url || ''));
       estado.appendChild(document.createElement('br'));
+      var viajes = Math.round(num(d.ordenes));
       estado.appendChild(document.createTextNode(
-        Math.round(num(d.ordenes)) + ' viajes · ' + dolares(d.tarifaUsd) + ' en tarifas · ganaste ' + dolares(d.ganadoUsd)));
+        viajes + (viajes === 1 ? ' viaje · ' : ' viajes · ') + dolares(d.tarifaUsd) + ' en tarifas · ganaste ' + dolares(d.ganadoUsd)));
     }).catch(function () {
       vaciar(estado);
       vaciar(servicios);

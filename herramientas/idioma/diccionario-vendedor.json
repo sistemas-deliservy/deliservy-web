@@ -292,7 +292,12 @@
 "El +58 es Venezuela. Presiona el código para elegir otro país.": "The +58 is Venezuela. Press the code to choose another country.",
 "Venezuela queda primero. Presiona un país para usar su código.": "Venezuela stays first. Press a country to use its code.",
 "Escribe los 10 dígitos, sin el +1.": "Enter the 10 digits, without the +1.",
-"Comparte este enlace para Delitaxi, mototaxi, XL, lujo y premium. Ganas este porcentaje de cada viaje que salga de él:": "Share this link for Delitaxi, motorbike taxi, XL, luxury and premium. You earn this percentage of every ride that comes from it:",
+"Comparte este enlace para Delitaxi, mototaxi, XL, lujo y premium. Ganas este porcentaje de cada viaje que salga de él:": "Share this link for Delitaxi, moto taxi, XL, luxury and premium. You earn this percentage of every ride that comes from it:",
 "Viajes": "Rides",
-"Taxi lujo": "Luxury taxi"
+"Taxi lujo": "Luxury taxi",
+"viajes": "rides",
+"viaje": "ride",
+"en tarifas": "in fares",
+"Cargando tu enlace…": "Loading your link…",
+"Tu enlace de viajes aparece cuando tu cuenta está activa.": "Your rides link shows up when your account is active."
 }
