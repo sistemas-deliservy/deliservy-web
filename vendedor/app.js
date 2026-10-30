@@ -1201,8 +1201,16 @@
 
   function tarjetaViajes() {
     var estado = h('p', { class: 'nota' }, 'Cargando tu enlace…');
+    var servicios = h('div', { class: 'servicios-viaje' });
     pedir('POST', '/viaje').then(function (d) {
       vaciar(estado);
+      vaciar(servicios);
+      (d.servicios || []).forEach(function (s) {
+        if (!s || s.pct == null || s.pct === '' || !s.nombre) return;
+        servicios.appendChild(h('div', { class: 'servicio-viaje' },
+          h('span', null, s.nombre),
+          dato('b', null, porcentaje(s.pct))));
+      });
       estado.appendChild(document.createTextNode('Tu enlace: '));
       estado.appendChild(dato('b', null, d.url || ''));
       estado.appendChild(document.createElement('br'));
@@ -1210,11 +1218,13 @@
         Math.round(num(d.ordenes)) + ' viajes · ' + dolares(d.tarifaUsd) + ' en tarifas · ganaste ' + dolares(d.ganadoUsd)));
     }).catch(function () {
       vaciar(estado);
+      vaciar(servicios);
       estado.appendChild(document.createTextNode('Tu enlace de viajes aparece cuando tu cuenta está activa.'));
     });
     return h('div', { class: 'tarjeta' },
       h('h2', null, 'Viajes'),
-      h('p', { class: 'nota' }, 'Comparte este enlace para Delitaxi, mototaxi, XL, lujo, premium y mandaditos. Ganas un porcentaje de cada viaje que salga de él.'),
+      h('p', { class: 'nota' }, 'Comparte este enlace para Delitaxi, mototaxi, XL, lujo y premium. Ganas este porcentaje de cada viaje que salga de él:'),
+      servicios,
       estado);
   }
 

@@ -1923,6 +1923,8 @@ const servidor = http.createServer(async (req, res) => {
       return;
     }
     if (p.startsWith('/__simulado/')) {
+      // La promotora de prueba ya firmó (para llegar a su inicio sin dibujar la firma). Solo pruebas, 29-oct-2026.
+      if (req.method === 'POST' && p === '/__simulado/promotor-firmado') { promotorSimulado.firmado = true; responder(res, 200, { ok: true }); return; }
       if (req.method === 'POST' && p === '/__simulado/reiniciar') { D = datosNuevos(); FALLAR_FOTOS = 0; PEDIR_FIRMA = false; responder(res, 200, { ok: true }); return; }
       if (req.method === 'POST' && p === '/__simulado/pedido-nuevo') {
         const id = Math.max(...D.pedidos.map((x) => x.id)) + 1;
@@ -2032,6 +2034,27 @@ const servidor = http.createServer(async (req, res) => {
         return;
       }
       if (req.method === 'POST' && ruta === 'acceso/salir') { promotorSimulado.token = ''; responder(res, 200, { ok: true }); return; }
+      // El inicio del promotor, lo mínimo para ver sus tarjetas (29-oct-2026).
+      if (req.method === 'GET' && ruta === 'inicio') {
+        responder(res, 200, {
+          vendedor: { nombre: 'Ana Rojas', estado: 'activo' },
+          saldo: { amountBs: 1250.5, tasa: 888.89, retenidoBs: 0 }, resumen: { ventasMes: 4, netoMes: 6.4, pendienteUsd: 1.2 },
+          cupon: null, visitas: [], ventas: [],
+        });
+        return;
+      }
+      // La tarjeta «Viajes» (29-oct-2026): el enlace y el % de los cinco servicios del enlace, como la API.
+      if (req.method === 'POST' && ruta === 'viaje') {
+        responder(res, 200, {
+          codigo: 'abc123', url: 'https://www.deliservy.com/viaje/abc123', ordenes: 3, tarifaUsd: 14.5, ganadoUsd: 1.45,
+          servicios: [
+            { clave: '20', nombre: 'Taxi', pct: 10 }, { clave: '40', nombre: 'Mototaxi', pct: 8 },
+            { clave: '50', nombre: 'Taxi XL', pct: 12.5 }, { clave: '60', nombre: 'Taxi lujo', pct: 10 },
+            { clave: '70', nombre: 'Premium', pct: 10 },
+          ],
+        });
+        return;
+      }
       responder(res, 200, {});
       return;
     }

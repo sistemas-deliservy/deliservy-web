@@ -117,6 +117,12 @@ h1.saludo { font-size: 28px; line-height: 1.15; margin: 2px 0 2px; font-weight: 
 .tarjeta + .tarjeta { margin-top: 8px; }
 .tarjeta h2 { font-size: 17px; margin: 0 0 4px; font-weight: 800; letter-spacing: -.01em; }
 .tarjeta .nota { color: var(--m); font-size: 14px; margin: 6px 0 0; }
+.servicios-viaje { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.servicios-viaje:empty { display: none; }
+.servicio-viaje { background: var(--c2); border-radius: 12px; padding: 10px; min-width: 0; }
+.servicio-viaje span { display: block; font-size: 13px; font-weight: 800; line-height: 1.25; }
+.servicio-viaje b { display: block; margin-top: 3px; color: var(--ok); font-size: 15px; font-weight: 800; }
+@media (max-width: 380px) { .servicios-viaje { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rejilla { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
 .cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .cifra { background: var(--c2); border-radius: 12px; padding: 10px; min-width: 0; }
