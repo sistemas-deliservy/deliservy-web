@@ -4,11 +4,10 @@ Landing page de **Deliservy** (https://deliservy.com). Sitio estático, sin buil
 framework: se edita el HTML directamente y se sirve tal cual desde Nginx.
 
 - Repo: `git@github.com:sistemas-deliservy/deliservy-web.git` · rama `main`
-- ⚠️ **Producción es Ferozo** (`200.58.111.115`, Apache), no la VM de GCP.
+- ⚠️ **Producción es el hosting de Ferozo** (Apache), no una VM de GCP.
   Comprobado el 19-ago-2026: `deliservy.com` resuelve ahí.
 
-> ⚠️ En la VM `interbank-deliservy` (`34.122.172.173`) hay un
-> `/var/www/deliservy` con este repo, **pero no es lo que se sirve**. Su
+> ⚠️ En una de las VM hay una copia de este repo, **pero no es lo que se sirve**. Su
 > `index.html` está modificado sin commitear: **un `git pull` ahí borra ese
 > trabajo**. Para dejar un archivo, copiarlo suelto. (`sudo git pull` además
 > falla por permisos de la clave SSH.)
@@ -115,7 +114,7 @@ www → apex) y pide el certificado con certbot.
 
 ```bash
 # en el VPS
-cd /var/www/deliservy && bash deploy.sh
+bash deploy.sh   # en la copia que hay en la VM
 ```
 
 > **Pendiente conocido:** el script clona desde
@@ -225,8 +224,8 @@ Un commit en la máquina no es producción. No decir que ya está desplegado sin
 1. Probarlo.
 2. Commit solo de esos archivos.
 3. Push.
-4. Desplegar: primero la API (`deliservy-app`, `/deliservy/deliservy`, `pm2` `deliservy`), después el panel o esta web (Ferozo).
-5. Comprobar la URL viva. Una ruta nueva en 404 no está publicada. Paquetería se sirve desde `/var/www/paqueteria/index.html` en `deliservy-app`.
+4. Desplegar: primero la API, después el panel o esta web (Ferozo). Dónde vive cada cosa está en la memoria de Claude, no en este repo (es público).
+5. Comprobar la URL viva. Una ruta nueva en 404 no está publicada.
 6. Anotarlo en la memoria.
 
 La app no se publica salvo pedido explícito.
