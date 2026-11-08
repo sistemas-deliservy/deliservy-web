@@ -19,6 +19,12 @@
   p{color:rgba(255,255,255,.72);font-size:17px;line-height:1.45;margin:0 0 22px;}
   .video{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:16/9;box-shadow:0 24px 60px rgba(0,0,0,.45);}
   .video video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;}
+  /* Si el navegador no deja que suene solo, el video arranca en silencio y esta capa lo cubre hasta el primer toque. */
+  .sonido{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0;padding:0;border:0;background:rgba(0,0,0,.18);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .sonido[hidden]{display:none;}
+  .sonido span{display:inline-flex;align-items:center;gap:10px;background:#e41616;color:#fff;border-radius:999px;padding:16px 26px;font:800 clamp(17px,2.6vw,22px)/1 Inter,system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:latido 1.6s ease-in-out infinite;}
+  @keyframes latido{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  @media (prefers-reduced-motion:reduce){.sonido span{animation:none;}}
   .btn{display:inline-flex;margin-top:22px;background:linear-gradient(135deg,#e41616,#ff5a1f);color:#fff;font-weight:700;text-decoration:none;border-radius:12px;padding:14px 18px;}
 </style>
 </head>
@@ -29,19 +35,60 @@
   <p>Valencia, estado Carabobo. El video de la campaña para promotores.</p>
   <div class="video">
     <video controls playsinline autoplay preload="auto" src="promotores.mp4"></video>
+    <button class="sonido" type="button" hidden aria-label="Activar el sonido del video"><span>🔊 Toca para oír</span></button>
   </div>
   <a class="btn" href="https://wa.me/584265201529">WhatsApp 0426-5201529</a>
 </main>
 <script>
+/*
+ * Con sonido desde que se abre (Gilberth, 8-nov-2026: «apenas abran el link, reproducirse con volumen»).
+ * Primero se intenta con sonido. Chrome y Safari no dejan que un video suene solo a quien llega desde un enlace
+ * (un correo, WhatsApp): entonces arranca en silencio con «🔊 Toca para oír» encima, y el PRIMER toque en
+ * cualquier parte de la página lo pone con sonido desde el principio. Si ni en silencio arranca (iPhone en
+ * ahorro de batería), el botón dice «▶ Toca para ver el video».
+ */
 (function () {
   var video = document.querySelector("video");
+  var capa = document.querySelector(".sonido");
   if (!video) return;
-  var intento = video.play();
-  if (!intento || !intento.catch) return;
-  intento.catch(function () {
+  var rotulo = capa && capa.querySelector("span");
+  // Solo los toques que el navegador acepta como «la persona tocó» (con esos sí deja sonar).
+  var TOQUES = ["click", "touchend", "keydown", "mousedown"];
+  var esperando = false;
+  function esperarToque(texto) {
+    if (capa) { if (rotulo) rotulo.textContent = texto; capa.hidden = false; }
+    if (esperando) return;
+    esperando = true;
+    TOQUES.forEach(function (e) { document.addEventListener(e, conSonido, true); });
+  }
+  function yaSuena() {
+    esperando = false;
+    TOQUES.forEach(function (e) { document.removeEventListener(e, conSonido, true); });
+    if (capa) capa.hidden = true;
+  }
+  function enSilencio() {
     video.muted = true;
-    video.play().catch(function () {});
-  });
+    var p = video.play();
+    if (p && p.then) p.then(function () { esperarToque("🔊 Toca para oír"); }, function () { esperarToque("▶ Toca para ver el video"); });
+    else esperarToque("🔊 Toca para oír");
+  }
+  function conSonido() {
+    if (!esperando) return;
+    yaSuena();
+    video.muted = false;
+    video.volume = 1;
+    try { video.currentTime = 0; } catch (_) {}
+    var p = video.play();
+    if (p && p.catch) p.catch(enSilencio);
+    // Un toque que el navegador no cuenta (p. ej. el final de un deslizamiento) lo deja en pausa o mudo: se vuelve a esperar.
+    setTimeout(function () { if ((video.paused && !video.ended) || video.muted) enSilencio(); }, 500);
+  }
+  video.addEventListener("volumechange", function () { if (esperando && !video.muted && video.volume > 0) yaSuena(); });
+  video.muted = false;
+  video.volume = 1;
+  var intento = video.play();
+  if (!intento || !intento.then) { if (video.paused) enSilencio(); return; }
+  intento.then(function () { if (video.muted) esperarToque("🔊 Toca para oír"); }, enSilencio);
 })();
 </script>
 </body>
