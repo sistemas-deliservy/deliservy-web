@@ -889,6 +889,12 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
 .pxw-txt .pxw-k,.pxw-txt .pxw-t{grid-column:1 / -1;}
 .pxw-lado{display:flex;flex-direction:column;gap:14px;}
 .pxw-video video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+/* Si el navegador no deja que el video suene solo, va en silencio con este botón encima hasta el primer toque (8-nov-2026). */
+.pxw-sonido{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0;padding:0;border:0;background:rgba(0,0,0,.18);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.pxw-sonido[hidden]{display:none;}
+.pxw-sonido span{display:inline-flex;align-items:center;gap:10px;background:#e41616;color:#fff;border-radius:999px;padding:16px 26px;font-weight:800;font-size:clamp(17px,2.6vw,22px);line-height:1;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:pxwLatido 1.6s ease-in-out infinite;}
+@keyframes pxwLatido{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.pxw-sonido span{animation:none;}}
 .pxw-k{font-size:11.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
 .pxw-t{font-size:clamp(19px,2vw,24px);font-weight:900;letter-spacing:-.02em;line-height:1.22;margin-bottom:12px;}
 .pxw-p{font-size:14.5px;line-height:1.6;color:rgba(255,255,255,.80);margin-bottom:14px;}
@@ -1174,6 +1180,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding-top:0;
     <div class="pxw fade-up" id="pedidos-por-whatsapp">
       <div class="pxw-video">
         <video controls playsinline preload="metadata" src="/campana/pedidos-por-whatsapp-30s.mp4" title="Pedidos por WhatsApp para su comercio"></video>
+        <button class="pxw-sonido" type="button" hidden aria-label="Activar el sonido del video"><span>🔊 Toca para oír</span></button>
       </div>
       <div class="pxw-txt">
         <div class="pxw-k">Pedidos por WhatsApp · Para su comercio</div>
@@ -1887,8 +1894,59 @@ document.querySelectorAll('.fade-up').forEach(function(el){io.observe(el);});
 // arriba ni abajo (12-oct-2026). Se centra al cargar y otra vez cuando el video ya tiene su alto.
 (function(){
   function centrar(){ var e=document.getElementById('pedidos-por-whatsapp'); if(!e) return; e.classList.add('visible'); var v=e.querySelector('.pxw-video')||e; v.scrollIntoView({block:'center',behavior:'auto'}); }
-  if (location.hash === '#pedidos-por-whatsapp') { centrar(); setTimeout(centrar, 400); window.addEventListener('load', function(){ setTimeout(centrar, 150); }); }
-  window.addEventListener('hashchange', function(){ if (location.hash === '#pedidos-por-whatsapp') centrar(); });
+  // Y el video arranca solo, con sonido si el navegador lo deja (Gilberth, 8-nov-2026: «apenas abran el link,
+  // reproducirse con volumen»). SOLO al llegar por el enlace de la campaña: la portada normal no suena sola.
+  // Chrome y Safari no dejan sonar solo a quien llega desde un enlace: entonces arranca en silencio con
+  // «🔊 Toca para oír» encima, y el PRIMER toque en cualquier parte lo pone con sonido desde el principio
+  // (igual que las páginas de /campana/).
+  var arrancado = false;
+  function arrancar(){
+    var caja = document.getElementById('pedidos-por-whatsapp');
+    var video = caja && caja.querySelector('video');
+    if (!video || arrancado) return;
+    arrancado = true;
+    var capa = caja.querySelector('.pxw-sonido');
+    var rotulo = capa && capa.querySelector('span');
+    var TOQUES = ['click', 'touchend', 'keydown', 'mousedown'];
+    var esperando = false;
+    function texto(es, en){ return document.documentElement.lang === 'en' ? en : es; }
+    function esperarToque(ver){
+      if (capa) { if (rotulo) rotulo.textContent = ver ? texto('▶ Toca para ver el video', '▶ Tap to watch the video') : texto('🔊 Toca para oír', '🔊 Tap to hear'); capa.hidden = false; }
+      if (esperando) return;
+      esperando = true;
+      TOQUES.forEach(function(e){ document.addEventListener(e, conSonido, true); });
+    }
+    function yaSuena(){
+      esperando = false;
+      TOQUES.forEach(function(e){ document.removeEventListener(e, conSonido, true); });
+      if (capa) capa.hidden = true;
+    }
+    function enSilencio(){
+      video.muted = true;
+      var p = video.play();
+      if (p && p.then) p.then(function(){ esperarToque(false); }, function(){ esperarToque(true); });
+      else esperarToque(false);
+    }
+    function conSonido(){
+      if (!esperando) return;
+      yaSuena();
+      video.muted = false;
+      video.volume = 1;
+      try { video.currentTime = 0; } catch (_) {}
+      var p = video.play();
+      if (p && p.catch) p.catch(enSilencio);
+      // Un toque que el navegador no cuenta (el final de un deslizamiento) lo deja en pausa o mudo: se vuelve a esperar.
+      setTimeout(function(){ if ((video.paused && !video.ended) || video.muted) enSilencio(); }, 500);
+    }
+    video.addEventListener('volumechange', function(){ if (esperando && !video.muted && video.volume > 0) yaSuena(); });
+    video.muted = false;
+    video.volume = 1;
+    var intento = video.play();
+    if (!intento || !intento.then) { if (video.paused) enSilencio(); return; }
+    intento.then(function(){ if (video.muted) esperarToque(false); }, enSilencio);
+  }
+  if (location.hash === '#pedidos-por-whatsapp') { centrar(); setTimeout(centrar, 400); window.addEventListener('load', function(){ setTimeout(centrar, 150); }); arrancar(); }
+  window.addEventListener('hashchange', function(){ if (location.hash === '#pedidos-por-whatsapp') { centrar(); arrancar(); } });
 })();
 
 // ── COUNTER ANIMATION ──
