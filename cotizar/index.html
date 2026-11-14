@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- «Cotiza tu envío» (14-nov-2026). La pantalla «Pedir motorizado» del panel del comercio, pública y solo para
+       cotizar: el mismo mapa, el mismo buscador y el MISMO precio que Alisa (api.deliservy.site/api/comercio/cotizar-envio).
+       Sin cuenta, sin guardar nada. Solo lo nuestro: ningún script ni estilo de fuera. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' https://api.deliservy.site https://www.deliservy.website; worker-src blob:; child-src blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#09090b">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Cotiza un envío de Deliservy en Valencia: marca tu comercio y a tu cliente en el mapa y mira el precio al momento, sin registrarte.">
+  <meta property="og:title" content="Cotiza tu envío · Deliservy">
+  <meta property="og:description" content="Mira cuánto cuesta un motorizado de Deliservy desde tu comercio hasta tu cliente. Sin registrarte.">
+  <meta property="og:image" content="https://www.deliservy.com/assets/logo-hd.png">
+  <title>Cotiza tu envío · Deliservy</title>
+  <link rel="icon" href="/assets/logo-icon.png">
+  <link rel="preload" href="/comercio/fuentes/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/comercio/app.css?v=2026102817">
+  <link rel="stylesheet" href="/cotizar/cotizar.css?v=2026111401">
+  <script src="/comercio/base.js?v=2026102607" defer></script>
+  <script src="/comercio/mapa.js?v=2026102607" defer></script>
+  <script src="/cotizar/cotizar.js?v=2026111401" defer></script>
+</head>
+<body>
+  <noscript><p class="sin-js">Para cotizar tu envío, activa JavaScript en tu navegador.</p></noscript>
+  <div id="app"><div class="cargando-todo">Cargando…</div></div>
+</body>
+</html>

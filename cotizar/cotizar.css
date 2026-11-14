@@ -1,0 +1,19 @@
+/* «Cotiza tu envío» (14-nov-2026): lo poco que no trae el panel del comercio (app.css). */
+.cotizar { max-width: 1120px; margin: 0 auto; padding: 16px 16px 40px; }
+.cotizar-cabecera { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.cotizar-cabecera img { width: 44px; height: 44px; border-radius: 12px; flex: 0 0 auto; }
+.cotizar-cabecera .titulo { min-width: 0; }
+.cotizar-cabecera small { display: block; color: var(--m); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.cotizar-cabecera h1 { margin: 0; font-size: 24px; line-height: 1.15; font-weight: 800; }
+.cotizar-intro { color: var(--m); font-size: 15px; margin: 0 0 14px; max-width: 720px; }
+.cotizar .ventajas { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.cotizar .ventajas li { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; }
+.cotizar .ventajas li::before { content: '✓'; color: var(--ok); font-weight: 800; }
+.cotizar .aviso-precio { color: var(--m); font-size: 13.5px; margin: 10px 0 0; }
+.cotizar .btn.whatsapp { background: #128C4A; border-color: #128C4A; color: #fff; }
+.cotizar .pie { color: var(--m); font-size: 12.5px; text-align: center; margin: 22px 0 0; }
+.cotizar .pie a { color: inherit; }
+@media (min-width: 900px) {
+  .cotizar .rejilla-pedir { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  .cotizar .col-mapa { position: sticky; top: 16px; }
+}
