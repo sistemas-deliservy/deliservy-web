@@ -8,7 +8,8 @@
  *
  * «Pedir motorizado», de dos formas que terminan en el mismo pedido:
  *  - Con botones: el tipo (envío, contra viaje y, si se los activaron, contra efectivo y exclusivo), A (la tienda) y B
- *    (buscar o tocar el mapa), quién recibe, nota y paquetes → Cotizar (precio y minutos) → Pedir.
+ *    (buscar o tocar el mapa), quién recibe y nota → Cotizar (precio y minutos) → Pedir. Sin «Paquetes» (14-nov-2026,
+ *    Gilberth: «quítalo también»): cada pedido es UN envío; la API cotiza 1 si no le llega el número.
  *    La calle se pide en cuanto A y B tienen coordenadas: OpenStreetMap (Valhalla), sin Google y sin guardar
  *    precio. Si no contesta, se queda la recta punteada. «Cotizar» pide el precio a Google y no cambia la línea.
  *  - Con Alisa: la misma de WhatsApp, en burbujas; si su respuesta trae una cotización, una tarjeta con el mapa (A y B)
@@ -424,7 +425,7 @@
 
   function conBotones(ctx, v, caja, f) {
     var tienda = laTienda(ctx, f);
-    var e = { tipo: 'envio', a: tienda, b: null, editando: 'b', cot: null, paquetes: 1, calle: null, calleClave: '', callePedida: '' };
+    var e = { tipo: 'envio', a: tienda, b: null, editando: 'b', cot: null, calle: null, calleClave: '', callePedida: '' };
     var mapaCaja = h('div', { class: 'mapa mapa-pedir' });
     var m = null;
     var tipos = Object.keys(TIPOS).filter(function (k) { return k === 'envio' || k === 'contra_viaje' || (k === 'contra_efectivo' && f.contraEfectivo) || (k === 'exclusivo' && f.exclusivo); });
@@ -539,11 +540,6 @@
     var nombre = C.entrada({ id: 'recibe-nombre', maxlength: '60', placeholder: 'Nombre', autocomplete: 'off' });
     var telefono = C.entrada({ id: 'recibe-telefono', type: 'tel', inputmode: 'tel', maxlength: '16', placeholder: '0412 555 0198', autocomplete: 'off' });
     var nota = h('textarea', { class: 'campo', id: 'nota-flota', rows: '2', maxlength: '300', placeholder: C.segunIdioma('Ej.: llamar al llegar, edificio azul', 'E.g.: call on arrival, blue building') });
-    var cuenta = h('b', { class: 'cuenta-paquetes' }, '1');
-    var menos = h('button', { class: 'boton-icono', type: 'button', 'aria-label': 'Menos paquetes' }, h('span', { 'aria-hidden': 'true' }, '−'));
-    var masB = h('button', { class: 'boton-icono', type: 'button', 'aria-label': 'Más paquetes' }, ico('agregar'));
-    menos.addEventListener('click', function () { e.paquetes = Math.max(1, e.paquetes - 1); cuenta.textContent = String(e.paquetes); quitarCotizacion(); });
-    masB.addEventListener('click', function () { e.paquetes = Math.min(10, e.paquetes + 1); cuenta.textContent = String(e.paquetes); quitarCotizacion(); });
     var montoEfectivo = C.entrada({ id: 'monto-cobrar', inputmode: 'decimal', maxlength: '9', placeholder: '0,00' });
     var efectivo = h('div', { hidden: e.tipo !== 'contra_efectivo' }, C.campo('monto-cobrar', 'Monto que cobra al entregar', h('div', { class: 'con-sufijo' }, montoEfectivo, h('span', null, '$'))));
     var error = h('p', { class: 'error', role: 'alert', hidden: true });
@@ -577,7 +573,6 @@
       if (mal) return;
       var cuerpo = puntosDelMapa();
       cuerpo.recibe = { nombre: nombre.value.trim().slice(0, 60), telefono: telefono.value.replace(/\D/g, '') };
-      cuerpo.paquetes = e.paquetes;
       if (nota.value.trim()) cuerpo.nota = nota.value.trim().slice(0, 300);
       if (efectivoUsd != null) cuerpo.efectivoUsd = C.redondo(efectivoUsd);
       C.trabajando(cotizar, C.pedir('POST', '/flota/cotizar?' + q(ctx), cuerpo)).then(function (r) {
@@ -645,7 +640,6 @@
           h('h2', null, '¿Quién recibe?'),
           h('div', { class: 'dos-campos' }, C.campo('recibe-nombre', 'Nombre', nombre), C.campo('recibe-telefono', 'Teléfono', telefono)),
           C.campo('nota-flota', 'Nota para el motorizado', nota),
-          h('div', { class: 'grupo-campo' }, h('span', { class: 'etq-campo' }, 'Paquetes'), h('div', { class: 'contador' }, menos, cuenta, masB)),
           efectivo),
         error, resultado,
         h('div', { class: 'botones' }, cotizar))));
