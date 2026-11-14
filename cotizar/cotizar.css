@@ -17,3 +17,5 @@
   .cotizar .rejilla-pedir { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
   .cotizar .col-mapa { position: sticky; top: 16px; }
 }
+/* Los tipos de servicio: tres tarjetas que se acomodan solas (el panel, con cuatro, las pone en fila en pantallas anchas). */
+.cotizar .tipos-servicio { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
