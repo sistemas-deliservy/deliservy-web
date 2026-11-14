@@ -9,7 +9,7 @@
  *  - A y B se buscan (el buscador del panel, nuestro mapa), se tocan en el mapa, se arrastran o se pega un enlace de
  *    Google Maps o Apple Maps (`POST /api/comercio/cotizar-envio/enlace`, como «resolver-direccion» del panel).
  *  - En cuanto hay A y B, la calle de OpenStreetMap (`/cotizar-envio/calle`); si no contesta, la recta punteada.
- *  - Paquetes, como el contador del panel (1 a 10).
+ *  - SIN paquetes (14-nov-2026, Gilberth: «quita eso de paquetes de allí»): siempre el precio de UN envío.
  *  - «Cotizar» → `POST /api/comercio/cotizar-envio`: lo que pagaría un comercio NUEVO de la flota, con las mismas piezas
  *    que el panel y Alisa. Sin cuenta, sin quién recibe y sin guardar nada: no hay «Pedir». Después del precio,
  *    «Activar por WhatsApp» al 0426-5201529 (el número de los comercios), con la cotización escrita.
@@ -44,7 +44,7 @@
 
   function pagina() {
     // `comercio()`: cuál de los dos puntos es el comercio (A en envío y contra efectivo; B en contra viaje).
-    var e = { tipo: 'envio', a: null, b: null, editando: 'a', cot: null, paquetes: 1, calle: null, calleClave: '', callePedida: '' };
+    var e = { tipo: 'envio', a: null, b: null, editando: 'a', cot: null, calle: null, calleClave: '', callePedida: '' };
     var comercio = function () { return e.tipo === 'contra_viaje' ? 'b' : 'a'; };
     var m = null;
     var mapaCaja = h('div', { class: 'mapa mapa-pedir' });
@@ -160,12 +160,6 @@
       }, function () { /* sin calle: se queda la recta punteada */ });
     }
 
-    var cuenta = h('b', { class: 'cuenta-paquetes' }, '1');
-    var menos = h('button', { class: 'boton-icono', type: 'button', 'aria-label': 'Menos paquetes' }, h('span', { 'aria-hidden': 'true' }, '−'));
-    var mas = h('button', { class: 'boton-icono', type: 'button', 'aria-label': 'Más paquetes' }, ico('agregar'));
-    menos.addEventListener('click', function () { e.paquetes = Math.max(1, e.paquetes - 1); cuenta.textContent = String(e.paquetes); quitarCotizacion(); });
-    mas.addEventListener('click', function () { e.paquetes = Math.min(10, e.paquetes + 1); cuenta.textContent = String(e.paquetes); quitarCotizacion(); });
-
     function quitarCotizacion() {
       if (!e.cot) return;
       e.cot = null;
@@ -179,7 +173,7 @@
       error.textContent = mal; error.hidden = !mal;
       if (mal) return;
       var punto = function (p) { return { lat: Number(Number(p.lat).toFixed(6)), lng: Number(Number(p.lng).toFixed(6)) }; };
-      C.trabajando(cotizar, C.pedir('POST', '/cotizar-envio', { tipo: e.tipo, paquetes: e.paquetes, a: punto(e.a), b: punto(e.b) }, { sinSesion: true })).then(function (r) {
+      C.trabajando(cotizar, C.pedir('POST', '/cotizar-envio', { tipo: e.tipo, a: punto(e.a), b: punto(e.b) }, { sinSesion: true })).then(function (r) {
         e.cot = r || {};
         pintarResultado();
       }, function (er) { error.textContent = (er && er.message) || 'No pude cotizar ahora. Intenta de nuevo en un momento.'; error.hidden = false; });
@@ -189,7 +183,6 @@
       var precio = C.dolares(r.precioUsd);
       var detalle = TIPOS[r.tipo] ? TIPOS[r.tipo][0].toLowerCase() : 'envío';
       var texto = 'Hola, quiero activar Pedidos por WhatsApp. Coticé en la web un ' + detalle + ': ' + precio
-        + (r.paquetes > 1 ? ' (' + r.paquetes + ' paquetes)' : '')
         + (r.distanciaKm != null ? ', ' + km(r.distanciaKm) : '') + '.';
       var otro = C.boton('Cotizar otro', { class: 'btn borde' });
       otro.addEventListener('click', function () {
@@ -201,8 +194,7 @@
       if (r.recargoHorario) recargos.push('el recargo de este horario');
       if (r.clima) recargos.push('el recargo por ' + String(r.clima.situacion || 'el clima'));
       var partes = [];
-      if (r.paquetes > 1) partes.push(r.paquetes + ' paquetes × ' + C.dolares(r.precioUnEnvioUsd));
-      if (C.num(r.recargoEfectivoUsd) > 0) partes.push('recargo por cobrar en efectivo ' + C.dolares(r.recargoEfectivoUsd));
+      if (C.num(r.recargoEfectivoUsd) > 0) partes.push('Envío ' + C.dolares(r.precioUnEnvioUsd), 'recargo por cobrar en efectivo ' + C.dolares(r.recargoEfectivoUsd));
       C.reemplazar(resultado, [
         h('div', { class: 'cot-cifras' },
           h('div', { class: 'cot-precio' }, h('small', null, 'Precio'), dato('b', null, precio)),
@@ -244,8 +236,6 @@
               h('button', { class: 'enlace-mini', type: 'button', onclick: function () { var x = e.a; e.a = e.b; e.b = x; quitarCotizacion(); pintarPuntos(); ponerEnMapa(); } }, ico('recargar'), 'Intercambiar A y B')),
             buscadorDir.caja,
             h('p', { class: 'ayuda' }, 'También puedes pegar un enlace de Google Maps o de Apple Maps.')),
-          h('div', { class: 'tarjeta' },
-            h('div', { class: 'grupo-campo' }, h('span', { class: 'etq-campo' }, 'Paquetes'), h('div', { class: 'contador' }, menos, cuenta, mas))),
           error, resultado,
           h('div', { class: 'botones' }, cotizar))),
       h('p', { class: 'pie' }, 'Deliservyapp, C.A. · RIF J-504754129 · ', h('a', { href: 'https://www.deliservy.com/' }, 'www.deliservy.com'))));
