@@ -1,13 +1,18 @@
 /*
  * «COTIZA TU ENVÍO» (www.deliservy.com/cotizar, 14-nov-2026).
  *
- * Gilberth: «que ellos puedan chequear nuestros precios antes de inscribirse… la sección de pedidos por flota que ya
- * tienes armada». Es «Pedir motorizado» del panel del comercio (comercio/flota.js), pública y solo para cotizar:
- *  - A = tu comercio y B = tu cliente: se buscan (el buscador del panel, nuestro mapa) o se tocan en el mapa.
- *  - En cuanto hay A y B, la calle de OpenStreetMap (`POST /api/comercio/cotizar-envio/calle`); si no contesta, la recta.
+ * Gilberth: «que ellos puedan chequear nuestros precios antes de inscribirse… todo tal cual como está en comercio, con
+ * todas sus integraciones; lo único es que no pueden solicitar el servicio». Es «Pedir motorizado» con botones del panel
+ * del comercio (comercio/flota.js, `conBotones`), pública y solo para cotizar:
+ *  - Tipo de servicio: envío, contra viaje (se busca donde digas y se trae a tu comercio) y contra efectivo (cobra al
+ *    entregar, con su recargo). El exclusivo no: su tarifa es la de cada comercio.
+ *  - A y B se buscan (el buscador del panel, nuestro mapa), se tocan en el mapa, se arrastran o se pega un enlace de
+ *    Google Maps o Apple Maps (`POST /api/comercio/cotizar-envio/enlace`, como «resolver-direccion» del panel).
+ *  - En cuanto hay A y B, la calle de OpenStreetMap (`/cotizar-envio/calle`); si no contesta, la recta punteada.
+ *  - Paquetes, como el contador del panel (1 a 10).
  *  - «Cotizar» → `POST /api/comercio/cotizar-envio`: lo que pagaría un comercio NUEVO de la flota, con las mismas piezas
- *    que Alisa (por la calle, con el nocturno y el clima de ese momento). Sin cuenta y sin guardar nada.
- *  - Después del precio, «Activar por WhatsApp» al 0426-5201529 (el número de los comercios), con el precio escrito.
+ *    que el panel y Alisa. Sin cuenta, sin quién recibe y sin guardar nada: no hay «Pedir». Después del precio,
+ *    «Activar por WhatsApp» al 0426-5201529 (el número de los comercios), con la cotización escrita.
  * Usa base.js y mapa.js del panel, tal cual.
  */
 (function (raiz) {
@@ -17,6 +22,12 @@
   if (!C || !C.mapa) return;
   var h = C.h, dato = C.dato, ico = C.ico;
   var WHATSAPP_0426 = 'https://wa.me/584265201529';
+  // Los del panel (comercio/flota.js), con «tu comercio» en vez de «tu tienda».
+  var TIPOS = {
+    envio: ['Envío', 'De tu comercio a tu cliente.'],
+    contra_viaje: ['Contra viaje', 'Lo busca donde digas y lo trae a tu comercio.'],
+    contra_efectivo: ['Contra efectivo', 'Cobra a tu cliente al entregar.'],
+  };
 
   /** El trazado de la calle: `[lng, lat]` (lo que pinta el mapa) o `{lat, lng}`. Con menos de dos puntos, nada. */
   function coordsDeRuta(ruta) {
@@ -32,15 +43,47 @@
   function km(n) { return String(C.redondo(n)).replace('.', ',') + ' km'; }
 
   function pagina() {
-    var e = { a: null, b: null, editando: 'a', cot: null, calle: null, calleClave: '', callePedida: '' };
+    // `comercio()`: cuál de los dos puntos es el comercio (A en envío y contra efectivo; B en contra viaje).
+    var e = { tipo: 'envio', a: null, b: null, editando: 'a', cot: null, paquetes: 1, calle: null, calleClave: '', callePedida: '' };
+    var comercio = function () { return e.tipo === 'contra_viaje' ? 'b' : 'a'; };
     var m = null;
     var mapaCaja = h('div', { class: 'mapa mapa-pedir' });
+
+    var cajaTipos = h('div', { class: 'tipos-servicio', role: 'radiogroup', 'aria-label': 'Tipo de servicio' });
+    function pintarTipos() {
+      C.reemplazar(cajaTipos, Object.keys(TIPOS).map(function (k) {
+        return h('button', { type: 'button', role: 'radio', 'aria-checked': String(e.tipo === k), class: 'tipo' + (e.tipo === k ? ' activo' : ''), onclick: function () { elegirTipo(k); } },
+          h('b', null, TIPOS[k][0]), h('small', null, TIPOS[k][1]));
+      }));
+    }
+    function elegirTipo(k) {
+      var antes = e.tipo;
+      e.tipo = k;
+      // Contra viaje: se busca donde diga el comercio y se trae al comercio (B es el comercio), como en el panel.
+      if ((k === 'contra_viaje') !== (antes === 'contra_viaje')) {
+        var x = e.a; e.a = e.b; e.b = x;
+        e.editando = e.a ? (e.b ? e.editando : 'b') : 'a';
+      }
+      quitarCotizacion();
+      pintarTipos(); pintarPuntos(); ponerEnMapa();
+    }
+
     var puntoA = h('div', { class: 'punto-campo' });
     var puntoB = h('div', { class: 'punto-campo' });
+    var claveDelEnlace = e.editando;
     var buscadorDir = C.mapa.buscador({
       id: 'buscar-dir',
       cerca: function () { return (m && m.centro()) || e.a || e.b || null; },
       alElegir: function (lugar) { ponerPunto(e.editando, lugar); },
+      alEscribir: function () { claveDelEnlace = e.editando === 'a' ? 'a' : 'b'; },
+      // Un enlace de Google Maps o Apple Maps: el servidor lo abre (como en el panel) y da el punto exacto.
+      alEnlace: function (texto) {
+        var clave = claveDelEnlace === 'a' ? 'a' : 'b';
+        return C.pedir('POST', '/cotizar-envio/enlace', { texto: texto }, { sinSesion: true }).then(function (r) {
+          if (!r || !C.mapa.valido(r)) throw new Error('No pude leer ese enlace. Prueba con otro o toca el mapa.');
+          ponerPunto(clave, { lat: Number(r.lat), lng: Number(r.lng), direccion: typeof r.direccion === 'string' ? r.direccion : '' });
+        });
+      },
     });
     var avisoToque = h('p', { class: 'ayuda' }, 'Busca la dirección o toca el punto exacto en el mapa.');
     var error = h('p', { class: 'error', role: 'alert', hidden: true });
@@ -50,9 +93,11 @@
     function pintarPuntos() {
       var fila = function (letra, p, clave) {
         var editando = e.editando === clave;
+        var esComercio = comercio() === clave;
+        var pista = esComercio ? 'Tu comercio' : e.tipo === 'contra_viaje' ? 'Dónde se busca' : 'Tu cliente';
         return [
           h('span', { class: 'letra ' + clave }, letra),
-          h('div', { class: 'txt' }, h('small', null, clave === 'a' ? 'Tu comercio' : 'Tu cliente'),
+          h('div', { class: 'txt' }, h('small', null, (clave === 'a' ? 'Recoge en' : 'Entrega en') + ' · ' + pista),
             p ? dato('b', null, p.direccion || 'Punto en el mapa')
               : h('b', { class: 'falta' }, editando ? 'Búscalo o toca el mapa' : 'Falta')),
           h('button', {
@@ -114,6 +159,13 @@
         ponerEnMapa();
       }, function () { /* sin calle: se queda la recta punteada */ });
     }
+
+    var cuenta = h('b', { class: 'cuenta-paquetes' }, '1');
+    var menos = h('button', { class: 'boton-icono', type: 'button', 'aria-label': 'Menos paquetes' }, h('span', { 'aria-hidden': 'true' }, '−'));
+    var mas = h('button', { class: 'boton-icono', type: 'button', 'aria-label': 'Más paquetes' }, ico('agregar'));
+    menos.addEventListener('click', function () { e.paquetes = Math.max(1, e.paquetes - 1); cuenta.textContent = String(e.paquetes); quitarCotizacion(); });
+    mas.addEventListener('click', function () { e.paquetes = Math.min(10, e.paquetes + 1); cuenta.textContent = String(e.paquetes); quitarCotizacion(); });
+
     function quitarCotizacion() {
       if (!e.cot) return;
       e.cot = null;
@@ -121,12 +173,13 @@
       cotizar.hidden = false;
     }
     cotizar.addEventListener('click', function () {
-      var mal = !e.a || !C.mapa.valido(e.a) ? 'Marca dónde está tu comercio (el punto A).'
-        : !e.b || !C.mapa.valido(e.b) ? 'Marca a dónde va el pedido (el punto B).' : '';
+      var cv = e.tipo === 'contra_viaje';
+      var mal = !e.a || !C.mapa.valido(e.a) ? (cv ? 'Marca dónde se recoge (el punto A).' : 'Marca dónde está tu comercio (el punto A).')
+        : !e.b || !C.mapa.valido(e.b) ? (cv ? 'Marca dónde está tu comercio (el punto B).' : 'Marca a dónde va el pedido (el punto B).') : '';
       error.textContent = mal; error.hidden = !mal;
       if (mal) return;
       var punto = function (p) { return { lat: Number(Number(p.lat).toFixed(6)), lng: Number(Number(p.lng).toFixed(6)) }; };
-      C.trabajando(cotizar, C.pedir('POST', '/cotizar-envio', { a: punto(e.a), b: punto(e.b) }, { sinSesion: true })).then(function (r) {
+      C.trabajando(cotizar, C.pedir('POST', '/cotizar-envio', { tipo: e.tipo, paquetes: e.paquetes, a: punto(e.a), b: punto(e.b) }, { sinSesion: true })).then(function (r) {
         e.cot = r || {};
         pintarResultado();
       }, function (er) { error.textContent = (er && er.message) || 'No pude cotizar ahora. Intenta de nuevo en un momento.'; error.hidden = false; });
@@ -134,22 +187,32 @@
     function pintarResultado() {
       var r = e.cot;
       var precio = C.dolares(r.precioUsd);
-      var texto = 'Hola, quiero activar Pedidos por WhatsApp. Coticé un envío en la web: ' + precio
-        + (r.distanciaKm != null ? ' (' + km(r.distanciaKm) + ')' : '') + '.';
+      var detalle = TIPOS[r.tipo] ? TIPOS[r.tipo][0].toLowerCase() : 'envío';
+      var texto = 'Hola, quiero activar Pedidos por WhatsApp. Coticé en la web un ' + detalle + ': ' + precio
+        + (r.paquetes > 1 ? ' (' + r.paquetes + ' paquetes)' : '')
+        + (r.distanciaKm != null ? ', ' + km(r.distanciaKm) : '') + '.';
       var otro = C.boton('Cotizar otro', { class: 'btn borde' });
-      otro.addEventListener('click', function () { quitarCotizacion(); e.b = null; e.editando = 'b'; pintarPuntos(); ponerEnMapa(); });
+      otro.addEventListener('click', function () {
+        quitarCotizacion();
+        var cliente = comercio() === 'a' ? 'b' : 'a';
+        e[cliente] = null; e.editando = cliente; pintarPuntos(); ponerEnMapa();
+      });
       var recargos = [];
       if (r.recargoHorario) recargos.push('el recargo de este horario');
       if (r.clima) recargos.push('el recargo por ' + String(r.clima.situacion || 'el clima'));
+      var partes = [];
+      if (r.paquetes > 1) partes.push(r.paquetes + ' paquetes × ' + C.dolares(r.precioUnEnvioUsd));
+      if (C.num(r.recargoEfectivoUsd) > 0) partes.push('recargo por cobrar en efectivo ' + C.dolares(r.recargoEfectivoUsd));
       C.reemplazar(resultado, [
         h('div', { class: 'cot-cifras' },
           h('div', { class: 'cot-precio' }, h('small', null, 'Precio'), dato('b', null, precio)),
           // Sin ruta (el mapa no contestó) la API da «minutos: null»: no se inventa «~0 min».
           r.minutos != null ? h('div', null, h('small', null, 'Llega en'), dato('b', null, '~' + Math.round(C.num(r.minutos)) + ' min')) : null,
           r.distanciaKm != null ? h('div', null, h('small', null, 'Distancia'), dato('b', null, km(r.distanciaKm))) : null),
+        partes.length ? h('p', { class: 'aviso-precio' }, partes.join(' + ') + '.') : null,
         h('p', { class: 'aviso-precio' }, (r.porRuta === false ? 'Precio aproximado: ahora no pude trazar la calle. ' : '') + (recargos.length
           ? 'Es el precio de ahora: incluye ' + recargos.join(' y ') + '. En otro horario y sin lluvia, baja.'
-          : 'Es el precio de ahora. De noche, en fin de semana o con lluvia puede subir.')),
+          : 'Es el precio de ahora. De noche, en días especiales o con lluvia puede subir.')),
         h('ul', { class: 'ventajas' },
           h('li', null, 'Sin costo de afiliación y sin porcentaje de tus ventas: pagas solo el envío.'),
           h('li', null, 'Pagas por pago móvil o transferencia, en el mismo chat de WhatsApp.'),
@@ -173,13 +236,20 @@
         h('div', { class: 'col-mapa' }, mapaCaja, avisoToque),
         h('div', { class: 'col-form' },
           h('div', { class: 'tarjeta' },
+            h('h2', null, '¿Qué necesitas?'),
+            cajaTipos),
+          h('div', { class: 'tarjeta' },
             h('h2', null, '¿De dónde a dónde?'),
             h('div', { class: 'puntos' }, puntoA, puntoB,
               h('button', { class: 'enlace-mini', type: 'button', onclick: function () { var x = e.a; e.a = e.b; e.b = x; quitarCotizacion(); pintarPuntos(); ponerEnMapa(); } }, ico('recargar'), 'Intercambiar A y B')),
-            buscadorDir.caja),
+            buscadorDir.caja,
+            h('p', { class: 'ayuda' }, 'También puedes pegar un enlace de Google Maps o de Apple Maps.')),
+          h('div', { class: 'tarjeta' },
+            h('div', { class: 'grupo-campo' }, h('span', { class: 'etq-campo' }, 'Paquetes'), h('div', { class: 'contador' }, menos, cuenta, mas))),
           error, resultado,
           h('div', { class: 'botones' }, cotizar))),
       h('p', { class: 'pie' }, 'Deliservyapp, C.A. · RIF J-504754129 · ', h('a', { href: 'https://www.deliservy.com/' }, 'www.deliservy.com'))));
+    pintarTipos();
     pintarPuntos();
     C.mapa.crear(mapaCaja, { centro: C.mapa.VALENCIA, zoom: 13 }).then(function (mm) {
       m = mm;
