@@ -19,3 +19,23 @@
 }
 /* Los tipos de servicio: tres tarjetas que se acomodan solas (el panel, con cuatro, las pone en fila en pantallas anchas). */
 .cotizar .tipos-servicio { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+/* 22-nov-2026: «¿Qué quieres cotizar?» (mototaxi, taxi y pedidos por flota), los tipos de taxi y «Desde» / «Hasta». */
+.cotizar .elegir-servicio { margin: 0 0 12px; }
+.cotizar .servicios { grid-template-columns: minmax(0, 1fr); }
+.cotizar .tipo.servicio { flex-direction: row; align-items: center; gap: 12px; }
+.cotizar .tipo.servicio > .ico { width: 30px; height: 30px; color: var(--m); }
+.cotizar .tipo.servicio.activo > .ico { color: var(--rt); }
+.cotizar .tipo.servicio .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+@media (min-width: 640px) { .cotizar .servicios { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cotizar .tipos-servicio.taxis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cotizar .campo-viaje { padding: 10px; border: 1.5px solid var(--b); border-radius: 12px; background: var(--c); }
+.cotizar .campo-viaje.editando { border-color: var(--r); }
+.cotizar .campo-viaje label { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14.5px; margin: 0 0 8px; }
+.cotizar .campo-viaje .letra { width: 24px; height: 24px; }
+.cotizar .otros-taxis { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.cotizar .otros-taxis button { display: inline-flex; gap: 6px; border: 1.5px solid var(--b); background: var(--c2); color: var(--t); border-radius: 999px; padding: 7px 14px; min-height: 44px; align-items: center; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.cotizar .otros-taxis button b { color: var(--rt); }
+.cotizar .otros-taxis button:hover { border-color: var(--r); }
+/* En el teléfono, primero «Desde» y «Hasta» y después el mapa. */
+@media (max-width: 899px) { .cotizar .rejilla-pedir > .col-form { order: -1; } }
+.cotizar .campo-viaje label .pista-punto { color: var(--m); font-weight: 700; font-size: 13px; }
