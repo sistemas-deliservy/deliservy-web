@@ -1,7 +1,7 @@
 <!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pide tu taxi o mototaxi · Deliservy</title>
-<meta name="description" content="Pide tu taxi o mototaxi en Valencia y todo Carabobo: por WhatsApp con Alisa, en la web sin registrarte o en la app Deliservy.">
+<meta name="description" content="Pide tu taxi o mototaxi en Valencia y todo Carabobo: por WhatsApp con Alisa o en la app Deliservy.">
 <link rel="icon" href="/assets/logo-icon.png">
 <style>
   :root{color-scheme:dark;--red:#e41616;--orange:#ff5a1f;--grad:linear-gradient(135deg,var(--red),var(--orange))}
@@ -40,17 +40,13 @@
 <div class="op" id="op-wa">
   <a class="btn" id="wa" href="https://wa.me/584144957006?text=Hola%2C%20quiero%20pedir%20un%20taxi.">💬 Pedir por WhatsApp</a>
 </div>
-<div class="op" id="op-web">
-  <a class="btn sec" id="web" href="https://www.deliservy.com/viaje/deliservy">🌐 Pedir en la web, sin registrarte</a>
-  <small>Marcas el mapa, ves el precio y pagas. Para confirmar tu número te llega un código por WhatsApp.</small>
-</div>
 <div class="op" id="op-app">
-  <a class="btn sec" id="app" href="https://api.deliservy.site/api/referral/r/google-busqueda">📲 Descargar la app</a>
+  <a class="btn sec" id="app" href="https://api.deliservy.site/api/referral/r/google-taxi">📲 Descargar la app</a>
   <div class="tiendas" id="tiendas" hidden>
     <a class="btn sec" href="https://play.google.com/store/apps/details?id=com.ivc.deliservy">Google Play</a>
     <a class="btn sec" href="https://apps.apple.com/us/app/deliservy/id6761390577">App Store</a>
   </div>
-  <small>Te registras con un código por SMS. Ahí también pides comida.</small>
+  <small>Pides taxi o mototaxi desde la app. Te registras con un código por SMS y ahí también pides comida.</small>
 </div>
 <a class="cotiza" href="/cotizar/#taxi">Cotiza tu viaje antes de pedirlo →</a>
 <div class="servicios"><b>Mototaxi</b> · <b>Taxi</b> · <b>Taxi premium</b> con aire · <b>Taxi XL</b> · <b>Taxi de lujo</b><br>En Valencia y todo el estado Carabobo.</div>
@@ -59,13 +55,13 @@
 </div>
 <script>
 // deliservy.com/taxi (Gilberth, 25-nov-2026): la página del anuncio de búsqueda de Google para taxi y mototaxi.
-// «Lo mejor es vía WhatsApp; si no tiene WhatsApp, vía web.» NADA se abre solo (Google castiga las páginas que
+// «Lo mejor es vía WhatsApp»; 25-nov: «si lo quieres solicitar en mototaxi o taxi, descarga la app» → solo WhatsApp y app (sin la web). NADA se abre solo (Google castiga las páginas que
 // redirigen sin que la persona toque): son botones. En Android el de WhatsApp es un intent: si el teléfono no tiene
 // WhatsApp, vuelve aquí con ?sin=1 y la página lo dice y pone la app primero (la web también pide un código que
-// llega por WhatsApp; la app se registra con SMS). La web es www.deliservy.com/viaje/deliservy: sin promotor.
+// llega por WhatsApp; la app se registra con SMS).
 (function(){
   var TEL="584144957006", MSG="Hola, quiero pedir un taxi.";
-  var DESCARGA="https://api.deliservy.site/api/referral/r/google-busqueda";
+  var DESCARGA="https://api.deliservy.site/api/referral/r/google-taxi";
   var ua=navigator.userAgent.toLowerCase();
   var ios=/iphone|ipad|ipod/.test(ua), android=/android/.test(ua);
   var emb=/instagram|fbav|fban|fb_iab|messenger|tiktok|musical_ly|snapchat|line\//.test(ua);
@@ -81,7 +77,7 @@
   if(ios || android) app.href=DESCARGA;
   else { app.hidden=true; document.getElementById('tiendas').hidden=false; }
   if(sin){
-    document.getElementById('estado').textContent='No encontramos WhatsApp en este teléfono. Descarga la app (te registras con un código por SMS) o, si tienes WhatsApp en otro teléfono, pídelo en la web.';
+    document.getElementById('estado').textContent='No encontramos WhatsApp en este teléfono. Descarga la app Deliservy y pide tu taxi o mototaxi desde ahí (te registras con un código por SMS).';
     var opApp=document.getElementById('op-app'), opWa=document.getElementById('op-wa');
     opWa.parentNode.insertBefore(opApp, opWa);
     app.className='btn'; wa.className='btn sec';

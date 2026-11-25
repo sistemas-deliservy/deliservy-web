@@ -1,0 +1,11 @@
+# «Pide comida en la app» (www.deliservy.com/comida, 25-nov-2026): la página del anuncio de búsqueda de Google.
+# Que ninguna otra página la meta en un marco, que el navegador no adivine tipos y sin «Referer» hacia fuera.
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "DENY"
+  Header always set Content-Security-Policy "frame-ancestors 'none'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "no-referrer"
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
