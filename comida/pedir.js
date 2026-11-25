@@ -28,7 +28,7 @@
   document.head.appendChild(oculto);
   var hoja = document.createElement('link');
   hoja.rel = 'stylesheet';
-  hoja.href = '/comida/pedir.css?v=20261125b';
+  hoja.href = '/comida/pedir.css?v=20261125c';
   // La lista se dibuja cuando llega su hoja de estilos (sin ella se vería desarmada); si no llega, lo de antes.
   var cssListo = new Promise(function (bien, mal) { hoja.onload = bien; hoja.onerror = mal; setTimeout(mal, 6000); });
   document.head.appendChild(hoja);
@@ -159,6 +159,9 @@
   /** Mientras llega la búsqueda nueva se quedan los productos de la anterior (sin parpadeo al escribir). */
   function productosQueSeVen() {
     if (!raices(S.q).length || !S.busqueda) return [];
+    var clave = claveDe(S.q);
+    var antes = S.busqueda.clave;
+    if (clave !== antes && clave.indexOf(antes) !== 0 && antes.indexOf(clave) !== 0) return [];
     var porId = {};
     S.lista.tiendas.forEach(function (t) { porId[t.id] = t; });
     return (S.busqueda.productos || []).filter(function (p) {
@@ -356,12 +359,15 @@
     var clave = claveDe(S.q);
     if (!clave) { S.busqueda = null; pedidoDeBusqueda++; pintar(); return; }
     pintar();
-    // Las mismas raíces que la búsqueda que ya está («pizza» → «pizzas»): nada que pedir.
-    if (busquedaAlDia()) return;
+    // Las mismas raíces que la búsqueda que ya está («pizza» → «pizzas»): nada que pedir, y lo que venía en camino
+    // (otra búsqueda que se escribió y se borró) ya no vale.
+    if (busquedaAlDia()) { pedidoDeBusqueda++; return; }
+    var q = S.q;
     reloj = setTimeout(function () {
       var n = ++pedidoDeBusqueda;
-      // Se mandan las raíces (no el texto): el servidor las calcula igual y la misma búsqueda es la misma petición.
-      pedir('/buscar?q=' + encodeURIComponent(clave)).then(function (r) {
+      // Se manda el TEXTO: el servidor saca sus raíces (y su memoria ya junta las búsquedas con las mismas). Mandar las
+      // raíces las volvía a pasar por las palabras vacías: «algodón» quedaba en «algo» y se perdía.
+      pedir('/buscar?q=' + encodeURIComponent(q.trim().slice(0, 60))).then(function (r) {
         if (n !== pedidoDeBusqueda) return;
         S.busqueda = { clave: clave, tiendas: Array.isArray(r && r.tiendas) ? r.tiendas : [], productos: Array.isArray(r && r.productos) ? r.productos : [] };
         pintar();
@@ -385,9 +391,9 @@
   Promise.all([cssListo, domListo]).then(armar, volverALoDeAntes);
   // La lista al día (abre y cierra con la hora): al volver a la pestaña y cada 3 minutos mientras se ve.
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && S.lista && Date.now() - S.cargadaEn > 90000) cargar(true);
+    if (!abandonada && document.visibilityState === 'visible' && S.lista && Date.now() - S.cargadaEn > 90000) cargar(true);
   });
   setInterval(function () {
-    if (document.visibilityState === 'visible' && S.lista && Date.now() - S.cargadaEn > 180000) cargar(true);
+    if (!abandonada && document.visibilityState === 'visible' && S.lista && Date.now() - S.cargadaEn > 180000) cargar(true);
   }, 60000);
 })();
