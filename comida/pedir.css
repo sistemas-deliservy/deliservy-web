@@ -1,0 +1,136 @@
+/*
+ * Pedir comida desde la COMPUTADORA (www.deliservy.com/comida, 25-nov-2026): la lista de tiendas de `pedir.js`.
+ * Solo se carga en la computadora y todo va dentro de `html.compu` / `#pedir`: el teléfono no lo ve.
+ * Los colores de la marca (CLAUDE.md del repo): rojo #e41616, naranja #ff5a1f, el degradado y el fondo oscuro.
+ */
+html.compu {
+  color-scheme: dark;
+  --red: #e41616; --orange: #ff5a1f; --grad: linear-gradient(135deg, var(--red), var(--orange));
+  --fondo: #08080a; --tarjeta: #141418; --tarjeta2: #1b1b21; --borde: #26262c; --borde2: #34343c;
+  --texto: #f5f5f7; --suave: #b4b4bd; --tenue: #8a8a92; --ok: #4cc488; --oro: #ffd700;
+}
+html.compu body {
+  display: block; min-height: 100vh; margin: 0; padding: 0; text-align: left; background: var(--fondo); color: var(--texto);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+html.compu body > .c { display: none !important; }
+
+.pd { max-width: 1180px; margin: 0 auto; padding: 0 28px 28px; }
+.pd a { color: inherit; }
+
+/* La barra de arriba */
+.pd-cab {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 22px; padding: 16px 0;
+  background: rgba(8, 8, 10, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--borde);
+}
+.pd-marca { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 20px; letter-spacing: -.3px; flex: none; }
+.pd-marca img { width: 40px; height: 40px; border-radius: 10px; }
+.pd-busca { position: relative; flex: 1; max-width: 560px; }
+.pd-lupa { position: absolute; left: 15px; top: 50%; transform: translateY(-52%); font-size: 20px; color: var(--tenue); pointer-events: none; }
+.pd-q {
+  width: 100%; height: 46px; padding: 0 16px 0 44px; border-radius: 999px; border: 1px solid var(--borde2);
+  background: var(--tarjeta); color: var(--texto); font: inherit; font-size: 15px; outline: none;
+}
+.pd-q::placeholder { color: var(--tenue); }
+.pd-q:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255, 90, 31, .22); }
+.pd-app {
+  margin-left: auto; flex: none; text-decoration: none; padding: 11px 16px; border-radius: 12px; font-weight: 600; font-size: 14px;
+  background: var(--tarjeta2); border: 1px solid var(--borde2);
+}
+.pd-app:hover { border-color: var(--orange); }
+
+/* El saludo */
+.pd-main { padding-top: 26px; }
+.pd-hola h1 { font-size: 34px; line-height: 1.15; margin: 4px 0 6px; letter-spacing: -.8px; }
+.pd-hola p { margin: 0 0 22px; color: var(--suave); font-size: 16px; }
+
+/* Las categorías */
+.pd-cats { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 26px; }
+.pd-cat {
+  display: flex; align-items: center; gap: 9px; padding: 6px 15px 6px 6px; border-radius: 999px; cursor: pointer;
+  background: var(--tarjeta); border: 1px solid var(--borde); color: var(--texto); font: inherit; font-size: 14px; font-weight: 600;
+}
+.pd-cat img, .pd-cat-todas {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--tarjeta2);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.pd-cat:hover { border-color: var(--borde2); background: var(--tarjeta2); }
+.pd-cat.activa { background: var(--grad); border-color: transparent; color: #fff; }
+.pd-cat:focus-visible, .pd-tienda:focus-visible, .pd-prod:focus-visible, .pd-app:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* Las secciones y la rejilla */
+.pd-sec { margin: 0 0 30px; }
+.pd-sec h2 { font-size: 20px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; letter-spacing: -.3px; }
+.pd-cuenta { font-size: 13px; font-weight: 600; color: var(--suave); background: var(--tarjeta2); border: 1px solid var(--borde); padding: 1px 9px; border-radius: 999px; }
+.pd-nota { margin: -6px 0 14px; color: var(--suave); font-size: 14px; }
+.pd-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 16px; }
+
+/* La tarjeta de la tienda (como la de la app: la foto, el nombre, las estrellas y «Cerrado») */
+.pd-tienda {
+  display: flex; flex-direction: column; text-decoration: none; background: var(--tarjeta); border: 1px solid var(--borde);
+  border-radius: 14px; overflow: hidden; transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.pd-tienda:hover { transform: translateY(-2px); border-color: var(--borde2); box-shadow: 0 12px 28px rgba(0, 0, 0, .45); }
+.pd-foto { position: relative; aspect-ratio: 4 / 3; background: var(--tarjeta2); overflow: hidden; }
+.pd-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pd-inicial { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 700; color: #fff; background: var(--grad); }
+.pd-cinta {
+  position: absolute; top: 18px; left: -30px; transform: rotate(-15deg); width: 150px; text-align: center; padding: 6px 0 6px 14px;
+  background: rgba(0, 0, 0, .82); color: #fff; font-size: 13px; font-weight: 600; border-radius: 8px;
+}
+.pd-tienda.cerrada .pd-foto img { filter: grayscale(.85) brightness(.7); }
+.pd-cuerpo { padding: 11px 13px 13px; }
+.pd-cuerpo h3 { margin: 0 0 3px; font-size: 15px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-linea { margin: 0; font-size: 13px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-est b { color: var(--oro); font-weight: 400; }
+.pd-nueva { color: var(--suave); }
+.pd-estado { margin: 6px 0 0; font-size: 13px; color: var(--suave); }
+.pd-estado.ok { color: var(--ok); font-weight: 600; }
+
+/* Los productos del buscador */
+.pd-prods { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.pd-prod {
+  display: flex; gap: 12px; align-items: center; text-decoration: none; background: var(--tarjeta); border: 1px solid var(--borde);
+  border-radius: 14px; padding: 10px; transition: border-color .15s ease;
+}
+.pd-prod:hover { border-color: var(--borde2); }
+.pd-prod-foto { width: 72px; height: 72px; flex: none; border-radius: 10px; overflow: hidden; background: var(--tarjeta2); }
+.pd-prod-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pd-prod.cerrada .pd-prod-foto img { filter: grayscale(.85) brightness(.7); }
+.pd-prod-cuerpo { min-width: 0; }
+.pd-prod-cuerpo h4 { margin: 0 0 3px; font-size: 14px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pd-prod-precio { margin: 0; font-size: 13px; color: var(--suave); }
+.pd-prod-precio b { color: var(--texto); }
+.pd-prod-tienda { margin: 2px 0 0; font-size: 12px; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pd-vacio { margin: 10px 0 34px; padding: 28px; text-align: center; color: var(--suave); background: var(--tarjeta); border: 1px dashed var(--borde2); border-radius: 14px; }
+
+/* La app y el taxi, abajo */
+.pd-descarga {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: center; margin: 12px 0 0; padding: 20px 22px;
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 18px;
+}
+.pd-descarga h2 { font-size: 18px; margin: 0 0 4px; }
+.pd-descarga p { margin: 0 0 10px; color: var(--suave); font-size: 14px; }
+.pd-qr { width: 132px; height: 132px; background: #fff; border-radius: 12px; padding: 7px; display: block; }
+.pd-tiendas-app { display: flex; gap: 8px; }
+.pd-tiendas-app a { text-decoration: none; padding: 10px 14px; border-radius: 11px; font-weight: 600; font-size: 14px; background: var(--tarjeta2); border: 1px solid var(--borde2); }
+.pd-tiendas-app a:hover { border-color: var(--orange); }
+.pd-taxi { padding-left: 22px; border-left: 1px solid var(--borde); max-width: 260px; }
+.pd-taxi a { font-weight: 600; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pd-pie { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde); font-size: 12px; color: var(--tenue); }
+
+@media (max-width: 760px) {
+  .pd { padding: 0 16px 20px; }
+  .pd-cab { gap: 12px; flex-wrap: wrap; }
+  .pd-busca { order: 3; flex-basis: 100%; max-width: none; }
+  .pd-hola h1 { font-size: 26px; }
+  .pd-descarga { grid-template-columns: auto 1fr; }
+  .pd-taxi { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--borde); padding-top: 14px; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd-tienda, .pd-prod { transition: none; }
+  .pd-tienda:hover { transform: none; }
+}
