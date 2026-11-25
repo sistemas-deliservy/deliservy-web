@@ -134,3 +134,12 @@ html.compu body > .c { display: none !important; }
   .pd-tienda, .pd-prod { transition: none; }
   .pd-tienda:hover { transform: none; }
 }
+
+/* Solo para lectores de pantalla (el título mientras se busca y el «N tiendas» que se anuncia) */
+.pd-oculto { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Mientras llega la lista */
+.pd-cargando { color: var(--suave); }
+.pd-esq { aspect-ratio: 4 / 3.9; border-radius: 14px; background: linear-gradient(100deg, var(--tarjeta) 40%, var(--tarjeta2) 50%, var(--tarjeta) 60%); background-size: 300% 100%; border: 1px solid var(--borde); animation: pd-brillo 1.4s ease-in-out infinite; }
+@keyframes pd-brillo { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .pd-esq { animation: none; } }

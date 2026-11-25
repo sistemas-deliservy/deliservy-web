@@ -28,7 +28,9 @@
   document.head.appendChild(oculto);
   var hoja = document.createElement('link');
   hoja.rel = 'stylesheet';
-  hoja.href = '/comida/pedir.css?v=20261125';
+  hoja.href = '/comida/pedir.css?v=20261125b';
+  // La lista se dibuja cuando llega su hoja de estilos (sin ella se vería desarmada); si no llega, lo de antes.
+  var cssListo = new Promise(function (bien, mal) { hoja.onload = bien; hoja.onerror = mal; setTimeout(mal, 6000); });
   document.head.appendChild(hoja);
 
   /** '' (relativo) en localhost (pruebas); en la web, la dirección entera de la API (como `tienda/app.js`). */
@@ -41,8 +43,11 @@
   var APP_STORE = 'https://apps.apple.com/us/app/deliservy/id6761390577';
   var PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.ivc.deliservy';
 
-  var S = { lista: null, cargadaEn: 0, categoria: 0, q: '', busqueda: null, buscando: false };
+  var S = { lista: null, cargadaEn: 0, categoria: 0, q: '', busqueda: null };
   var raiz = null;
+  var principal = null;
+  var aviso = null;
+  var abandonada = false;
   var reloj = null;
   var pedidoDeBusqueda = 0;
 
@@ -71,9 +76,10 @@
     return s[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + s[1];
   }
   function urlFoto(u) { return typeof u === 'string' && /^https:\/\/[^\s"'<>\\]+$/i.test(u) ? u : null; }
+  var MARCAS = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
   function plano(t) {
     var s = String(t || '').toLowerCase();
-    return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
+    return s.normalize ? s.normalize('NFD').replace(MARCAS, '') : s;
   }
   // Las raíces del buscador de la app (`src/common/buscar-texto.ts`): cada palabra sin tildes, de 2 letras o más,
   // cortada a 4 y sin las vacías; y la tienda coincide si TODAS empiezan alguna palabra de su nombre.
@@ -91,15 +97,18 @@
     });
     return salen.slice(0, 5);
   }
+  /** Las raíces juntas: dos textos con las mismas raíces son la misma búsqueda («pizza», «Pizzas », «PIZZERÍA»). */
+  function claveDe(q) { return raices(q).join(' '); }
+  function busquedaAlDia() { return !!S.busqueda && S.busqueda.clave === claveDe(S.q); }
   function tieneRaices(texto, rs) {
     if (!rs.length) return true;
     var palabras = plano(texto).split(/[^a-z0-9]+/).filter(Boolean);
     return rs.every(function (r) { return palabras.some(function (w) { return w.indexOf(r) === 0; }); });
   }
 
-  function pedir(ruta) {
+  function pedir(ruta, ms) {
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 12000);
+    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 12000);
     return fetch(API + ruta, {
       headers: { Accept: 'application/json' }, credentials: 'omit', signal: ctrl ? ctrl.signal : undefined,
     }).then(function (r) {
@@ -111,8 +120,10 @@
 
   // ── La lista ────────────────────────────────────────────────────────────────
 
+  /** La primera vez espera 5 s como mucho (quien llega del anuncio no se queda mirando una pantalla vacía). */
   function cargar(callado) {
-    return pedir('/tiendas').then(function (d) {
+    return pedir('/tiendas', callado ? 12000 : 5000).then(function (d) {
+      if (abandonada) return;
       if (!d || !Array.isArray(d.tiendas) || !Array.isArray(d.categorias)) throw new Error('sin lista');
       if (d.mantenimiento || !d.tiendas.length) throw new Error('sin tiendas');
       S.lista = d;
@@ -126,6 +137,7 @@
   }
 
   function volverALoDeAntes() {
+    abandonada = true;
     raizHtml.classList.remove('compu');
     if (oculto.parentNode) oculto.parentNode.removeChild(oculto);
     if (raiz && raiz.parentNode) raiz.parentNode.removeChild(raiz);
@@ -136,7 +148,7 @@
   function tiendasQueSeVen() {
     var l = S.lista;
     var rs = raices(S.q);
-    var delServidor = S.busqueda && S.busqueda.q === S.q ? S.busqueda.tiendas : [];
+    var delServidor = busquedaAlDia() ? S.busqueda.tiendas : [];
     return l.tiendas.filter(function (t) {
       if (S.categoria && (t.categorias || []).indexOf(S.categoria) < 0) return false;
       if (!rs.length) return true;
@@ -144,8 +156,9 @@
     });
   }
 
+  /** Mientras llega la búsqueda nueva se quedan los productos de la anterior (sin parpadeo al escribir). */
   function productosQueSeVen() {
-    if (!raices(S.q).length || !S.busqueda || S.busqueda.q !== S.q) return [];
+    if (!raices(S.q).length || !S.busqueda) return [];
     var porId = {};
     S.lista.tiendas.forEach(function (t) { porId[t.id] = t; });
     return (S.busqueda.productos || []).filter(function (p) {
@@ -156,13 +169,26 @@
 
   // ── El dibujo ───────────────────────────────────────────────────────────────
 
-  var principal = null;
   /** La barra de arriba (con el buscador) se crea UNA vez: al escribir solo se repinta la lista. */
   function armar() {
+    if (abandonada || raiz) return;
     principal = h('main', { class: 'pd-main' });
     raiz = h('div', { id: 'pedir', class: 'pd' }, [cabecera(), principal, h('footer', { class: 'pd-pie', text: 'Deliservy · RIF: J-504754129' })]);
     document.body.insertBefore(raiz, document.body.firstChild);
     pintar();
+  }
+
+  /** Mientras llega la lista: el saludo, «Cargando tiendas…» y tarjetas vacías. */
+  function cargando() {
+    var esq = [];
+    for (var i = 0; i < 8; i++) esq.push(h('div', { class: 'pd-esq', 'aria-hidden': 'true' }));
+    return h('div', {}, [
+      h('div', { class: 'pd-hola' }, [
+        h('h1', { text: 'Pide comida en Valencia' }),
+        h('p', { class: 'pd-cargando', role: 'status', text: 'Cargando tiendas…' }),
+      ]),
+      h('div', { class: 'pd-rejilla' }, esq),
+    ]);
   }
 
   function cabecera() {
@@ -173,6 +199,7 @@
       onkeydown: function (e) { if (e.key === 'Escape') { e.target.value = ''; escribir(''); } },
       onsearch: function (e) { if (!e.target.value) escribir(''); },
     });
+    aviso = h('p', { class: 'pd-oculto', role: 'status', 'aria-live': 'polite' });
     return h('header', { class: 'pd-cab' }, [
       h('a', { class: 'pd-marca', href: '/', 'aria-label': 'Deliservy, inicio' }, [
         h('img', { src: '/assets/logo-icon.png', alt: '', width: '40', height: '40' }),
@@ -183,6 +210,7 @@
         buscador,
       ]),
       h('a', { class: 'pd-app', href: '#pd-descarga', text: '📲 La app' }),
+      aviso,
     ]);
   }
 
@@ -191,10 +219,10 @@
     var chip = function (id, nombre, imagen) {
       var activa = S.categoria === id;
       return h('button', {
-        type: 'button', class: 'pd-cat' + (activa ? ' activa' : ''), 'aria-pressed': activa ? 'true' : 'false',
+        type: 'button', class: 'pd-cat' + (activa ? ' activa' : ''), 'aria-pressed': activa ? 'true' : 'false', 'data-cat': String(id),
         onclick: function () { S.categoria = activa && id ? 0 : id; pintar(); },
       }, [
-        urlFoto(imagen) ? h('img', { src: imagen, alt: '', loading: 'lazy', width: '44', height: '44' }) : h('span', { class: 'pd-cat-todas', 'aria-hidden': 'true', text: '🍽️' }),
+        urlFoto(imagen) ? h('img', { src: imagen, alt: '', loading: 'lazy', width: '44', height: '44', onerror: quitarFoto }) : h('span', { class: 'pd-cat-todas', 'aria-hidden': 'true', text: '🍽️' }),
         h('span', { text: nombre }),
       ]);
     };
@@ -202,13 +230,17 @@
       l.categorias.map(function (c) { return chip(c.id, c.nombre, c.imagen); })));
   }
 
+  /** Una foto que no carga: fuera (queda el fondo de la tarjeta), sin el icono de imagen rota. */
+  function quitarFoto() { if (this.parentNode) this.parentNode.removeChild(this); }
+
   function tarjetaDeTienda(t) {
     var foto = urlFoto(t.logo);
+    var inicial = function () { return h('span', { class: 'pd-inicial', 'aria-hidden': 'true', text: String(t.nombre || 'D').charAt(0).toUpperCase() }); };
     var cats = (S.lista.categorias || []).filter(function (c) { return (t.categorias || []).indexOf(c.id) >= 0; })
       .map(function (c) { return c.nombre; });
     return h('a', { class: 'pd-tienda' + (t.abierta ? '' : ' cerrada'), href: '/t/' + encodeURIComponent(String(t.id)) }, [
       h('div', { class: 'pd-foto' }, [
-        foto ? h('img', { src: foto, alt: '', loading: 'lazy' }) : h('span', { class: 'pd-inicial', 'aria-hidden': 'true', text: String(t.nombre || 'D').charAt(0).toUpperCase() }),
+        foto ? h('img', { src: foto, alt: '', loading: 'lazy', onerror: function () { if (this.parentNode) this.parentNode.replaceChild(inicial(), this); } }) : inicial(),
         t.abierta ? null : h('span', { class: 'pd-cinta', text: 'Cerrado' }),
       ]),
       h('div', { class: 'pd-cuerpo' }, [
@@ -229,7 +261,7 @@
     var precio = p.precio ? (p.precio.desde ? 'Desde ' : '') + miles(p.precio.usd) + ' $' : 'Ver opciones';
     var bs = p.precio && S.lista.tasa ? miles(p.precio.usd * S.lista.tasa) + ' Bs' : null;
     return h('a', { class: 'pd-prod' + (p.abierta ? '' : ' cerrada'), href: '/p/' + encodeURIComponent(String(p.id)) }, [
-      h('div', { class: 'pd-prod-foto' }, [foto ? h('img', { src: foto, alt: '', loading: 'lazy' }) : null]),
+      h('div', { class: 'pd-prod-foto' }, [foto ? h('img', { src: foto, alt: '', loading: 'lazy', onerror: quitarFoto }) : null]),
       h('div', { class: 'pd-prod-cuerpo' }, [
         h('h4', { text: p.nombre }),
         h('p', { class: 'pd-prod-precio' }, [h('b', { text: precio }), bs ? h('span', { text: ' · ' + bs }) : null]),
@@ -266,15 +298,20 @@
   }
 
   function pintar() {
-    if (!raiz) { if (S.lista) armar(); return; }
+    if (!principal) return;
+    if (!S.lista) { principal.textContent = ''; principal.appendChild(cargando()); return; }
+    // Si el foco estaba en una categoría, vuelve a ella tras repintar (con el teclado no se pierde).
+    var activo = document.activeElement;
+    var catEnfocada = activo && activo.getAttribute ? activo.getAttribute('data-cat') : null;
     var hay = raices(S.q).length > 0;
     var tiendas = tiendasQueSeVen();
     var abiertas = tiendas.filter(function (t) { return t.abierta; });
     var cerradas = tiendas.filter(function (t) { return !t.abierta; });
     var productos = productosQueSeVen();
-    var esperando = hay && (!S.busqueda || S.busqueda.q !== S.q);
+    var esperando = hay && !busquedaAlDia();
 
     var cuerpo = [];
+    if (hay) cuerpo.push(h('h1', { class: 'pd-oculto', text: 'Resultados para «' + S.q.trim() + '»' }));
     if (!hay) {
       cuerpo.push(h('div', { class: 'pd-hola' }, [
         h('h1', { text: 'Pide comida en Valencia' }),
@@ -300,6 +337,15 @@
 
     principal.textContent = '';
     cuerpo.forEach(function (x) { principal.appendChild(x); });
+    if (catEnfocada != null && /^\d+$/.test(catEnfocada)) {
+      var chip = principal.querySelector('[data-cat="' + catEnfocada + '"]');
+      if (chip) chip.focus();
+    }
+    // Para los lectores de pantalla: cuántas tiendas (y productos) se ven ahora.
+    var dice = hay
+      ? (esperando ? 'Buscando…' : tiendas.length + (tiendas.length === 1 ? ' tienda' : ' tiendas') + ' y ' + productos.length + (productos.length === 1 ? ' producto' : ' productos'))
+      : abiertas.length + (abiertas.length === 1 ? ' tienda abierta' : ' tiendas abiertas');
+    if (aviso && aviso.textContent !== dice) aviso.textContent = dice;
   }
 
   // ── El buscador ─────────────────────────────────────────────────────────────
@@ -307,19 +353,22 @@
   function escribir(texto) {
     S.q = String(texto || '');
     clearTimeout(reloj);
+    var clave = claveDe(S.q);
+    if (!clave) { S.busqueda = null; pedidoDeBusqueda++; pintar(); return; }
     pintar();
-    if (!raices(S.q).length) { S.busqueda = null; return; }
-    var q = S.q;
+    // Las mismas raíces que la búsqueda que ya está («pizza» → «pizzas»): nada que pedir.
+    if (busquedaAlDia()) return;
     reloj = setTimeout(function () {
       var n = ++pedidoDeBusqueda;
-      pedir('/buscar?q=' + encodeURIComponent(q.trim().slice(0, 60))).then(function (r) {
+      // Se mandan las raíces (no el texto): el servidor las calcula igual y la misma búsqueda es la misma petición.
+      pedir('/buscar?q=' + encodeURIComponent(clave)).then(function (r) {
         if (n !== pedidoDeBusqueda) return;
-        S.busqueda = { q: q, tiendas: Array.isArray(r && r.tiendas) ? r.tiendas : [], productos: Array.isArray(r && r.productos) ? r.productos : [] };
+        S.busqueda = { clave: clave, tiendas: Array.isArray(r && r.tiendas) ? r.tiendas : [], productos: Array.isArray(r && r.productos) ? r.productos : [] };
         pintar();
       }).catch(function () {
         if (n !== pedidoDeBusqueda) return;
         // Sin el servidor, al menos las tiendas por su nombre.
-        S.busqueda = { q: q, tiendas: [], productos: [] };
+        S.busqueda = { clave: clave, tiendas: [], productos: [] };
         pintar();
       });
     }, 280);
@@ -327,11 +376,18 @@
 
   // ── Arranque ────────────────────────────────────────────────────────────────
 
-  function empezar() { cargar(false); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', empezar);
-  else empezar();
-  // Al volver a la pestaña, la lista al día (abre y cierra con la hora).
+  // La lista se pide YA (en paralelo con la página); se dibuja cuando están la página y su hoja de estilos.
+  cargar(false);
+  var domListo = new Promise(function (bien) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bien);
+    else bien();
+  });
+  Promise.all([cssListo, domListo]).then(armar, volverALoDeAntes);
+  // La lista al día (abre y cierra con la hora): al volver a la pestaña y cada 3 minutos mientras se ve.
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && S.lista && Date.now() - S.cargadaEn > 90000) cargar(true);
   });
+  setInterval(function () {
+    if (document.visibilityState === 'visible' && S.lista && Date.now() - S.cargadaEn > 180000) cargar(true);
+  }, 60000);
 })();
