@@ -45,7 +45,7 @@
   <small>Marcas el mapa, ves el precio y pagas. Para confirmar tu número te llega un código por WhatsApp.</small>
 </div>
 <div class="op" id="op-app">
-  <a class="btn sec" id="app" href="https://play.google.com/store/apps/details?id=com.ivc.deliservy">📲 Descargar la app</a>
+  <a class="btn sec" id="app" href="https://api.deliservy.site/api/referral/r/google-busqueda">📲 Descargar la app</a>
   <div class="tiendas" id="tiendas" hidden>
     <a class="btn sec" href="https://play.google.com/store/apps/details?id=com.ivc.deliservy">Google Play</a>
     <a class="btn sec" href="https://apps.apple.com/us/app/deliservy/id6761390577">App Store</a>
@@ -65,7 +65,7 @@
 // llega por WhatsApp; la app se registra con SMS). La web es www.deliservy.com/viaje/deliservy: sin promotor.
 (function(){
   var TEL="584144957006", MSG="Hola, quiero pedir un taxi.";
-  var PLAY="https://play.google.com/store/apps/details?id=com.ivc.deliservy", APPLE="https://apps.apple.com/us/app/deliservy/id6761390577";
+  var DESCARGA="https://api.deliservy.site/api/referral/r/google-busqueda";
   var ua=navigator.userAgent.toLowerCase();
   var ios=/iphone|ipad|ipod/.test(ua), android=/android/.test(ua);
   var emb=/instagram|fbav|fban|fb_iab|messenger|tiktok|musical_ly|snapchat|line\//.test(ua);
@@ -75,9 +75,10 @@
   var wa=document.getElementById('wa');
   wa.href=(android && !emb) ? 'intent://send?phone='+TEL+'&text='+t+'#Intent;scheme=whatsapp;S.browser_fallback_url='+encodeURIComponent(volver)+';end'
                             : 'https://wa.me/'+TEL+'?text='+t;
+  // En el teléfono, el enlace inteligente de descarga (App Store o Play Store según el aparato) con el código
+  // google-busqueda: así el panel cuenta en «Campañas de descarga» los que vinieron del anuncio (Gilberth, 25-nov).
   var app=document.getElementById('app');
-  if(ios) app.href=APPLE;
-  else if(android) app.href=PLAY;
+  if(ios || android) app.href=DESCARGA;
   else { app.hidden=true; document.getElementById('tiendas').hidden=false; }
   if(sin){
     document.getElementById('estado').textContent='No encontramos WhatsApp en este teléfono. Descarga la app (te registras con un código por SMS) o, si tienes WhatsApp en otro teléfono, pídelo en la web.';
