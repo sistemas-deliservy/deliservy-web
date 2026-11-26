@@ -4,8 +4,8 @@
 <meta name="description" content="Pide tu taxi o mototaxi en Valencia y todo Carabobo: por WhatsApp con Alisa o en la app Deliservy.">
 <meta name="theme-color" content="#08080a">
 <link rel="icon" href="/assets/logo-icon.png">
-<link rel="preload" as="image" href="/assets/fotos/taxi-moto-v.webp?v=3" media="(orientation:portrait)" fetchpriority="high">
-<link rel="preload" as="image" href="/assets/fotos/taxi-moto-h.webp?v=3" media="(orientation:landscape)" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/fotos/taxi-moto-v.webp?v=4" media="(orientation:portrait)" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/fotos/taxi-moto-h.webp?v=4" media="(orientation:landscape)" fetchpriority="high">
 <style>
   :root{color-scheme:dark;--red:#e41616;--orange:#ff5a1f;--grad:linear-gradient(135deg,var(--red),var(--orange));--dark:#08080a;--wa:#25d366}
   *{box-sizing:border-box}
@@ -79,8 +79,8 @@
     footer{text-align:left}
   }
 
-  .f1{background-image:url(/assets/fotos/taxi-moto-v.webp?v=3)}
-  @media (orientation:landscape){.f1{background-image:url(/assets/fotos/taxi-moto-h.webp?v=3)}}
+  .f1{background-image:url(/assets/fotos/taxi-moto-v.webp?v=4)}
+  @media (orientation:landscape){.f1{background-image:url(/assets/fotos/taxi-moto-h.webp?v=4)}}
   .op+.op{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.11)}
   .op small{margin-top:10px;text-align:center}
   .tiendas{justify-content:center}
@@ -171,7 +171,7 @@
   var fotos=(caja.getAttribute('data-fotos')||'').split(',');
   if(fotos.length<2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var capas=caja.querySelectorAll('.f'), i=0, arriba=0;
-  function url(n){ return '/assets/fotos/'+n+(matchMedia('(orientation: portrait)').matches?'-v':'-h')+'.webp?v=3'; }
+  function url(n){ return '/assets/fotos/'+n+(matchMedia('(orientation: portrait)').matches?'-v':'-h')+'.webp?v=4'; }
   function turno(){
     if(!caja.offsetWidth){ setTimeout(turno,7000); return; }   // la página no se está viendo: no se baja nada
     var n=(i+1)%fotos.length, im=new Image();
