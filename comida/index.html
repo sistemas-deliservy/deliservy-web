@@ -86,7 +86,7 @@
   html:not(.pc) .fondo{display:none}
   html:not(.pc) .cab{margin-bottom:28px}
   html:not(.pc) .heroe{margin:auto 0}
-  html.pc .f1{background-image:url(/assets/fotos/comida-1-h.webp?v=2)}
+  html.pc .f1{background-image:url(/assets/fotos/comida-1-h.webp?v=3)}
   .descarga{display:flex;flex-wrap:wrap;align-items:center;gap:20px}
   .descarga>div{flex:1;min-width:180px}
   .qr{display:block;flex:none;width:148px;height:148px;padding:8px;background:#fff;border-radius:14px}
@@ -94,7 +94,7 @@
 </style></head><body><div class="c">
 <script>
 // Precarga la primera foto solo en la computadora y solo si esta página es la que se ve (no la lista de tiendas de pedir.js).
-(function(d){var h=d.documentElement;if(/(^| )pc( |$)/.test(h.className) && !/(^| )compu( |$)/.test(h.className)){var l=d.createElement('link');l.rel='preload';l.as='image';l.href='/assets/fotos/comida-1-h.webp?v=2';d.head.appendChild(l);}})(document);
+(function(d){var h=d.documentElement;if(/(^| )pc( |$)/.test(h.className) && !/(^| )compu( |$)/.test(h.className)){var l=d.createElement('link');l.rel='preload';l.as='image';l.href='/assets/fotos/comida-1-h.webp?v=3';d.head.appendChild(l);}})(document);
 </script>
 <!-- Fotos de fondo (solo computadora): /assets/fotos/<nombre>-h.webp, 1920×1080. Para sumar otra: añadir su nombre a data-fotos. -->
 <div class="fondo" data-fotos="comida-1,comida-2,comida-3" aria-hidden="true"><div class="f f1 ve"></div><div class="f"></div><div class="velo"></div></div>
@@ -165,7 +165,7 @@
   var fotos=(caja.getAttribute('data-fotos')||'').split(',');
   if(fotos.length<2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var capas=caja.querySelectorAll('.f'), i=0, arriba=0;
-  function url(n){ return '/assets/fotos/'+n+('-h')+'.webp?v=2'; }
+  function url(n){ return '/assets/fotos/'+n+('-h')+'.webp?v=3'; }
   function turno(){
     if(!caja.offsetWidth){ setTimeout(turno,7000); return; }   // la página no se está viendo: no se baja nada
     var n=(i+1)%fotos.length, im=new Image();
