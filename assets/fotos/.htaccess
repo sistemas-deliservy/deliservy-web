@@ -1,0 +1,6 @@
+# Fotos de fondo de /comida, /taxi y /flota (25-nov-2026). Un día de caché: al cambiar una foto (mismo nombre) se ve al día siguiente.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(webp|jpg)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+</IfModule>
