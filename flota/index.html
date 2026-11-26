@@ -79,11 +79,11 @@
     footer{text-align:left}
   }
 
-  /* En el teléfono la foto baja un poco más y se agranda: las tiendas y los motorizados quedan justo encima del título. */
+  /* En el teléfono la foto ocupa lo de arriba entera (sin agrandar): se leen los tres letreros y los motorizados quedan encima del título. */
   :root{--pos-v:center top;--pos-h:center}
   @media (max-width:899px),(orientation:portrait){
     .fondo{height:76vh;height:76svh}
-    .f{background-size:auto 128%}
+    .f{background-size:cover}
   }
   .f1{background-image:url(/assets/fotos/flota-1-v.webp)}
   @media (orientation:landscape){.f1{background-image:url(/assets/fotos/flota-1-h.webp)}}
