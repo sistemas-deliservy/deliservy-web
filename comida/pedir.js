@@ -28,7 +28,7 @@
   document.head.appendChild(oculto);
   var hoja = document.createElement('link');
   hoja.rel = 'stylesheet';
-  hoja.href = '/comida/pedir.css?v=20261126b';
+  hoja.href = '/comida/pedir.css?v=20261126c';
   // La lista se dibuja cuando llega su hoja de estilos (sin ella se vería desarmada); si no llega, lo de antes.
   var cssListo = new Promise(function (bien, mal) { hoja.onload = bien; hoja.onerror = mal; setTimeout(mal, 6000); });
   document.head.appendChild(hoja);

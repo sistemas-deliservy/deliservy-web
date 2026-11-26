@@ -41,18 +41,18 @@ html.compu body > .c { display: none !important; }
 }
 .pd-app:hover { border-color: var(--orange); }
 
-/* El saludo, sobre la foto de comida de la página de antes (/assets/fotos/comida-1-h.webp?v=3, la comida a la derecha).
-   La foto se ve entera de alto desde arriba (auto 170 %): la MANO que sostiene la porción de pizza tiene que salir
-   (26-nov-2026, Gilberth: la porción sola flotando no). Con «cover» quedaba cortada.
-   Si la foto no llega queda el degradado oscuro y el texto se lee igual. Todo con valores propios: el index.html
-   tiene estilos sueltos para h1 y footer que, si no, se le cuelan a la lista. */
+/* El saludo, sobre la foto de comida de la página de antes (/assets/fotos/comida-1-h.webp?v=4: una pareja en el sofá
+   comiendo hamburguesas, a la derecha; la izquierda es oscura y ahí va el texto). Desde el 26-nov-2026 las fotos son
+   «reales» (gente de verdad, luz natural; Gilberth: las de antes se veían falsas): «cover» encuadrado al 30 % desde
+   arriba para que salgan las caras y la hamburguesa. Si la foto no llega queda el degradado oscuro y el texto se lee
+   igual. Todo con valores propios: el index.html tiene estilos sueltos para h1 y footer que, si no, se le cuelan a la lista. */
 .pd-main { padding-top: 26px; }
 .pd-hola {
   display: flex; flex-direction: column; justify-content: center; min-height: 250px; margin: 0 0 24px; padding: 34px 40px;
   border-radius: 22px; border: 1px solid var(--borde); overflow: hidden;
   background:
     linear-gradient(90deg, rgba(8, 8, 10, .95) 0, rgba(8, 8, 10, .8) 32%, rgba(8, 8, 10, .15) 62%, rgba(8, 8, 10, 0) 100%),
-    url(/assets/fotos/comida-1-h.webp?v=3) right 0 top 6% / auto 170% no-repeat,
+    url(/assets/fotos/comida-1-h.webp?v=4) right 0 top 30% / cover no-repeat,
     var(--tarjeta);
 }
 .pd-hola h1 {
@@ -143,7 +143,7 @@ html.compu body > .c { display: none !important; }
   .pd-cab { gap: 12px; flex-wrap: wrap; }
   .pd-busca { order: 3; flex-basis: 100%; max-width: none; }
   .pd-hola { min-height: 220px; padding: 26px 22px; background-position: 0 0, center top; background-size: auto, cover;
-    background-image: linear-gradient(90deg, rgba(8, 8, 10, .95) 0, rgba(8, 8, 10, .78) 60%, rgba(8, 8, 10, .35) 100%), url(/assets/fotos/comida-1-h.webp?v=3); }
+    background-image: linear-gradient(90deg, rgba(8, 8, 10, .95) 0, rgba(8, 8, 10, .78) 60%, rgba(8, 8, 10, .35) 100%), url(/assets/fotos/comida-1-h.webp?v=4); }
   .pd-hola h1 { font-size: 28px; }
   .pd-descarga { grid-template-columns: auto 1fr; }
   .pd-taxi { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--borde); padding-top: 14px; max-width: none; }
