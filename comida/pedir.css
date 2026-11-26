@@ -41,10 +41,24 @@ html.compu body > .c { display: none !important; }
 }
 .pd-app:hover { border-color: var(--orange); }
 
-/* El saludo */
+/* El saludo, sobre la foto de comida de la página de antes (/assets/fotos/comida-1-h.webp, la comida a la derecha).
+   Si la foto no llega queda el degradado oscuro y el texto se lee igual. Todo con valores propios: el index.html
+   tiene estilos sueltos para h1 y footer que, si no, se le cuelan a la lista. */
 .pd-main { padding-top: 26px; }
-.pd-hola h1 { font-size: 34px; line-height: 1.15; margin: 4px 0 6px; letter-spacing: -.8px; }
-.pd-hola p { margin: 0 0 22px; color: var(--suave); font-size: 16px; }
+.pd-hola {
+  display: flex; flex-direction: column; justify-content: center; min-height: 250px; margin: 0 0 24px; padding: 34px 40px;
+  border-radius: 22px; border: 1px solid var(--borde); overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(8, 8, 10, .95) 0, rgba(8, 8, 10, .8) 32%, rgba(8, 8, 10, .15) 62%, rgba(8, 8, 10, 0) 100%),
+    url(/assets/fotos/comida-1-h.webp) right 42% / cover no-repeat,
+    var(--tarjeta);
+}
+.pd-hola h1 {
+  max-width: 520px; font-size: 42px; font-weight: 800; line-height: 1.08; margin: 0 0 10px; letter-spacing: -1.2px;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, .6); text-wrap: balance;
+}
+.pd-hola p { max-width: 540px; margin: 0; color: #e4e4ea; font-size: 17px; text-shadow: 0 1px 10px rgba(0, 0, 0, .8); }
+.pd-hola .pd-cargando { color: var(--suave); }
 
 /* Las categorías */
 .pd-cats { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 26px; }
@@ -120,13 +134,15 @@ html.compu body > .c { display: none !important; }
 .pd-tiendas-app a:hover { border-color: var(--orange); }
 .pd-taxi { padding-left: 22px; border-left: 1px solid var(--borde); max-width: 260px; }
 .pd-taxi a { font-weight: 600; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.pd-pie { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde); font-size: 12px; color: var(--tenue); }
+.pd-pie { text-align: left; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--borde); font-size: 12px; color: var(--tenue); }
 
 @media (max-width: 760px) {
   .pd { padding: 0 16px 20px; }
   .pd-cab { gap: 12px; flex-wrap: wrap; }
   .pd-busca { order: 3; flex-basis: 100%; max-width: none; }
-  .pd-hola h1 { font-size: 26px; }
+  .pd-hola { min-height: 220px; padding: 26px 22px; background-position: 0 0, 72% 42%, 0 0;
+    background-image: linear-gradient(90deg, rgba(8, 8, 10, .95) 0, rgba(8, 8, 10, .78) 60%, rgba(8, 8, 10, .35) 100%), url(/assets/fotos/comida-1-h.webp); }
+  .pd-hola h1 { font-size: 28px; }
   .pd-descarga { grid-template-columns: auto 1fr; }
   .pd-taxi { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--borde); padding-top: 14px; max-width: none; }
 }
