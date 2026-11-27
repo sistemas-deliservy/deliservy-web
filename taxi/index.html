@@ -129,16 +129,33 @@
 // llega por WhatsApp; la app se registra con SMS).
 (function(){
   var TEL="584144957006", MSG="Hola, quiero pedir un taxi.";
-  var DESCARGA="https://api.deliservy.site/api/referral/r/google-taxi";
   var ua=navigator.userAgent.toLowerCase();
   var ios=/iphone|ipad|ipod/.test(ua), android=/android/.test(ua);
   var emb=/instagram|fbav|fban|fb_iab|messenger|tiktok|musical_ly|snapchat|line\//.test(ua);
-  var sin=new URLSearchParams(location.search).get('sin')==='1';
+  var q=new URLSearchParams(location.search);
+  var sin=q.get('sin')==='1';
+  // De dónde viene (Gilberth, 27-nov-2026: «haz que cuente también la visita»): el ?c= del enlace, o la red por el
+  // parámetro que añade cada una al anuncio (Meta: fbclid o su navegador; Google: gclid/gbraid/wbraid), o «directo».
+  var origen=(q.get('c')||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20)
+    || ((q.get('fbclid') || /instagram|fbav|fban|fb_iab|messenger/.test(ua)) ? 'meta'
+    : (q.get('gclid') || q.get('gbraid') || q.get('wbraid')) ? 'google' : 'directo');
+  // La visita y el toque a WhatsApp quedan en qr_scan como taxi-<origen> y taxi-<origen>-wa (sin esperar respuesta).
+  // No cuentan los robots (la revisión de los anuncios) ni la vuelta de Android sin WhatsApp (?sin=1).
+  var robot=/bot|crawl|spider|preview|facebookexternalhit|headless|lighthouse/.test(ua);
+  function contar(codigo){
+    if(robot) return;
+    var u='https://api.deliservy.site/api/referral/visita/'+codigo;
+    try{ fetch(u,{mode:'no-cors',keepalive:true,cache:'no-store'}); }catch(e){ try{ (new Image()).src=u; }catch(_){} }
+  }
+  if(!sin) contar('taxi-'+origen);
+  // «Descargar la app» también dice de qué red vino (las «Campañas de descarga» del panel): meta-taxi o google-taxi.
+  var DESCARGA="https://api.deliservy.site/api/referral/r/"+(origen==='meta'?'meta-taxi':'google-taxi');
   var t=encodeURIComponent(MSG);
   var volver=location.origin+location.pathname+'?sin=1';
   var wa=document.getElementById('wa');
   wa.href=(android && !emb) ? 'intent://send?phone='+TEL+'&text='+t+'#Intent;scheme=whatsapp;S.browser_fallback_url='+encodeURIComponent(volver)+';end'
                             : 'https://wa.me/'+TEL+'?text='+t;
+  wa.addEventListener('click',function(){ contar('taxi-'+origen+'-wa'); });
   // En el teléfono, el enlace inteligente de descarga (App Store o Play Store según el aparato) con el código
   // google-busqueda: así el panel cuenta en «Campañas de descarga» los que vinieron del anuncio (Gilberth, 25-nov).
   var app=document.getElementById('app');
